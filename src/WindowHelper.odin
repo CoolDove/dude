@@ -10,7 +10,8 @@ import gl   "vendor:OpenGL"
 create_helper_window :: proc (allocator:=context.allocator, loc := #caller_location) -> ^Window {
 	wnd := new(Window);
 
-	wnd.name = fmt.aprintf("helper:%i", len(windows));
+	// wnd.name = fmt.aprintf("helper:%i", len(app.windows));
+	wnd.name = "helper";
 	wnd.handler = handler;
 	wnd.render = render_proc;
 	wnd.window_flags = {};
