@@ -7,4 +7,5 @@
 @popd
 
 @echo #build package main
+@mkdir bin
 @odin build ./src/ -out:bin/sdl.exe -collection:foreign=./foreign/

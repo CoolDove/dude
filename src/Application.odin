@@ -7,7 +7,6 @@ import "core:strings"
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
 
-
 Application :: struct {
     windows : map[u32]^Window,
 }
@@ -16,6 +15,15 @@ app : ^Application;
 
 app_init :: proc() {
 	app = new(Application);
+
+	sdl.GL_SetAttribute(.CONTEXT_MAJOR_VERSION, OPENGL_VERSION_MAJOR);
+	sdl.GL_SetAttribute(.CONTEXT_MINOR_VERSION, OPENGL_VERSION_MINOR);
+
+	if sdl.Init({.VIDEO, .EVENTS}) != 0 {
+	    fmt.println("failed to init: ", sdl.GetErrorString());
+		return
+	}
+
 }
 app_release :: proc() {
     free(app);
@@ -23,20 +31,12 @@ app_release :: proc() {
 
 app_run :: proc() {
 	using app;
-	if sdl.Init({.VIDEO, .EVENTS}) != 0 {
-	    fmt.println("failed to init: ", sdl.GetErrorString());
-		return
-	}
 
 	main_window := create_main_window();
 	helper_window := create_helper_window();
-	defer {
-        free(main_window);
-        free(helper_window);
-	}
 
-	register_window(main_window);
-	register_window(helper_window);
+	register_window(&main_window);
+	register_window(&helper_window);
 
     evt := sdl.Event{};
 
@@ -48,10 +48,17 @@ app_run :: proc() {
 					wnd.handler(wnd, evt);
 				}
 			}
-		} else {
+		} 
+		{
 			// rendering
 			for id, wnd in &windows {
-				if wnd.render != nil do wnd.render(wnd);
+				if wnd.render != nil {
+					if wnd.is_opengl_window {
+						assert(sdl.GL_MakeCurrent(wnd.window, wnd.gl_context) == 0, 
+							fmt.tprintf("Failed to switch gl context, because: {}\n", sdl.GetError()));
+					}
+					if wnd.render != nil do wnd.render(wnd);
+				}
 			}
 		}
 	}
@@ -61,15 +68,15 @@ app_run :: proc() {
 
 register_window :: proc(wnd:^Window) {
 	using app;
-	instantiate_window(wnd);
+	window_instantiate(wnd);
 
-	id := get_window_id(wnd);
+	id := window_get_id(wnd);
 	has := id in windows;
 	if !has do windows[id] = wnd;
 	else do fmt.println("window has been registered");
 
 	wnd.before_destroy = proc(wnd:^Window) {
-		remove_id := get_window_id(wnd);
+		remove_id := window_get_id(wnd);
 		remove_window(remove_id);
 	};
 }

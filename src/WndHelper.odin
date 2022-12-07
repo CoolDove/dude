@@ -7,17 +7,12 @@ import "core:strings"
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
 
-create_helper_window :: proc (allocator:=context.allocator, loc := #caller_location) -> ^Window {
-	wnd := new(Window);
+create_helper_window :: proc (allocator:=context.allocator, loc := #caller_location) -> Window {
+	wnd := window_get_basic_template("helper", IVec2{256, 100});
 
-	// wnd.name = fmt.aprintf("helper:%i", len(app.windows));
-	wnd.name = "helper";
 	wnd.handler = handler;
-	wnd.render = render_proc;
-	wnd.window_flags = {};
+	// wnd.render = render_proc;
 	wnd.renderer_flags = {.ACCELERATED, .PRESENTVSYNC, .TARGETTEXTURE};
-	wnd.position = IVec2{20, 20};
-	wnd.size = IVec2{256, 100};
 
     return wnd;
 }
@@ -29,18 +24,24 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 
 	#partial switch eid:=window_event.event; eid {
 	case .CLOSE :{
-		destroy_window(wnd);
+		window_destroy(wnd);
 	}
 	}
 }
 
 @(private="file")
 render_proc :: proc(using wnd:^Window) {
-	sdl.SetRenderDrawColor(renderer, 128, 128, 255, 255);
-	sdl.RenderClear(renderer);
-	render_slashes(renderer, get_window_id(wnd), 5);
+	if is_opengl_window {
+		gl.ClearColor(.8, .2, .1, 1);
+		gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT);
+		sdl.GL_SwapWindow(wnd.window);
+	} else {
+		sdl.SetRenderDrawColor(renderer, 128, 128, 255, 255);
+		sdl.RenderClear(renderer);
+		render_slashes(renderer, window_get_id(wnd), 5);
 
-	sdl.RenderPresent(renderer);
+		sdl.RenderPresent(renderer);
+	}
 }
 
 @(private="file")
