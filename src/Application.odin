@@ -3,12 +3,19 @@ package main
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:time"
 
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
 
 Application :: struct {
     windows : map[u32]^Window,
+
+	duration_total : time.Duration,
+	duration_frame : time.Duration,
+
+	stopwatch : time.Stopwatch,
+	frame_stopwatch : time.Stopwatch,
 }
 
 app : ^Application;
@@ -18,6 +25,8 @@ app_init :: proc() {
 
 	sdl.GL_SetAttribute(.CONTEXT_MAJOR_VERSION, OPENGL_VERSION_MAJOR);
 	sdl.GL_SetAttribute(.CONTEXT_MINOR_VERSION, OPENGL_VERSION_MINOR);
+
+	time.stopwatch_start(&app.stopwatch);
 
 	if sdl.Init({.VIDEO, .EVENTS}) != 0 {
 	    fmt.println("failed to init: ", sdl.GetErrorString());
@@ -41,6 +50,9 @@ app_run :: proc() {
     evt := sdl.Event{};
 
 	for len(windows) > 0 {
+		delta_msec := app_time_step();
+		fmt.printf("delta time: {} ms.\n", delta_msec);
+		
 		if sdl.PollEvent(&evt) {
 			if evt.window.type == .WINDOWEVENT {
 				wid := evt.window.windowID;
@@ -49,21 +61,34 @@ app_run :: proc() {
 				}
 			}
 		} 
-		{
-			// rendering
-			for id, wnd in &windows {
-				if wnd.render != nil {
-					if wnd.is_opengl_window {
-						assert(sdl.GL_MakeCurrent(wnd.window, wnd.gl_context) == 0, 
-							fmt.tprintf("Failed to switch gl context, because: {}\n", sdl.GetError()));
-					}
-					if wnd.render != nil do wnd.render(wnd);
+
+		// rendering and update
+		for id, wnd in &windows {
+			if wnd.render != nil {
+				if wnd.is_opengl_window {
+					assert(sdl.GL_MakeCurrent(wnd.window, wnd.gl_context) == 0, 
+						fmt.tprintf("Failed to switch gl context, because: {}\n", sdl.GetError()));
 				}
+				if wnd.update != nil do wnd.update(wnd);
+				if wnd.render != nil do wnd.render(wnd);
 			}
 		}
 	}
 
 	sdl.Quit();
+}
+
+@(private ="file")
+app_time_step :: proc() -> f64 {
+	using app;
+	time.stopwatch_stop(&stopwatch);
+	duration := time.stopwatch_duration(frame_stopwatch);
+
+	duration_frame = duration - duration_total;
+	duration_total = duration;
+
+	time.stopwatch_start(&frame_stopwatch);
+	return time.duration_milliseconds(duration_frame);
 }
 
 register_window :: proc(wnd:^Window) {

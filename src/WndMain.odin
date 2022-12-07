@@ -3,6 +3,8 @@ package main
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:time"
+import "core:math"
 
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
@@ -30,7 +32,11 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 
 @(private="file")
 render_proc :: proc(using wnd:^Window) {
-	gl.ClearColor(.2, .8, .7, 1);
+	col := [4]f32{.2, .8, .7, 1};
+	total_ms := time.duration_milliseconds(app.duration_total);
+	col *= [4]f32{0..<4 = math.sin(cast(f32)total_ms * .01) * .5 + 1};
+
+	gl.ClearColor(col.r, col.g, col.b, col.a);
 	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT);
 	sdl.GL_SwapWindow(wnd.window);
 	// sdl.SetRenderDrawColor(renderer, 128, 255, 128, 255);
@@ -38,6 +44,13 @@ render_proc :: proc(using wnd:^Window) {
 	// render_slashes(renderer, window_get_id(wnd), 5);
 
 	// sdl.RenderPresent(renderer);
+}
+
+@(private="file")
+update_proc :: proc(using wnd:^Window) {
+	now := time.now();
+	// time.duration_milliseconds()
+	fmt.println();
 }
 
 @(private="file")

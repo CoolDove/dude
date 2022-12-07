@@ -11,8 +11,12 @@ OPENGL_VERSION_MAJOR :: 3
 OPENGL_VERSION_MINOR :: 1
 
 Window :: struct {
-	handler  : proc(wnd:^Window, event:sdl.Event),
+	// NOTE(Dove): 
+	// The GLContext is not correct during `handler`, 
+	// so do not use any OpenGL things in `handler`.
+	handler  : proc(wnd:^Window, event:sdl.Event), 
 	render   : proc(wnd:^Window),
+	update 	 : proc(wnd:^Window),
 
 	before_destroy : proc(wnd:^Window), // not necessary
 
