@@ -50,15 +50,19 @@ app_run :: proc() {
     evt := sdl.Event{};
 
 	for len(windows) > 0 {
-		delta_msec := app_time_step();
-		fmt.printf("delta time: {} ms.\n", delta_msec);
+		app_time_step();
 		
 		if sdl.PollEvent(&evt) {
-			if evt.window.type == .WINDOWEVENT {
-				wid := evt.window.windowID;
-				if wnd, has := windows[wid]; has && wnd.handler != nil {
-					wnd.handler(wnd, evt);
-				}
+			// if evt.window.type == .WINDOWEVENT {
+			// 	wid := evt.window.windowID;
+			// 	if wnd, has := windows[wid]; has && wnd.handler != nil {
+			// 		wnd.handler(wnd, evt);
+			// 	}
+			// }
+
+			wid := evt.window.windowID;
+			if wnd, has := windows[wid]; has && wnd.handler != nil {
+				wnd.handler(wnd, evt);
 			}
 		} 
 
@@ -79,7 +83,7 @@ app_run :: proc() {
 }
 
 @(private ="file")
-app_time_step :: proc() -> f64 {
+app_time_step :: proc() {
 	using app;
 	time.stopwatch_stop(&stopwatch);
 	duration := time.stopwatch_duration(frame_stopwatch);
@@ -88,7 +92,6 @@ app_time_step :: proc() -> f64 {
 	duration_total = duration;
 
 	time.stopwatch_start(&frame_stopwatch);
-	return time.duration_milliseconds(duration_frame);
 }
 
 register_window :: proc(wnd:^Window) {
@@ -109,7 +112,8 @@ register_window :: proc(wnd:^Window) {
 remove_window :: proc(id:u32) {
 	using app;
 	if id in windows {
+		wnd := windows[id];
+		fmt.println("window: ", id, ": ", wnd.name, " removed, now ", len(windows), " windows left.");
         delete_key(&windows, id);
-		fmt.println("window: ", id, " removed, now ", len(windows), " windows left.");
 	}
 }

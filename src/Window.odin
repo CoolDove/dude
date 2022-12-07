@@ -7,8 +7,8 @@ import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
 
 
-OPENGL_VERSION_MAJOR :: 3
-OPENGL_VERSION_MINOR :: 1
+OPENGL_VERSION_MAJOR :: 4
+OPENGL_VERSION_MINOR :: 5
 
 Window :: struct {
 	// NOTE(Dove): 
@@ -68,10 +68,9 @@ window_instantiate :: proc(using wnd:^Window) -> bool {
 	if is_opengl_window {
 		gl_context = sdl.GL_CreateContext(window);
 		assert(gl_context != nil, fmt.tprintf("Failed to create GLContext for window: {}, because: {}.\n", name, sdl.GetError()));
-		fmt.println("GLContext inited, GLContext: ", gl_context);
 
 		sdl.GL_MakeCurrent(window, gl_context);
-		gl.load_up_to(3, 1, sdl.gl_set_proc_address)
+		gl.load_up_to(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR, sdl.gl_set_proc_address)
 	} else {
 		renderer = sdl.CreateRenderer(window, -1, renderer_flags);
 		assert(renderer != nil, fmt.tprintf("Failed to create renderer for window: {}, because: {}.\n", name, sdl.GetError()));

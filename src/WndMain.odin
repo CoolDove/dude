@@ -14,7 +14,7 @@ create_main_window :: proc (allocator:=context.allocator, loc := #caller_locatio
 
 	wnd.handler = handler;
 	wnd.render = render_proc;
-	wnd.renderer_flags = {.ACCELERATED, .PRESENTVSYNC, .TARGETTEXTURE};
+	// wnd.renderer_flags = {.ACCELERATED, .PRESENTVSYNC, .TARGETTEXTURE};
 
     return wnd;
 }
