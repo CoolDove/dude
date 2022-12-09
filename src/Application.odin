@@ -4,9 +4,12 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:time"
+import "core:c"
 
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
+
+import "pac:imgui"
 
 Application :: struct {
     windows : map[u32]^Window,
@@ -23,15 +26,22 @@ app : ^Application;
 app_init :: proc() {
 	app = new(Application);
 
-	sdl.GL_SetAttribute(.CONTEXT_MAJOR_VERSION, OPENGL_VERSION_MAJOR);
-	sdl.GL_SetAttribute(.CONTEXT_MINOR_VERSION, OPENGL_VERSION_MINOR);
-
 	time.stopwatch_start(&app.stopwatch);
 
 	if sdl.Init({.VIDEO, .EVENTS}) != 0 {
 	    fmt.println("failed to init: ", sdl.GetErrorString());
 		return
 	}
+
+	sdl.GL_SetAttribute(.CONTEXT_MAJOR_VERSION, OPENGL_VERSION_MAJOR);
+	sdl.GL_SetAttribute(.CONTEXT_MINOR_VERSION, OPENGL_VERSION_MINOR);
+	sdl.GL_SetAttribute(sdl.GLattr.CONTEXT_PROFILE_MASK, cast(i32)sdl.GLprofile.CORE);
+	
+	major, minor, profile : c.int;
+	sdl.GL_GetAttribute(.CONTEXT_MAJOR_VERSION, &major);
+	sdl.GL_GetAttribute(.CONTEXT_MAJOR_VERSION, &minor);
+	sdl.GL_GetAttribute(.CONTEXT_PROFILE_MASK, &profile);
+	fmt.printf("OpenGL version: {}.{}, profile: {}\n", major, minor, cast(sdl.GLprofile)profile);
 
 }
 app_release :: proc() {
@@ -53,20 +63,13 @@ app_run :: proc() {
 		app_time_step();
 		
 		if sdl.PollEvent(&evt) {
-			// if evt.window.type == .WINDOWEVENT {
-			// 	wid := evt.window.windowID;
-			// 	if wnd, has := windows[wid]; has && wnd.handler != nil {
-			// 		wnd.handler(wnd, evt);
-			// 	}
-			// }
-
 			wid := evt.window.windowID;
 			if wnd, has := windows[wid]; has && wnd.handler != nil {
 				wnd.handler(wnd, evt);
 			}
 		} 
 
-		// rendering and update
+		// update and render
 		for id, wnd in &windows {
 			if wnd.render != nil {
 				if wnd.is_opengl_window {

@@ -18,7 +18,9 @@ Window :: struct {
 	render   : proc(wnd:^Window),
 	update 	 : proc(wnd:^Window),
 
+	// events
 	before_destroy : proc(wnd:^Window), // not necessary
+	after_instantiate : proc(wnd:^Window), // not necessary
 
 	position, size : IVec2,
 
@@ -70,11 +72,12 @@ window_instantiate :: proc(using wnd:^Window) -> bool {
 		assert(gl_context != nil, fmt.tprintf("Failed to create GLContext for window: {}, because: {}.\n", name, sdl.GetError()));
 
 		sdl.GL_MakeCurrent(window, gl_context);
-		gl.load_up_to(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR, sdl.gl_set_proc_address)
+		gl.load_up_to(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR, sdl.gl_set_proc_address);
 	} else {
 		renderer = sdl.CreateRenderer(window, -1, renderer_flags);
 		assert(renderer != nil, fmt.tprintf("Failed to create renderer for window: {}, because: {}.\n", name, sdl.GetError()));
 	}
+	if after_instantiate != nil do after_instantiate(wnd)
 
 	return true;
 }
