@@ -1,4 +1,5 @@
 bin/
+.vscode/
 *.exe
 ols.json
 imgui.ini

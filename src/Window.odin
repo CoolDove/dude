@@ -34,6 +34,9 @@ Window :: struct {
 
 	is_opengl_window : bool,
 	gl_context : sdl.GLContext,
+
+	_data_type : typeid,
+	_data : rawptr, // This is invalid before instantiated.
 }
 
 IVec2 :: [2]i32
@@ -43,60 +46,91 @@ Event :: struct {
 }
 
 window_get_basic_template :: proc(name: string, size : IVec2 = IVec2{800, 600}, is_opengl_window : bool = true) -> Window {
-	wnd : Window;
-	wnd.name = name;
-	wnd.handler = nil;
-	wnd.render = nil;
-	wnd.is_opengl_window = is_opengl_window;
+	wnd : Window
+	wnd.name = name
+	wnd.handler = nil
+	wnd.render = nil
+	wnd.is_opengl_window = is_opengl_window
 	if is_opengl_window {
-		wnd.window_flags |= {.OPENGL};
+		wnd.window_flags |= {.OPENGL}
 	} 
-	wnd.position = sdl.WINDOWPOS_CENTERED;
-	wnd.size = size;
-    return wnd;
+	wnd.position = sdl.WINDOWPOS_CENTERED
+	wnd.size = size
+    return wnd
 }
 
-window_instantiate :: proc(using wnd:^Window) -> bool {
+// window_instantiate_with_data :: proc($DataType: typeid, using wnd: ^Window) -> bool {
+// 	instantiate_result := window_instantiate(wnd)
+// 	wnd._data = new(typeid)
+// 	wnd._data_type = DataType
+// 	return instantiate_result
+// }
+
+window_instantiate :: proc {
+	window_instantiate_with_data,
+	window_instantiate_without_data,
+}
+
+window_instantiate_with_data :: proc(using wnd:^Window, $DataType: typeid) -> bool {
+	create_result := create_window_and_init_opengl(wnd)
+	_data = new(DataType)
+	_data_type = DataType
+
+	if after_instantiate != nil do after_instantiate(wnd)
+	return create_result
+}
+window_instantiate_without_data :: proc(using wnd:^Window) -> bool {
+	create_result := create_window_and_init_opengl(wnd)
+	if after_instantiate != nil do after_instantiate(wnd)
+	return create_result
+}
+
+@(private="file")
+create_window_and_init_opengl :: proc(using wnd: ^Window)  -> bool {
 	window = sdl.CreateWindow(
 	    strings.clone_to_cstring(name, context.temp_allocator),
 	    position.x, position.y, size.x, size.y,
-	    window_flags);
+	    window_flags)
 
 	if !window_is_good(wnd) {
-        fmt.println("failed to instantiate window: ", name);
-		return false;
+        fmt.println("failed to instantiate window: ", name)
+		return false
 	}
 
 	if is_opengl_window {
-		gl_context = sdl.GL_CreateContext(window);
-		assert(gl_context != nil, fmt.tprintf("Failed to create GLContext for window: {}, because: {}.\n", name, sdl.GetError()));
+		gl_context = sdl.GL_CreateContext(window)
+		assert(gl_context != nil, fmt.tprintf("Failed to create GLContext for window: {}, because: {}.\n", name, sdl.GetError()))
 
-		sdl.GL_MakeCurrent(window, gl_context);
-		gl.load_up_to(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR, sdl.gl_set_proc_address);
+		sdl.GL_MakeCurrent(window, gl_context)
+		gl.load_up_to(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR, sdl.gl_set_proc_address)
 	} else {
-		renderer = sdl.CreateRenderer(window, -1, renderer_flags);
-		assert(renderer != nil, fmt.tprintf("Failed to create renderer for window: {}, because: {}.\n", name, sdl.GetError()));
+		renderer = sdl.CreateRenderer(window, -1, renderer_flags)
+		assert(renderer != nil, fmt.tprintf("Failed to create renderer for window: {}, because: {}.\n", name, sdl.GetError()))
 	}
-	if after_instantiate != nil do after_instantiate(wnd)
+	return true
+}
 
-	return true;
+window_data :: proc($Type:typeid, using wnd: ^Window) -> ^Type {
+	assert(_data != nil, fmt.tprintf("Failed to get window: {}'s data, cuz it has no data.\n", name))
+	return cast(^Type)_data
 }
 
 window_destroy :: proc(using wnd:^Window) {
-	if !window_is_good(wnd) do return
+	if window == nil do return
 
-	if before_destroy!=nil do before_destroy(wnd);
+	if before_destroy!=nil do before_destroy(wnd)
 
-	sdl.DestroyWindow(window);
-	sdl.DestroyRenderer(renderer);
-	window = nil;
-    renderer = nil;
+	if _data != nil do free(_data)
+	sdl.DestroyWindow(window)
+	if renderer != nil do sdl.DestroyRenderer(renderer)
+	window = nil
+    renderer = nil
 }
 
 window_is_good :: proc(using wnd:^Window) -> bool {
-	return window != nil;
+	return window != nil
 }
 
 window_get_id :: proc(using wnd:^Window) -> u32 {
-	return sdl.GetWindowID(window);
+	return sdl.GetWindowID(window)
 }
