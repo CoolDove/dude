@@ -5,6 +5,7 @@ import "core:os"
 import "core:strings"
 import "core:time"
 import "core:c"
+import "core:log"
 
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
@@ -41,8 +42,7 @@ app_init :: proc() {
 	sdl.GL_GetAttribute(.CONTEXT_MAJOR_VERSION, &major)
 	sdl.GL_GetAttribute(.CONTEXT_MAJOR_VERSION, &minor)
 	sdl.GL_GetAttribute(.CONTEXT_PROFILE_MASK, &profile)
-	fmt.printf("OpenGL version: {}.{}, profile: {}\n", major, minor, cast(sdl.GLprofile)profile)
-
+	log.infof("OpenGL version: {}.{}, profile: {}", major, minor, cast(sdl.GLprofile)profile)
 }
 app_release :: proc() {
     free(app)
@@ -55,7 +55,7 @@ app_run :: proc() {
 	helper_window := create_helper_window()
 
 	register_window(&main_window, WndMainData)
-	register_window(&helper_window)
+	// register_window(&helper_window)
 
     evt := sdl.Event{}
 
@@ -132,7 +132,7 @@ remove_window :: proc(id:u32) {
 	using app
 	if id in windows {
 		wnd := windows[id]
-		fmt.println("window: ", id, ": ", wnd.name, " removed, now ", len(windows), " windows left.")
+		log.debugf("window {}: \"{}\" removed, now {} windows left", id, wnd.name, len(windows))
         delete_key(&windows, id)
 	}
 }

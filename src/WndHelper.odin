@@ -2,6 +2,7 @@ package main
 
 import "core:fmt"
 import "core:os"
+import "core:log"
 import "core:strings"
 
 import sdl  "vendor:sdl2"
@@ -23,14 +24,13 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 	window_event := event.window;
 
 	if event.type == .KEYDOWN {
-		fmt.printf("Key: {} down. Target window: {}.\n", event.key.keysym.sym, name);
+		log.debugf("Key: {} down. Target window: {}.\n", event.key.keysym.sym, name);
 	}
 
 	if event.window.type == .WINDOWEVENT {
 		#partial switch eid:=window_event.event; eid {
 		// case .RESIZED : {
 		// 	size = IVec2{event.window.data1, event.window.data2};
-		// 	fmt.printf("window \"{}\" resized to: {}.\n", name, size);
 		// }
 		case .CLOSE :{
 			window_destroy(wnd);

@@ -3,6 +3,10 @@
 
 ## TODO
 
-- [ ] Replace core:fmt with core:log.
-- [ ] Basic open gl abstraction, starting from GLObject.Shader.
+- [x] Replace core:fmt with core:log.
+- [x] Fix ImGui.
+- [ ] Fix debug building.
+- [ ] Use Makefile for building.
+
 - [ ] Dynamic add and remove windows.
+- [ ] Basic open gl abstraction, starting from GLObject.Shader.
