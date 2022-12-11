@@ -3,7 +3,7 @@ CC   = cl
 LINK = lib
 MAKE = nmake
 
-TOOLS_DIR = D:\softw\msys2\usr\bin
+TOOLS_DIR = D:\softw\msys2\usr\bin\
 
 PROGRAM_NAME = MillionUV
 
@@ -11,7 +11,7 @@ OUTPUT_PATH = .\bin
 ODIN_SOURCE = .\src
 
 ODIN_COLLECTIONS = "-collection:pac=.\pac\"
-ODIN_DEBUG_FLAGS = "-debug"
+ODIN_DEBUG_FLAGS = -debug
 ODIN_RELEASE_FLAGS = -no-bounds-check -subsystem:windows -o:speed
 
 all: program

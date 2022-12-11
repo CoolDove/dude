@@ -15,7 +15,6 @@ import imsdl "pac:imgui/impl/sdl"
 
 import "pac:imgui"
 
-
 WndMainData :: struct {
 	imgui_state : ImguiState,
 	vertices : [9]f32,
@@ -173,7 +172,7 @@ render_proc :: proc(using wnd:^Window) {
 
 	col := [4]f32{.2, .8, .7, 1}
 	total_ms := time.duration_milliseconds(app.duration_total)
-	col *= [4]f32{0..<4 = math.sin(cast(f32)total_ms * .01) * .5 + 1}
+	col *= [4]f32{0..<4 = math.sin(cast(f32)total_ms * .004) * .5 + 1}
 
     gl.Viewport(0, 0, i32(size.x), i32(size.y))
     gl.Scissor(0, 0, i32(size.x), i32(size.y))
@@ -192,8 +191,8 @@ render_proc :: proc(using wnd:^Window) {
 
 	imgui_viewport.size = io.display_size
 
-    imgui.set_next_window_pos(imgui.Vec2{10, 10})
-    imgui.set_next_window_bg_alpha(0.2)
+    imgui.set_next_window_pos(Vec2{10, 10})
+    imgui.set_next_window_bg_alpha(0.8)
     overlay_flags: imgui.Window_Flags = .NoDecoration | 
                                         .AlwaysAutoResize | 
                                         .NoSavedSettings | 
@@ -201,8 +200,29 @@ render_proc :: proc(using wnd:^Window) {
                                         .NoNav | 
                                         .NoMove
 	imgui.begin("Test", nil, overlay_flags)
-	imgui.button("HELLO DOVE")
+	if imgui.button("HELLO DOVE") {
+		log.debugf("You pressed *HELLO DOVE*")
+	}
+
+	@static test_col : [4]f32
+	imgui.color_picker4("Color", cast(^Vec4)&test_col)
+
+	@static value:i32
+	imgui.slider_int("Value", &value, 0, 64, "Value:%d")
+
+	@static vec3i: Vec3i
+	imgui.slider_int3("Int3Slider", &vec3i, 0, 255)
+
+	@static f2:Vec2
+	imgui.slider_float2("Slider2Test", &f2, 0, 1)
+	@static f3:Vec3
+	imgui.slider_float3("Slider3Test", &f3, 0, 1)
+	@static f4:Vec4
+	imgui.slider_float4("Slider4Test", &f4, 0, 1)
+
+
     imgui.text_unformatted("YOU WIN!!!")
+	// imgui.color_edit3()
 	imgui.end()
 
 	// FIXME: [ imgui ] display size in draw_data is not updated.
@@ -214,6 +234,7 @@ render_proc :: proc(using wnd:^Window) {
 	imgl.imgui_render(draw_data, imgui_state.opengl_state)
 	sdl.GL_SwapWindow(wnd.window)
 }
+
 
 @(private="file")
 render_gltest :: proc(using wnd:^Window) {
