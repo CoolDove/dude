@@ -27,7 +27,7 @@ ImguiState :: struct {
 }
 
 create_main_window :: proc (allocator:=context.allocator, loc := #caller_location) -> Window {
-	wnd := window_get_basic_template("Dove")
+	wnd := window_get_basic_template("MillionUV")
 
 	wnd.handler = handler
 	wnd.render = render_proc
@@ -184,15 +184,9 @@ render_proc :: proc(using wnd:^Window) {
 	imsdl.new_frame()
 
     io := imgui.get_io()
-	imgui_context := imgui.get_current_context()
-	imgui_viewport := imgui.get_main_viewport()
 	
 	imgui.new_frame()
 
-	imgui_viewport.size = io.display_size
-
-    imgui.set_next_window_pos(Vec2{10, 10})
-    imgui.set_next_window_bg_alpha(0.8)
     overlay_flags: imgui.Window_Flags = .NoDecoration | 
                                         .AlwaysAutoResize | 
                                         .NoSavedSettings | 
@@ -200,39 +194,76 @@ render_proc :: proc(using wnd:^Window) {
                                         .NoNav | 
                                         .NoMove
 	imgui.begin("Test", nil, overlay_flags)
-	if imgui.button("HELLO DOVE") {
-		log.debugf("You pressed *HELLO DOVE*")
+	{
+		imgui_logger_checkboxex()
+
+		for i in 0..<5 {
+			imgui.radio_button("", io.mouse_down[i])
+			if i != 4 do imgui.same_line()
+		}
+
+		@static test_col : [4]f32
+		imgui.color_picker4("Color", cast(^Vec4)&test_col)
+
+		@static value:i32
+		imgui.slider_int("Value", &value, 0, 64, "Value:%d")
+
+		@static vec3i: Vec3i
+		imgui.slider_int3("Int3Slider", &vec3i, 0, 255)
+
+		@static f2:Vec2
+		imgui.slider_float2("Slider2Test", &f2, 0, 1)
+		@static f3:Vec3
+		imgui.slider_float3("Slider3Test", &f3, 0, 1)
+		@static f4:Vec4
+		imgui.slider_float4("Slider4Test", &f4, 0, 1)
+
+	    imgui.text_unformatted("YOU WIN!!!")
 	}
-
-	@static test_col : [4]f32
-	imgui.color_picker4("Color", cast(^Vec4)&test_col)
-
-	@static value:i32
-	imgui.slider_int("Value", &value, 0, 64, "Value:%d")
-
-	@static vec3i: Vec3i
-	imgui.slider_int3("Int3Slider", &vec3i, 0, 255)
-
-	@static f2:Vec2
-	imgui.slider_float2("Slider2Test", &f2, 0, 1)
-	@static f3:Vec3
-	imgui.slider_float3("Slider3Test", &f3, 0, 1)
-	@static f4:Vec4
-	imgui.slider_float4("Slider4Test", &f4, 0, 1)
-
-
-    imgui.text_unformatted("YOU WIN!!!")
-	// imgui.color_edit3()
 	imgui.end()
 
-	// FIXME: [ imgui ] display size in draw_data is not updated.
 	imgui.end_frame()
 	imgui.render()
 	draw_data := imgui.get_draw_data();
 
-	// log.debugf("draw data display size: {}", draw_data.display_size)
 	imgl.imgui_render(draw_data, imgui_state.opengl_state)
 	sdl.GL_SwapWindow(wnd.window)
+}
+
+@(private="file")
+imgui_logger_checkboxex :: proc() {
+	logger := context.logger
+	
+	using log.Option
+	level_before := .Level in logger.options
+	level_after  := level_before
+	time_before := .Time in logger.options
+	time_after  := time_before
+	line_before := .Line in logger.options
+	line_after := line_before
+
+	imgui.checkbox("Level", &level_after)
+	imgui.checkbox("Time", &time_after)
+	imgui.checkbox("Line", &line_after)
+
+	dirty := false 
+
+	if level_after != level_before {
+		dirty = true
+		if level_after do incl(&logger.options, log.Option.Level)
+		else do excl(&logger.options, log.Option.Level)
+	}
+	if time_after != time_before {
+		if time_after do incl(&logger.options, log.Option.Time)
+		else do excl(&logger.options, log.Option.Time)
+	}
+	if line_after != time_before {
+		if line_after do incl(&logger.options, log.Option.Line)
+		else do excl(&logger.options, log.Option.Line)
+	}
+	if dirty {
+		context.logger = logger
+	}
 }
 
 
