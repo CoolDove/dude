@@ -15,10 +15,13 @@ import imsdl "pac:imgui/impl/sdl"
 
 import "pac:imgui"
 
+import dgl "dgl"
+
 WndMainData :: struct {
 	imgui_state : ImguiState,
 	vertices : [9]f32,
 	vao, vbo, shader_program : u32, 
+	shader : dgl.Shader
 }
 
 ImguiState :: struct {
@@ -97,58 +100,19 @@ void main()
 } 
 	`
 
-	vertex_shader := compile_shader_src(vertex_shader_src, gl.VERTEX_SHADER)
-	fragment_shader := compile_shader_src(fragment_shader_src, gl.FRAGMENT_SHADER)
+	shader_comp_vertex := dgl.shader_create_component(.VERTEX_SHADER, vertex_shader_src)
+	shader_comp_fragment := dgl.shader_create_component(.FRAGMENT_SHADER, fragment_shader_src)
 
-	shader_program = gl.CreateProgram()
+	shader = dgl.shader_create(&shader_comp_vertex, &shader_comp_fragment)
+	dgl.shader_destroy_components(&shader_comp_vertex, &shader_comp_fragment)
 
-	gl.AttachShader(shader_program, vertex_shader)
-	gl.AttachShader(shader_program, fragment_shader)
-	gl.LinkProgram(shader_program)
-	gl.DeleteShader(vertex_shader)
-	gl.DeleteShader(fragment_shader)
-
-	link_success : i32
-	gl.GetProgramiv(shader_program, gl.LINK_STATUS, &link_success)
-	if link_success == 0 {
-		info_length:i32
-		info_buf : [512]u8
-		gl.GetProgramInfoLog(shader_program, 512, &info_length, &info_buf[0]);
-		log.debugf("Failed to link shader program, because: \n%s\n", info_buf)
-	} else {
-		log.debugf("Shader Program is initialized.")
-		gl.UseProgram(shader_program)
-	}
+	if shader.native_id != 0 do dgl.shader_bind(&shader)
 
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), 0);
 	gl.EnableVertexAttribArray(0)
 
 	init_imgui(&imgui_state, window)
 }
-
-@(private="file") 
-compile_shader_src :: proc(src:string, shader_type:u32) -> u32 {
-	cstr := strings.clone_to_cstring(src, context.temp_allocator)
-
-	shader_obj := gl.CreateShader(shader_type)
-	gl.ShaderSource(shader_obj, 1, &cstr, nil)
-	gl.CompileShader(shader_obj)
-
-	success : i32;
-	gl.GetShaderiv(shader_obj, gl.COMPILE_STATUS, &success)
-
-	if success == 0 {
-		shader_log_length:i32
-		info_buf : [512]u8
-		gl.GetShaderInfoLog(shader_obj, 512, &shader_log_length, &info_buf[0])
-		log.debugf("Failed to compile shader because: \n%s\n", info_buf);
-		return 0;
-	} else {
-		log.debugf("Shader compiled! ID: {}.", shader_obj)
-		return shader_obj;
-	}
-}
-
 
 @(private="file")
 handler :: proc(using wnd:^Window, event:sdl.Event) {
@@ -271,7 +235,8 @@ imgui_logger_checkboxex :: proc() {
 render_gltest :: proc(using wnd:^Window) {
 	wdata := window_data(WndMainData, wnd);
 	using wdata
-	gl.UseProgram(shader_program)
+	// gl.UseProgram(shader_program)
+	dgl.shader_bind(&shader)
 	gl.BindVertexArray(vao)
 
 	gl.DrawArrays(gl.TRIANGLES, 0, 3)
