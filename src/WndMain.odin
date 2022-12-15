@@ -6,6 +6,7 @@ import "core:strings"
 import "core:time"
 import "core:math"
 import "core:log"
+import "core:math/rand"
 
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
@@ -16,12 +17,16 @@ import imsdl "pac:imgui/impl/sdl"
 import "pac:imgui"
 
 import dgl "dgl"
+import dsh "dgl/shader"
+import dbuf "dgl/buffer"
 
 WndMainData :: struct {
 	imgui_state : ImguiState,
 	vertices : [9]f32,
-	vao, vbo, shader_program : u32, 
-	shader : dgl.Shader
+	vao : u32, 
+
+	shader : dsh.Shader,
+	vertex_buffer : dbuf.Buffer
 }
 
 ImguiState :: struct {
@@ -75,9 +80,10 @@ after_instantiate :: proc(using wnd: ^Window) {
 	gl.GenVertexArrays(1, &vao)
 	gl.BindVertexArray(vao)
 
-	gl.GenBuffers(1, &vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), &vertices, gl.STATIC_DRAW)
+	vertex_buffer = dbuf.create()
+	buffer_data := cast([^]u8)raw_data(vertices[:])
+	
+	dbuf.store(&vertex_buffer, size_of(vertices), raw_data(vertices[:]), .DYNAMIC_DRAW)
 
 	vertex_shader_src := `
 
@@ -99,20 +105,26 @@ void main()
     FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
 } 
 	`
+	shader = load_shader(vertex_shader_src, fragment_shader_src)
+	if shader.native_id != 0 do dsh.bind(&shader)
 
-	shader_comp_vertex := dgl.shader_create_component(.VERTEX_SHADER, vertex_shader_src)
-	shader_comp_fragment := dgl.shader_create_component(.FRAGMENT_SHADER, fragment_shader_src)
-
-	shader = dgl.shader_create(&shader_comp_vertex, &shader_comp_fragment)
-	dgl.shader_destroy_components(&shader_comp_vertex, &shader_comp_fragment)
-
-	if shader.native_id != 0 do dgl.shader_bind(&shader)
-
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), 0);
-	gl.EnableVertexAttribArray(0)
+	gl.VertexArrayAttribFormat(vao, 0, 3, gl.FLOAT, false, 0)
+	gl.VertexArrayAttribBinding(vao, 0, 0)
+	gl.EnableVertexArrayAttrib(vao, 0)
+	gl.VertexArrayVertexBuffer(vao, 0, vertex_buffer.native_id, 0, 3 * size_of(f32))
 
 	init_imgui(&imgui_state, window)
 }
+
+@(private="file") 
+load_shader :: proc(vertex_source, frag_source : string)  -> dsh.Shader {
+	shader_comp_vertex := dsh.create_component(.VERTEX_SHADER, vertex_source)
+	shader_comp_fragment := dsh.create_component(.FRAGMENT_SHADER, frag_source)
+	shader := dsh.create(&shader_comp_vertex, &shader_comp_fragment)
+	dsh.destroy_components(&shader_comp_vertex, &shader_comp_fragment)
+	return shader
+}
+
 
 @(private="file")
 handler :: proc(using wnd:^Window, event:sdl.Event) {
@@ -235,9 +247,20 @@ imgui_logger_checkboxex :: proc() {
 render_gltest :: proc(using wnd:^Window) {
 	wdata := window_data(WndMainData, wnd);
 	using wdata
-	// gl.UseProgram(shader_program)
-	dgl.shader_bind(&shader)
+
+	total_ms := time.duration_milliseconds(app.duration_total) 
+	randseed := rand.create(cast(u64)total_ms)
+
+	new_data := [?]f32 {
+		rand.float32(&randseed),
+		rand.float32(&randseed),
+		rand.float32(&randseed),
+	}
+
+	dbuf.set(&vertex_buffer, 0, 3 * size_of(u8), raw_data(new_data[:]))
+
 	gl.BindVertexArray(vao)
+	dsh.bind(&shader)
 
 	gl.DrawArrays(gl.TRIANGLES, 0, 3)
 

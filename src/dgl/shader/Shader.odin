@@ -1,8 +1,12 @@
-package dovegl
+package shader
+
+import dgl "../"
 
 import gl "vendor:OpenGL"
 import "core:log"
 import "core:strings"
+
+GLObject :: dgl.GLObject
 
 ShaderType :: enum u32 {
     FRAGMENT_SHADER        = gl.FRAGMENT_SHADER,
@@ -17,13 +21,13 @@ Shader :: struct {
     using obj : GLObject,
 }
 
-ShaderComponent :: struct {
+Component :: struct {
     using obj : GLObject,
     type : ShaderType,
 }
 
-shader_create_component :: proc (type : ShaderType, source : string) -> ShaderComponent {
-    shader: ShaderComponent
+create_component :: proc (type : ShaderType, source : string) -> Component {
+    shader: Component
 
     shader.type = type
 
@@ -43,12 +47,12 @@ shader_create_component :: proc (type : ShaderType, source : string) -> ShaderCo
 		info_buf : [512]u8
 		gl.GetShaderInfoLog(id, 512, &shader_log_length, &info_buf[0])
 		log.errorf("DGL: Shader Component Compile Error: \n%s\n", info_buf);
-        return ShaderComponent{}
+        return Component{}
 	}
     return shader
 }
 
-shader_destroy_component :: proc (using component : ^ShaderComponent) -> bool {
+destroy_component :: proc (using component : ^Component) -> bool {
     if native_id != 0 {
         gl.DeleteShader(native_id)
         native_id = 0
@@ -56,19 +60,19 @@ shader_destroy_component :: proc (using component : ^ShaderComponent) -> bool {
     }
     return false
 }
-shader_destroy_components :: proc (comps: ..^ShaderComponent) -> int {
+destroy_components :: proc (comps: ..^Component) -> int {
     count := 0
     for c in comps {
-        if shader_destroy_component(c) do count += 1
+        if destroy_component(c) do count += 1
     }
     return count
 }
 
-shader_create :: proc {
-    shader_create_from_components,
+create :: proc {
+    create_from_components,
 }
 
-shader_create_from_components :: proc(comps: ..^ShaderComponent) -> Shader {
+create_from_components :: proc(comps: ..^Component) -> Shader {
     shader : Shader
     shader.native_id = gl.CreateProgram()
     for c in comps {
@@ -90,7 +94,7 @@ shader_create_from_components :: proc(comps: ..^ShaderComponent) -> Shader {
     return shader
 }
 
-shader_bind :: proc(using shader: ^Shader) {
+bind :: proc(using shader: ^Shader) {
     if native_id == 0 {
         log.error("DGL Error: Failed to bind shader, the shader is not correctly initialized!")
     } else {
