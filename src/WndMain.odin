@@ -19,14 +19,15 @@ import "pac:imgui"
 import dgl "dgl"
 import dsh "dgl/shader"
 import dbuf "dgl/buffer"
+import dva "dgl/vertex_array"
 
 WndMainData :: struct {
 	imgui_state : ImguiState,
-	vertices : [9]f32,
-	vao : u32, 
+	vertices : [15]f32,
 
 	shader : dsh.Shader,
-	vertex_buffer : dbuf.Buffer
+	vertex_buffer : dbuf.Buffer,
+	vertex_array : dva.VertexArray
 }
 
 ImguiState :: struct {
@@ -66,22 +67,17 @@ init_imgui :: proc(imgui_state:^ImguiState, wnd: ^sdl.Window) {
 after_instantiate :: proc(using wnd: ^Window) {
 	log.debugf("window {} instantiated.", name)
 
-	// data := window_data(WndMainData, wnd);
 	wdata := window_data(WndMainData, wnd)
 	using wdata
 
 	// prepare gl rendering data
 	vertices = [?]f32{
-		-.5, -.5,  0,
-		 .5, -.5,  0,
-		  0,  .5,  0
+		-.5, -.5,  0,   0, 0,
+		 .5, -.5,  0,   0, 1,
+		  0,  .5,  0,   1, 0
 	}
 
-	gl.GenVertexArrays(1, &vao)
-	gl.BindVertexArray(vao)
-
 	vertex_buffer = dbuf.create()
-	buffer_data := cast([^]u8)raw_data(vertices[:])
 	
 	dbuf.store(&vertex_buffer, size_of(vertices), raw_data(vertices[:]), .DYNAMIC_DRAW)
 
@@ -90,6 +86,7 @@ after_instantiate :: proc(using wnd: ^Window) {
 #version 330 core
 
 layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec2 uv;
 
 void main()
 {
@@ -108,10 +105,11 @@ void main()
 	shader = load_shader(vertex_shader_src, fragment_shader_src)
 	if shader.native_id != 0 do dsh.bind(&shader)
 
-	gl.VertexArrayAttribFormat(vao, 0, 3, gl.FLOAT, false, 0)
-	gl.VertexArrayAttribBinding(vao, 0, 0)
-	gl.EnableVertexArrayAttrib(vao, 0)
-	gl.VertexArrayVertexBuffer(vao, 0, vertex_buffer.native_id, 0, 3 * size_of(f32))
+	{
+		pos := dva.VertexAttribute{"position", 3, .FLOAT, .Float, false}
+		uv := dva.VertexAttribute{"uv", 2, .FLOAT, .Float, false}
+		vertex_array = dva.create(&vertex_buffer, pos, uv)
+	}
 
 	init_imgui(&imgui_state, window)
 }
@@ -259,7 +257,8 @@ render_gltest :: proc(using wnd:^Window) {
 
 	dbuf.set(&vertex_buffer, 0, 3 * size_of(u8), raw_data(new_data[:]))
 
-	gl.BindVertexArray(vao)
+	// gl.BindVertexArray(vao)
+	dva.bind(&vertex_array)
 	dsh.bind(&shader)
 
 	gl.DrawArrays(gl.TRIANGLES, 0, 3)
@@ -269,15 +268,4 @@ render_gltest :: proc(using wnd:^Window) {
 
 @(private="file")
 update_proc :: proc(using wnd:^Window) {
-}
-
-@(private="file")
-render_slashes :: proc(renderer:^sdl.Renderer, count, interval:u32) {
-	sdl.SetRenderDrawColor(renderer, 0, 0, 0, 255)
-
-	xa, xb :i32= 10, 20
-	for i in 0..<count {
-		y :i32= cast(i32)( (i + 1) * interval )
-	    sdl.RenderDrawLine(renderer, xa, y, xb, y)
-	}
 }

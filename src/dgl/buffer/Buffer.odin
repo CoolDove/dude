@@ -48,11 +48,11 @@ create :: proc () -> Buffer {
 
 destroy :: proc (buffers: ..^Buffer) {
     count := cast(i32)len(buffers)
-    buffer_ids := make([dynamic]u32, 0, count)
+    ids := make([dynamic]u32, 0, count)
     for b, ind in buffers {
-        buffer_ids[ind] = b.native_id
+        append(&ids, b.native_id)
     }
-    gl.DeleteBuffers(count, raw_data(buffer_ids))
+    gl.DeleteBuffers(count, raw_data(ids))
 }
 
 store :: proc(buffer : ^Buffer, #any_int size: u32, data: rawptr, usage: BufferUsage, immutable := false) {
