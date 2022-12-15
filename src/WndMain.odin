@@ -86,20 +86,25 @@ after_instantiate :: proc(using wnd: ^Window) {
 #version 330 core
 
 layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec2 uv;
+layout (location = 1) in vec2 aUV;
+
+layout(location = 0) out vec2 uv;
 
 void main()
 {
     gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+	uv = aUV;
 }
 	`
 	fragment_shader_src :=`
 #version 440 core
 out vec4 FragColor;
 
+layout(location = 0) in vec2 uv;
+
 void main()
 {
-    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+    FragColor = vec4(uv.x, uv.y, 1.0, 1.0);
 } 
 	`
 	shader = load_shader(vertex_shader_src, fragment_shader_src)

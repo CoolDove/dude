@@ -43,7 +43,7 @@ VertexAttribute :: struct {
     name : string,
     count : i32,
     type : AttributeType,
-    shader_type : AttributeShaderType,
+    // shader_type : AttributeShaderType,
     normalized : bool,
 }
 
@@ -56,7 +56,7 @@ create :: proc(buffer: ^dbuf.Buffer, attributes: ..VertexAttribute) -> VertexArr
         using atb
         index :u32= cast(u32)ind
         gl.VertexArrayAttribFormat(id, index, count, cast(u32)type, normalized, offset)
-        gl.VertexArrayAttribBinding(id, index, index)
+        gl.VertexArrayAttribBinding(id, index, 0)
         gl.EnableVertexArrayAttrib(id, index)
         offset += get_attribute_size(count, type)
     }
