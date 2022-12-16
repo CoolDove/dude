@@ -5,10 +5,16 @@
 
 - [x] Replace core:fmt with core:log.
 - [x] Fix ImGui.
-- [ ] Fix shit array paramed function in imgui binding.
-- [ ] Fix widgets: ColorPicker, ColorEdit
-- [ ] Fix debug building.
-- [ ] Use Makefile for building.
+- [x] Fix shit array paramed function in imgui binding.
+- [x] Fix widgets: ColorPicker, ColorEdit
+- [x] Fix debug building.
+- [x] Use Makefile for building.
 
 - [ ] Dynamic add and remove windows.
-- [ ] Basic open gl abstraction, starting from GLObject.Shader.
+- [ ] # Basic open gl abstraction, starting from GLObject.Shader.
+
+- [ ] Camera
+
+### DGL
+- [ ] Framebuffer
+- [ ] Texture
