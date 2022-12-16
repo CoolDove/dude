@@ -55,13 +55,13 @@ destroy :: proc (buffers: ..^Buffer) {
     gl.DeleteBuffers(count, raw_data(ids))
 }
 
-store :: proc(buffer : ^Buffer, #any_int size: u32, data: rawptr, usage: BufferUsage, immutable := false) {
+store :: proc(buffer : ^Buffer, #any_int byte_size: u32, data: rawptr, usage: BufferUsage, immutable := false) {
     buffer.immutable = immutable
-    buffer.size = size
+    buffer.size = byte_size
     if immutable {
-        gl.NamedBufferStorage(buffer.native_id, cast(int)size, data, cast(u32)usage)
+        gl.NamedBufferStorage(buffer.native_id, cast(int)byte_size, data, cast(u32)usage)
     } else {
-        gl.NamedBufferData(buffer.native_id, cast(int)size, data, cast(u32)usage)
+        gl.NamedBufferData(buffer.native_id, cast(int)byte_size, data, cast(u32)usage)
     }
 }
 

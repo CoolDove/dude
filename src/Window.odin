@@ -14,13 +14,8 @@ Window :: struct {
 	// NOTE(Dove): 
 	// The GLContext is not correct during `handler`, 
 	// so do not use any OpenGL things in `handler`.
-	handler  : proc(wnd:^Window, event:sdl.Event), 
-	render   : proc(wnd:^Window),
-	update 	 : proc(wnd:^Window),
-
-	// events
-	before_destroy : proc(wnd:^Window), // not necessary
-	after_instantiate : proc(wnd:^Window), // not necessary
+	using window_handler : WindowHandler,
+	using window_events : WindowEvents,
 
 	position, size : IVec2,
 
@@ -37,6 +32,16 @@ Window :: struct {
 
 	_data_type : typeid,
 	_data : rawptr, // This is invalid before instantiated.
+}
+
+WindowHandler :: struct {
+	handler  : proc(wnd:^Window, event:sdl.Event), 
+	render   : proc(wnd:^Window),
+	update 	 : proc(wnd:^Window),
+}
+WindowEvents :: struct {
+	before_destroy : proc(wnd:^Window),
+	after_instantiate : proc(wnd:^Window),
 }
 
 IVec2 :: [2]i32

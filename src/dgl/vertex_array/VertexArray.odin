@@ -11,7 +11,8 @@ GLObject :: dgl.GLObject
 
 VertexArray :: struct {
     using obj : GLObject,
-    attributes : [dynamic]VertexAttribute
+    attributes : [dynamic]VertexAttribute,
+    stride : u32
 }
 
 AttributeType :: enum u32 {
@@ -47,9 +48,17 @@ VertexAttribute :: struct {
     normalized : bool,
 }
 
-create :: proc(buffer: ^dbuf.Buffer, attributes: ..VertexAttribute) -> VertexArray {
+create :: proc {
+    create_without_buffer,
+    create_with_buffer,
+}
+
+create_without_buffer :: proc(attributes: ..VertexAttribute) -> VertexArray {
     vao : VertexArray
+    vao.attributes = make([dynamic]VertexAttribute, 0, len(attributes))
+
 	gl.GenVertexArrays(1, &vao.native_id)
+    gl.BindVertexArray(vao.native_id)
     id := vao.native_id
     offset :u32= 0
     for atb, ind in attributes {
@@ -58,11 +67,33 @@ create :: proc(buffer: ^dbuf.Buffer, attributes: ..VertexAttribute) -> VertexArr
         gl.VertexArrayAttribFormat(id, index, count, cast(u32)type, normalized, offset)
         gl.VertexArrayAttribBinding(id, index, 0)
         gl.EnableVertexArrayAttrib(id, index)
-        offset += get_attribute_size(count, type)
+        size := get_attribute_size(count, type)
+        log.debugf("DGL Debug: AttribFormat: {}, size: {}, offset: {}", name, size, offset)
+        offset += size
+        append(&vao.attributes, atb)
     }
-    gl.VertexArrayVertexBuffer(id, 0, buffer.native_id, 0, cast(i32)offset)
+    vao.stride = offset
     return vao
 }
+create_with_buffer :: proc(vertex_buffer, index_buffer: ^dbuf.Buffer, attributes: ..VertexAttribute) -> VertexArray {
+    vao := create_without_buffer(..attributes)
+
+    if vertex_buffer != nil do attach_vertex_buffer(&vao, vertex_buffer, 0, vao.stride, 0)
+    if index_buffer != nil do attach_index_buffer(&vao, index_buffer)
+    return vao
+}
+
+attach_vertex_buffer :: proc(vertex_array: ^VertexArray, buffer: ^dbuf.Buffer, offset, stride, binding_index : u32) {
+    gl.VertexArrayVertexBuffer(
+        vertex_array.native_id,
+        binding_index, 
+        buffer.native_id, 
+        cast(int)offset, cast(i32)stride)
+}
+attach_index_buffer :: proc(vertex_array: ^VertexArray, buffer: ^dbuf.Buffer) {
+    gl.VertexArrayElementBuffer(vertex_array.native_id, buffer.native_id)
+}
+
 
 @(private="file") 
 get_attribute_size :: proc (#any_int count: u32, type: AttributeType) -> u32 {

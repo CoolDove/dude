@@ -68,8 +68,22 @@ destroy_components :: proc (comps: ..^Component) -> int {
     return count
 }
 
+
 create :: proc {
     create_from_components,
+}
+
+destroy :: proc {
+    destroy_single,
+    destroy_multiple,
+}
+destroy_single :: proc(using shader: ^Shader) {
+    gl.DeleteProgram(native_id)
+}
+destroy_multiple :: proc(shaders: ..^Shader) {
+    for sh in shaders {
+        gl.DeleteProgram(sh.native_id)
+    }
 }
 
 create_from_components :: proc(comps: ..^Component) -> Shader {
