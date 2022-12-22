@@ -8,7 +8,7 @@ import gl   "vendor:OpenGL"
 
 
 OPENGL_VERSION_MAJOR :: 4
-OPENGL_VERSION_MINOR :: 5
+OPENGL_VERSION_MINOR :: 4
 
 Window :: struct {
 	// NOTE(Dove): 

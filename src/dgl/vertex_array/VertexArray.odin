@@ -4,10 +4,10 @@ import "core:log"
 import "core:fmt"
 
 import gl "vendor:OpenGL"
-import dgl "../"
+import basic "../basic"
 import dbuf "../buffer"
 
-GLObject :: dgl.GLObject
+GLObject :: basic.GLObject
 
 VertexArray :: struct {
     using obj : GLObject,
@@ -84,6 +84,7 @@ create_with_buffer :: proc(vertex_buffer, index_buffer: ^dbuf.Buffer, attributes
 }
 
 attach_vertex_buffer :: proc(vertex_array: ^VertexArray, buffer: ^dbuf.Buffer, offset, stride, binding_index : u32) {
+    bind(vertex_array)
     gl.VertexArrayVertexBuffer(
         vertex_array.native_id,
         binding_index, 
@@ -91,6 +92,7 @@ attach_vertex_buffer :: proc(vertex_array: ^VertexArray, buffer: ^dbuf.Buffer, o
         cast(int)offset, cast(i32)stride)
 }
 attach_index_buffer :: proc(vertex_array: ^VertexArray, buffer: ^dbuf.Buffer) {
+    bind(vertex_array)
     gl.VertexArrayElementBuffer(vertex_array.native_id, buffer.native_id)
 }
 
@@ -118,5 +120,10 @@ destroy :: proc(vertex_array: ..^VertexArray) {
 }
 
 bind :: proc(vertex_array: ^VertexArray) {
-    gl.BindVertexArray(vertex_array.native_id)
+    if current_vertex_array != vertex_array do gl.BindVertexArray(vertex_array.native_id)
 }
+
+
+@(private="file")
+current_vertex_array : ^VertexArray
+

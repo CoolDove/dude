@@ -1,12 +1,12 @@
 package shader
 
-import dgl "../"
+import basic "../basic"
 
 import gl "vendor:OpenGL"
 import "core:log"
 import "core:strings"
 
-GLObject :: dgl.GLObject
+GLObject :: basic.GLObject
 
 ShaderType :: enum u32 {
     FRAGMENT_SHADER        = gl.FRAGMENT_SHADER,

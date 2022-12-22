@@ -23,10 +23,6 @@ import dva "dgl/vertex_array"
 
 WndMainData :: struct {
 	imgui_state : ImguiState,
-	render_repository : ^RenderRepository,
-
-	static_render_objects    : [dynamic]RenderObject,
-	immediate_render_objects : [dynamic]RenderObject
 }
 
 ImguiState :: struct {
@@ -68,94 +64,11 @@ after_instantiate :: proc(using wnd: ^Window) {
 
 	wdata := window_data(WndMainData, wnd)
 	using wdata
-	wdata.render_repository = new(RenderRepository)
-	prepare_render_repository(wdata.render_repository)
+	init_imgui(&wdata.imgui_state, window)
 
-	basic_shader := &wdata.render_repository.shaders["Basic"]
-	basic_vertex_array := &wdata.render_repository.vertex_arrays["Basic"]
+	dgl.immediate_init()
 
-	{// make quad
-		vertices := [?]f32{
-			-.5,  .5,  0,   0, 1,
-			 .5,  .5,  0,   1, 1,
-			-.5, -.5,  0,   0, 0,
-			 .5, -.5,  0,   1, 0
-		}
-		indices := [?]i32 {
-			0, 2, 1,
-			1, 3, 2
-		}
-		vertex_buffer := dbuf.create()
-		index_buffer := dbuf.create()
-		dbuf.store(&vertex_buffer, size_of(vertices), raw_data(vertices[:]), .DYNAMIC_DRAW)
-		dbuf.store(&index_buffer, size_of(indices), raw_data(indices[:]), .DYNAMIC_DRAW)
-		quad := render_obj_create(
-			basic_vertex_array, basic_shader, 
-			vertex_buffer, index_buffer, 
-			len(vertices), len(indices))
-		append(&static_render_objects, quad)
-	}
-	{// make triangle
-		vertices := [?]f32{
-			-.5, -.5,  0,   0, 0,
-			 .5, -.5,  0,   0, 1,
-			  0,  .5,  0,   1, 0
-		}
-		indices := [?]i32 {
-			0, 1, 2
-		}
-		vertex_buffer := dbuf.create()
-		index_buffer := dbuf.create()
-		dbuf.store(&vertex_buffer, size_of(vertices), raw_data(vertices[:]), .DYNAMIC_DRAW)
-		dbuf.store(&index_buffer, size_of(indices), raw_data(indices[:]), .DYNAMIC_DRAW)
-		triangle := render_obj_create(
-			basic_vertex_array, basic_shader, 
-			vertex_buffer, index_buffer, 
-			len(vertices), len(indices))
-		append(&static_render_objects, triangle)
-	}
-
-	init_imgui(&imgui_state, window)
 }
-
-@(private="file")
-prepare_render_repository :: proc(using repo: ^RenderRepository) {
-	shaders = make(map[string]dsh.Shader)
-	vertex_arrays = make(map[string]dva.VertexArray)
-
-	{
-		pos := dva.VertexAttribute{"position", 3, .FLOAT, false}
-		uv := dva.VertexAttribute{"uv", 2, .FLOAT, false}
-		vertex_arrays["Basic"] = dva.create(pos, uv)
-	}
-	vertex_shader_src := `
-#version 330 core
-
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec2 aUV;
-
-layout(location = 0) out vec2 uv;
-
-void main()
-{
-    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
-	uv = aUV;
-}
-	`
-	fragment_shader_src :=`
-#version 440 core
-out vec4 FragColor;
-
-layout(location = 0) in vec2 uv;
-
-void main()
-{
-    FragColor = vec4(uv.x, uv.y, 0.0, 1.0);
-} 
-	`
-	shaders["Basic"] = load_shader(vertex_shader_src, fragment_shader_src)
-}
-
 
 @(private="file")
 before_destroy :: proc(wnd: ^Window) {
@@ -236,12 +149,6 @@ render_proc :: proc(using wnd:^Window) {
 
 	    imgui.text_unformatted("YOU WIN!!!")
 
-		// if imgui.button("SwitchMesh") {
-		// 	if current_robj == &quad do current_robj = &triangle
-		// 	else do current_robj = &quad
-		// }
-
-
 	}
 	imgui.end()
 
@@ -257,36 +164,16 @@ render_proc :: proc(using wnd:^Window) {
 
 @(private="file")
 render_gltest :: proc(using wnd:^Window) {
-	wdata := window_data(WndMainData, wnd);
+	using dgl
 
-	current_shader : ^dsh.Shader
-	current_vao : ^dva.VertexArray
-	for srobj in &wdata.static_render_objects {
-		shader := srobj.shader
-		vao    := srobj.vertex_array
-		if shader != nil && shader != current_shader {
-			dsh.bind(shader)
-		}
-		if vao != nil && vao != current_vao {
-			dva.bind(vao)
-		}
-		dva.attach_vertex_buffer(vao, &srobj.vertex_buffer, 0, vao.stride, 0)
-		dva.attach_index_buffer(vao, &srobj.index_buffer)
-		gl.DrawElements(gl.TRIANGLES, cast(i32)srobj.index_count, gl.UNSIGNED_INT, nil)
-	}
-	for srobj in &wdata.immediate_render_objects {
-		shader := srobj.shader
-		vao    := srobj.vertex_array
-		if shader != nil && shader != current_shader {
-			dsh.bind(shader)
-		}
-		if vao != nil && vao != current_vao {
-			dva.bind(vao)
-		}
-		dva.attach_vertex_buffer(vao, &srobj.vertex_buffer, 0, vao.stride, 0)
-		dva.attach_index_buffer(vao, &srobj.index_buffer)
-		gl.DrawElements(gl.TRIANGLES, cast(i32)srobj.index_count, gl.UNSIGNED_INT, nil)
-	}
+	immediate_begin(Vec4i{0, 0, wnd.size.x, wnd.size.y})
+
+	wnd_size := Vec2{cast(f32)wnd.size.x, cast(f32)wnd.size.y}
+	immediate_quad(Vec2{wnd_size.x * 0.05, 0}, Vec2{wnd_size.x * 0.9, 20}, Vec4{ 1, 0, 0, 0.2 })
+	immediate_quad(Vec2{40, 10}, Vec2{120, 20}, Vec4{ 0, 1, .4, 0.2 })
+	immediate_quad(Vec2{10, 120}, Vec2{90, 20}, Vec4{ 1, 1, 1, 0.9 })
+
+	immediate_end()
 }
 
 @(private="file")

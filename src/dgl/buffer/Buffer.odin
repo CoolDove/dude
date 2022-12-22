@@ -3,7 +3,8 @@
 import "core:log"
 
 import gl "vendor:OpenGL"
-import dgl "../"
+// import dgl "../"
+import dgl "../basic"
 
 GLObject :: dgl.GLObject
 
@@ -89,4 +90,11 @@ map_data :: proc(buffer: ^Buffer, allocator := context.allocator) -> rawptr {
 
 upmap_data :: proc(buffer: ^Buffer) {
 
+}
+
+bind_vertex_buffer :: proc(buffer: ^Buffer) {
+    gl.BindBuffer(gl.ARRAY_BUFFER, buffer.native_id)
+}
+bind_index_buffer :: proc(buffer: ^Buffer) {
+    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.native_id)
 }
