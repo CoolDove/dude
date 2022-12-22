@@ -63,11 +63,12 @@ after_instantiate :: proc(using wnd: ^Window) {
 	log.debugf("window {} instantiated.", name)
 
 	wdata := window_data(WndMainData, wnd)
-	using wdata
 	init_imgui(&wdata.imgui_state, window)
 
 	dgl.immediate_init()
 
+	game.window = wnd
+	init_game()
 }
 
 @(private="file")
@@ -106,25 +107,34 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 @(private="file")
 render_proc :: proc(using wnd:^Window) {
 	wnd_data := window_data(WndMainData, wnd)
-	using wnd_data
 
 	col := [4]f32{.2, .8, .7, 1}
-	total_ms := time.duration_milliseconds(app.duration_total)
-	col *= [4]f32{0..<4 = math.sin(cast(f32)total_ms * .004) * .5 + 1}
-
-    gl.Viewport(0, 0, i32(size.x), i32(size.y))
-    gl.Scissor(0, 0, i32(size.x), i32(size.y))
 	gl.ClearColor(col.r, col.g, col.b, col.a)
 	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT)
-
-	render_gltest(wnd);
 
 	imsdl.new_frame()
 
     io := imgui.get_io()
 	
 	imgui.new_frame()
+	dgl.immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
 
+
+	draw_game()
+
+
+	dgl.immediate_end()
+
+	imgui.end_frame()
+	imgui.render()
+	draw_data := imgui.get_draw_data();
+
+	imgl.imgui_render(draw_data, wnd_data.imgui_state.opengl_state)
+	sdl.GL_SwapWindow(wnd.window)
+}
+
+@(private="file") 
+imgui_test :: proc(io: ^imgui.IO) {
     overlay_flags: imgui.Window_Flags = .NoDecoration | 
                                         .AlwaysAutoResize | 
                                         .NoSavedSettings | 
@@ -141,7 +151,7 @@ render_proc :: proc(using wnd:^Window) {
 		@static value:i32
 		imgui.slider_int("Value", &value, 0, 64, "Value:%d")
 
-		@static vec3i: Vec3i
+		@static vec3i: [3]int
 		imgui.slider_int3("Int3Slider", &vec3i, 0, 255)
 
 		@static f3:Vec3
@@ -152,30 +162,13 @@ render_proc :: proc(using wnd:^Window) {
 	}
 	imgui.end()
 
-	imgui.end_frame()
-	imgui.render()
-	draw_data := imgui.get_draw_data();
-
-	imgl.imgui_render(draw_data, imgui_state.opengl_state)
-	sdl.GL_SwapWindow(wnd.window)
 }
-
-
 
 @(private="file")
 render_gltest :: proc(using wnd:^Window) {
-	using dgl
-
-	immediate_begin(Vec4i{0, 0, wnd.size.x, wnd.size.y})
-
-	wnd_size := Vec2{cast(f32)wnd.size.x, cast(f32)wnd.size.y}
-	immediate_quad(Vec2{wnd_size.x * 0.05, 0}, Vec2{wnd_size.x * 0.9, 20}, Vec4{ 1, 0, 0, 0.2 })
-	immediate_quad(Vec2{40, 10}, Vec2{120, 20}, Vec4{ 0, 1, .4, 0.2 })
-	immediate_quad(Vec2{10, 120}, Vec2{90, 20}, Vec4{ 1, 1, 1, 0.9 })
-
-	immediate_end()
 }
 
 @(private="file")
 update_proc :: proc(using wnd:^Window) {
+	update_game()
 }

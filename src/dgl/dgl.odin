@@ -4,6 +4,7 @@ import gl "vendor:OpenGL"
 import dbuf "/buffer"
 
 import "core:log"
+import "core:math/linalg"
 
 
 // set_vertex_format :: proc(format: string) {
@@ -37,9 +38,9 @@ bind_index_buffer :: proc(buffer: ^dbuf.Buffer) {
     gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.native_id)
 }
 
-Vec2 :: distinct [2]f32
-Vec3 :: distinct [3]f32
-Vec4 :: distinct [4]f32
+Vec2 :: linalg.Vector2f32
+Vec3 :: linalg.Vector3f32
+Vec4 :: linalg.Vector4f32
 
 Vec2i :: distinct [2]i32
 Vec3i :: distinct [3]i32
@@ -50,4 +51,3 @@ VertexPCU :: struct {
     color    : Vec4,
     uv       : Vec2
 }
-

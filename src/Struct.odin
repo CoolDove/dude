@@ -1,11 +1,12 @@
 package main
 
 import "core:math/linalg"
+import "dgl"
 
-Vec2 :: linalg.Vector2f32
-Vec3 :: linalg.Vector3f32
-Vec4 :: linalg.Vector4f32
+Vec2 :: dgl.Vec2
+Vec3 :: dgl.Vec3
+Vec4 :: dgl.Vec4
 
-Vec2i :: [2]int
-Vec3i :: [3]int
-Vec4i :: [4]int
+Vec2i :: dgl.Vec2i
+Vec3i :: dgl.Vec3i
+Vec4i :: dgl.Vec4i

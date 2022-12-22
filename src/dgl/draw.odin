@@ -8,7 +8,8 @@ import "core:log"
 @(private="file")
 ImmediateDrawElement :: struct {
     shader : u32,
-    start, count : u32
+    start, count : u32,
+    texture : u32
 }
 
 @(private="file")
@@ -16,7 +17,10 @@ ImmediateDrawContext :: struct {
     viewport : Vec4i,
     vertices : [dynamic]VertexPCU,
     elements : [dynamic]ImmediateDrawElement,
-    vao, basic_shader : u32
+    vao, basic_shader : u32,
+
+    default_texture_white, default_texture_black : u32
+
 }
 
 @(private="file")
@@ -24,6 +28,10 @@ ime_context : ImmediateDrawContext
 
 immediate_init :: proc () {
     gl.GenVertexArrays(1, &ime_context.vao)
+
+    ime_context.default_texture_white = texture_create(4, 4, [4]u8{0xff, 0xff, 0xff, 0xff})
+    ime_context.default_texture_black = texture_create(4, 4, [4]u8{0x00, 0x00, 0x00, 0xff})
+
 	vertex_shader_src := `
 #version 440 core
 
@@ -54,8 +62,11 @@ out vec4 FragColor;
 layout(location = 0) in vec2 _uv;
 layout(location = 1) in vec4 _color;
 
+uniform sampler2D main_texture;
+
 void main() { 
-    FragColor = _color; 
+    vec4 c = texture(main_texture, _uv);
+    FragColor = c * _color;
 }
 	`
     ime_context.basic_shader = load_shader(vertex_shader_src, fragment_shader_src).native_id
@@ -93,22 +104,40 @@ immediate_end :: proc () {
 
     current_shader :u32= 0
     format_set := true
+
+    loc_viewport_size :i32= -1
+    loc_main_texture  :i32= -1
+
     for e in elements {
         if e.shader != current_shader || format_set {
             current_shader = e.shader
-            gl.UseProgram(current_shader)
-            set_vertex_format_PCU(current_shader)
+            loc_viewport_size, loc_main_texture = switch_shader(current_shader)
             gl.Uniform2f(
-                gl.GetUniformLocation(current_shader, "viewport_size"), 
+                loc_viewport_size, 
                 cast(f32)(viewport.z - viewport.x), 
                 cast(f32)(viewport.w - viewport.y))
             format_set = false
         }
-        gl.DrawArrays(gl.TRIANGLES, 0, cast(i32)len(vertices))
-    }
 
+        gl.ActiveTexture(gl.TEXTURE0)
+        if e.texture != 0 { gl.BindTexture(gl.TEXTURE_2D, e.texture) }
+        else { gl.BindTexture(gl.TEXTURE_2D, ime_context.default_texture_white) }
+        gl.Uniform1i(loc_main_texture, 0)
+
+        gl.DrawArrays(gl.TRIANGLES, cast(i32)e.start, cast(i32)e.count)
+    }
 }
 
+// return uniform location
+@(private="file")
+switch_shader :: proc(shader : u32) -> (viewport_size, main_texture : i32) {
+    gl.UseProgram(shader)
+    set_vertex_format_PCU(shader)
+
+    viewport_size = gl.GetUniformLocation(shader, "viewport_size")
+    main_texture  = gl.GetUniformLocation(shader, "main_texture")
+    return viewport_size, main_texture
+}
 
 /*
 (0,0)-------------*
@@ -117,13 +146,12 @@ immediate_end :: proc () {
 |                 |
 *-------------(w,h)
 */
-
-immediate_quad :: proc (leftup, size: Vec2, color: Vec4) {
-    element : ImmediateDrawElement = ---
-
-    element.start = cast(u32)len(ime_context.vertices)
-    element.count = 6
-    element.shader = ime_context.basic_shader
+immediate_quad :: proc (leftup, size: Vec2, color: Vec4) -> ^ImmediateDrawElement {
+    element := ImmediateDrawElement{
+        ime_context.basic_shader,
+        cast(u32)len(ime_context.vertices), 6,
+        0
+    }
 
     rightdown := leftup + size
     vertices := &ime_context.vertices
@@ -155,4 +183,11 @@ immediate_quad :: proc (leftup, size: Vec2, color: Vec4) {
     }
     append(vertices, a, b, c, b, d, c)
     append(&ime_context.elements, element)
+    return &ime_context.elements[len(ime_context.elements) - 1]
+}
+
+immediate_texture :: proc(leftup, size: Vec2, color: Vec4, texture : u32) -> ^ImmediateDrawElement {
+    quad := immediate_quad(leftup, size, color)
+    quad.texture = texture
+    return quad
 }
