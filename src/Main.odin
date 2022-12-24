@@ -16,7 +16,7 @@ main :: proc() {
 
 	app_init();
 	defer app_release();
-    app_run();
+	app_run();
 }
 
 
