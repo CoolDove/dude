@@ -11,6 +11,11 @@ import "core:math/linalg"
 
 import gl "vendor:OpenGL"
 
+DrawSettings :: struct {
+    screen_width, screen_height : f32
+}
+
+draw_settings : DrawSettings
 
 TriangleMesh :: struct {
     vertices   : [dynamic]Vec3,
@@ -81,10 +86,9 @@ make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
     for i in 0..<6 {
         base :u32= cast(u32) i * 4
         append(&indices, 
-            [3]u32{base, base + 1, base + 2}, 
-            [3]u32{base + 1, base + 3, base + 2})
+            [3]u32{base, base + 2, base + 1}, 
+            [3]u32{base + 1, base + 2, base + 3})
     }
-    log.debugf("indices: {}", indices)
 
     triangle_list : TriangleList
     triangle_list.triangles = indices
@@ -119,7 +123,7 @@ MeshPCNU :: struct {
 draw_mesh :: proc(mesh: ^TriangleMesh, transform: ^Transform, camera : ^Camera) {
     // Maybe i need to set VAO before this.
     assert(mesh.triangles != nil, "Mesh has no submesh")
-    vp := camera_get_matrix_vp(camera)
+    vp := camera_get_matrix_vp(camera, draw_settings.screen_width/draw_settings.screen_height)
 
     vbo : u32
     gl.GenBuffers(1, &vbo)

@@ -55,7 +55,7 @@ app_run :: proc() {
 	helper_window := create_helper_window()
 
 	register_window(&main_window, WndMainData)
-	// register_window(&helper_window)
+	register_window(&helper_window)
 
     evt := sdl.Event{}
 
@@ -65,6 +65,11 @@ app_run :: proc() {
 		if sdl.PollEvent(&evt) {
 			wid := evt.window.windowID
 			if wnd, has := windows[wid]; has && wnd.handler != nil {
+				if evt.window.event == .RESIZED {
+					wnd.size.x = evt.window.data1
+					wnd.size.y = evt.window.data2
+					log.debugf("Window {} resized to {}.", wid, wnd.size)
+				}
 				wnd.handler(wnd, evt)
 			}
 		} 

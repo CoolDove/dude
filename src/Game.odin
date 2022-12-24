@@ -107,6 +107,12 @@ void main() {
     game.basic_shader = load_shader(vertex_shader_src, fragment_shader_src)
 
     dgl.make_cube(&game.test_obj.mesh, game.basic_shader.native_id)
+    game.camera.fov  = 45
+    game.camera.near = .1 
+    game.camera.far  = 300
+    // game.camera.orientation = cast(quaternion128)linalg.quaternion_from_forward_and_up(Vec3{0, 0, 1}, Vec3{0, 1, 0})
+    game.camera.forward = {0, 0, -1}
+    game.camera.scale = {1, 1, 1}
 }
 @(private="file") 
 load_shader :: proc(vertex_source, frag_source : string)  -> dsh.Shader {
