@@ -65,6 +65,7 @@ after_instantiate :: proc(using wnd: ^Window) {
 	wdata := window_data(WndMainData, wnd)
 	init_imgui(&wdata.imgui_state, window)
 
+	dgl.init()
 	dgl.immediate_init()
 
 	game.window = wnd

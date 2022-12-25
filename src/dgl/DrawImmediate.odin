@@ -19,8 +19,6 @@ ImmediateDrawContext :: struct {
     elements : [dynamic]ImmediateDrawElement,
     vao, basic_shader : u32,
 
-    default_texture_white, default_texture_black : u32
-
 }
 
 @(private="file")
@@ -28,9 +26,6 @@ ime_context : ImmediateDrawContext
 
 immediate_init :: proc () {
     gl.GenVertexArrays(1, &ime_context.vao)
-
-    ime_context.default_texture_white = texture_create(4, 4, [4]u8{0xff, 0xff, 0xff, 0xff})
-    ime_context.default_texture_black = texture_create(4, 4, [4]u8{0x00, 0x00, 0x00, 0xff})
 
 	vertex_shader_src := `
 #version 440 core
@@ -86,15 +81,26 @@ immediate_begin :: proc (viewport: Vec4i) {
     clear(&ime_context.elements)
     ime_context.viewport = viewport
 }
-immediate_end :: proc () {
-    using ime_context
-    gl.BindVertexArray(vao)
-
-    gl.Viewport(viewport.x, viewport.y, viewport.z, viewport.w)
+@(private="file")
+set_opengl_state_for_draw_immediate :: proc() {
+    gl.Disable(gl.DEPTH_TEST)
+    // gl.DepthMask(false)
 
     gl.Enable(gl.BLEND)
     gl.BlendEquation(gl.FUNC_ADD)
     gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+    gl.Enable(gl.CULL_FACE)
+    gl.CullFace(gl.BACK)
+}
+
+
+immediate_end :: proc () {
+    using ime_context
+    set_opengl_state_for_draw_immediate()
+    gl.BindVertexArray(vao)
+
+    gl.Viewport(viewport.x, viewport.y, viewport.z, viewport.w)
 
     vbuffer : u32
     gl.GenBuffers(1, &vbuffer)
@@ -121,7 +127,7 @@ immediate_end :: proc () {
 
         gl.ActiveTexture(gl.TEXTURE0)
         if e.texture != 0 { gl.BindTexture(gl.TEXTURE_2D, e.texture) }
-        else { gl.BindTexture(gl.TEXTURE_2D, ime_context.default_texture_white) }
+        else { gl.BindTexture(gl.TEXTURE_2D, draw_settings.default_texture_white) }
         gl.Uniform1i(loc_main_texture, 0)
 
         gl.DrawArrays(gl.TRIANGLES, cast(i32)e.start, cast(i32)e.count)
@@ -181,7 +187,7 @@ immediate_quad :: proc (leftup, size: Vec2, color: Vec4) -> ^ImmediateDrawElemen
         color,
         Vec2{1, 0},
     }
-    append(vertices, a, b, c, b, d, c)
+    append(vertices, a, c, b, b, c, d)
     append(&ime_context.elements, element)
     return &ime_context.elements[len(ime_context.elements) - 1]
 }

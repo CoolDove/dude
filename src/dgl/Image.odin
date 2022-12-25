@@ -16,6 +16,7 @@ Image :: struct {
 
 Color_RGBA :: distinct [4]byte
 
+@(private="file")
 image_load :: proc (path: string) -> Image {
     width, height, channels : libc.int
     image.set_flip_vertically_on_load(1)
@@ -27,8 +28,8 @@ image_load :: proc (path: string) -> Image {
         return Image{}
     }
 
-    img := Image{Vec2i{width, height}, data, 0}
-
+    img := Image{{width, height}, data, 0}
+    // log.debugf("load image from: {}, img size: {}", path, img.size)
     return img
 }
 

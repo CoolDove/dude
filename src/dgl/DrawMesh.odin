@@ -1,6 +1,5 @@
 package dgl
 
-import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:time"
@@ -12,10 +11,16 @@ import "core:math/linalg"
 import gl "vendor:OpenGL"
 
 DrawSettings :: struct {
-    screen_width, screen_height : f32
+    screen_width, screen_height : f32,
+    default_texture_white, default_texture_black : u32
 }
 
 draw_settings : DrawSettings
+
+init :: proc() {
+    draw_settings.default_texture_white = texture_create(4, 4, [4]u8{0xff, 0xff, 0xff, 0xff})
+    draw_settings.default_texture_black = texture_create(4, 4, [4]u8{0x00, 0x00, 0x00, 0xff})
+}
 
 TriangleMesh :: struct {
     vertices   : [dynamic]Vec3,
@@ -27,21 +32,22 @@ TriangleMesh :: struct {
     tangents   : [dynamic]Vec3,
     bitangents : [dynamic]Vec3,
 
-    triangles  : [dynamic]TriangleList,
+    submeshes  : [dynamic]SubMesh,
 
     mesh_pcnu  : MeshPCNU,
 }
 
-TriangleList :: struct {
+SubMesh :: struct {
     triangles : [dynamic][3]u32,
     shader    : u32,
+    texture    : u32, // Maybe put into material later.
 }
 
 make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
     vertices  = make([dynamic]Vec3, 0, 6 * 4)
     uvs       = make([dynamic]Vec2, 0, 6 * 4)
     colors    = make([dynamic]Vec4, 0, 6 * 4)
-    triangles = make([dynamic]TriangleList)
+    submeshes = make([dynamic]SubMesh)
 
     {// position
         a := Vec3{-1,  1, -1}
@@ -58,7 +64,7 @@ make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
             d, b, h, f,
             b, a, f, e,
             a, c, e, g,
-            e, f, g, h)
+            g, h, e, f)
     }
 
     for v in &mesh.vertices do v *= 0.5
@@ -74,7 +80,7 @@ make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
             a, b, c, d, 
             a, b, c, d, 
             a, b, c, d, 
-            a, b, c, d)
+            c, d, a, b)
     }
 
     for i in 0..<(6 * 4) do append(&colors, Vec4{1, 1, 1, 1})
@@ -90,11 +96,11 @@ make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
             [3]u32{base + 1, base + 2, base + 3})
     }
 
-    triangle_list : TriangleList
+    triangle_list : SubMesh
     triangle_list.triangles = indices
     triangle_list.shader = shader
 
-    append(&triangles, triangle_list)
+    append(&submeshes, triangle_list)
 
     pncu := mesh_make_pcnu(mesh)
     mesh.mesh_pcnu = pncu
@@ -119,11 +125,23 @@ MeshPCNU :: struct {
     vertices : [dynamic]VertexPCNU
 }
 
+set_opengl_state_for_draw_geometry :: proc() {
+    gl.Enable(gl.DEPTH_TEST)
+    gl.DepthFunc(gl.LEQUAL)
+    // gl.DepthMask(true)
+
+    gl.Disable(gl.BLEND)
+
+    gl.Enable(gl.CULL_FACE)
+    gl.CullFace(gl.BACK)
+}
+
 // @Speed
 draw_mesh :: proc(mesh: ^TriangleMesh, transform: ^Transform, camera : ^Camera) {
     // Maybe i need to set VAO before this.
-    assert(mesh.triangles != nil, "Mesh has no submesh")
-    vp := camera_get_matrix_vp(camera, draw_settings.screen_width/draw_settings.screen_height)
+    assert(mesh.submeshes != nil, "Mesh has no submesh")
+    mat_view_projection := camera_get_matrix_vp(camera, draw_settings.screen_width/draw_settings.screen_height)
+    mat_model := matrix_srt(transform.scale, transform.orientation, transform.position)
 
     vbo : u32
     gl.GenBuffers(1, &vbo)
@@ -133,18 +151,28 @@ draw_mesh :: proc(mesh: ^TriangleMesh, transform: ^Transform, camera : ^Camera) 
     data_size := len(mesh.vertices) * size_of(VertexPCNU)
     gl.BufferData(gl.ARRAY_BUFFER, data_size, raw_data(mesh.mesh_pcnu.vertices), gl.STREAM_DRAW)
 
-    for sub_mesh in mesh.triangles {
+    for sub_mesh in mesh.submeshes {
         gl.UseProgram(sub_mesh.shader)
         set_vertex_format_PCNU(sub_mesh.shader)
         uni_loc_matrix_view_projection := gl.GetUniformLocation(sub_mesh.shader, "matrix_view_projection")
+        uni_loc_matrix_model := gl.GetUniformLocation(sub_mesh.shader, "matrix_model")
+        uni_loc_main_texture := gl.GetUniformLocation(sub_mesh.shader, "main_texture")
         
         gl.UniformMatrix4fv(uni_loc_matrix_view_projection, 
-            1, false, linalg.matrix_to_ptr(&vp))
+            1, false, linalg.matrix_to_ptr(&mat_view_projection))
+        gl.UniformMatrix4fv(uni_loc_matrix_model, 
+            1, false, linalg.matrix_to_ptr(&mat_model))
 
         ebo : u32
         gl.GenBuffers(1, &ebo)
         gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
         defer gl.DeleteBuffers(1, &ebo)
+
+        // Set texture.
+        gl.ActiveTexture(gl.TEXTURE0)
+        if sub_mesh.texture != 0 { gl.BindTexture(gl.TEXTURE_2D, sub_mesh.texture) }
+        else { gl.BindTexture(gl.TEXTURE_2D, draw_settings.default_texture_white) }
+        gl.Uniform1i(uni_loc_main_texture, 0)
 
         element_buffer_count := len(sub_mesh.triangles) * 3
         element_buffer_size := element_buffer_count * size_of(u32)
@@ -153,5 +181,4 @@ draw_mesh :: proc(mesh: ^TriangleMesh, transform: ^Transform, camera : ^Camera) 
         gl.DrawElements(gl.TRIANGLES, cast(i32)element_buffer_count, gl.UNSIGNED_INT, nil)
 
     }
-
 }

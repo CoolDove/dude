@@ -17,4 +17,3 @@ camera_get_matrix_vp :: proc(cam: ^Camera, aspect: f32) -> linalg.Matrix4x4f32 {
     project := linalg.matrix4_perspective_f32(math.to_radians(cam.fov), aspect, cam.near, cam.far)
     return linalg.matrix_mul(project, view)
 }
-

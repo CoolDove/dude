@@ -1,5 +1,7 @@
 ﻿package main
 
+import "core:time"
+
 import dgl "dgl"
 import sdl "vendor:sdl2"
 
@@ -39,23 +41,35 @@ draw_game :: proc() {
 	immediate_quad(Vec2{40, 10}, Vec2{120, 20}, Vec4{ 0, 1, .4, 0.2 })
 	immediate_quad(Vec2{10, 120}, Vec2{90, 20}, Vec4{ 1, 1, 1, 0.9 })
 
-    @static show_icon := false
-    imgui.checkbox("show_icon", &show_icon)
+    @static debug_texture := false
+    imgui.checkbox("debug_texture", &debug_texture)
     img := &game.test_image
-    if show_icon do immediate_texture(
-        Vec2{120, 120}, Vec2{auto_cast img.size.x, auto_cast img.size.y}, 
-        Vec4{1, 1, 1, 1},
-        img.texture_id
-    )
-    
+    if debug_texture {
+        img_gallery_x :f32= 0
+        immediate_texture({img_gallery_x, wnd_size.y - 64}, {64, 64}, {1, 1, 1, 1}, 
+            game.test_obj.mesh.submeshes[0].texture)
+        img_gallery_x += 64 + 10
+        immediate_texture(
+            {img_gallery_x, cast(f32)wnd_size.y - cast(f32)img.size.y}, 
+            {auto_cast img.size.x, auto_cast img.size.y},
+            {1, 1, 1, 1},
+            img.texture_id
+        )
+        img_gallery_x += cast(f32)img.size.x + 10
+    }
+
     imgui.slider_float3("camera position", &game.camera.position, -10, 10)
 
     gl.BindVertexArray(game.vao)
+    dgl.set_opengl_state_for_draw_geometry()
     dgl.draw_mesh(&game.test_obj.mesh, &game.test_obj.transform, &game.camera)
-
 }
 
 update_game :: proc() {
+    obj := &game.test_obj
+
+    total_ms := cast(f32)time.duration_milliseconds(app.duration_total) 
+    obj.transform.orientation = auto_cast linalg.quaternion_from_euler_angle_y(total_ms * 0.001)
 
 }
 
@@ -78,10 +92,12 @@ layout(location = 1) out vec3 _normal;
 layout(location = 2) out vec4 _color;
 
 uniform mat4 matrix_view_projection;
+uniform mat4 matrix_model;
 
 void main()
 {
-    gl_Position = matrix_view_projection * vec4(position.x, position.y, position.z, 1);
+    vec4 wpos = matrix_model * vec4(position.x, position.y, position.z, 1);
+    gl_Position = matrix_view_projection * wpos;
 	_uv = uv;
     _color = color;
     _normal = normal;// not correct
@@ -106,13 +122,23 @@ void main() {
 	`
     game.basic_shader = load_shader(vertex_shader_src, fragment_shader_src)
 
+    box_img := dgl.texture_load("./res/texture/box.png")
+    dgl.image_free(&box_img)
+
     dgl.make_cube(&game.test_obj.mesh, game.basic_shader.native_id)
+    game.test_obj.mesh.submeshes[0].texture = box_img.texture_id
+
+    game.camera.position = {0, 0, 3.5}
     game.camera.fov  = 45
     game.camera.near = .1 
     game.camera.far  = 300
     // game.camera.orientation = cast(quaternion128)linalg.quaternion_from_forward_and_up(Vec3{0, 0, 1}, Vec3{0, 1, 0})
     game.camera.forward = {0, 0, -1}
     game.camera.scale = {1, 1, 1}
+
+    transform := &game.test_obj.transform
+    transform.scale = {1, 1, 1}
+    transform.orientation = cast(quaternion128)linalg.quaternion_from_euler_angles_f32(0, 0, 0, .XYZ)
 }
 @(private="file") 
 load_shader :: proc(vertex_source, frag_source : string)  -> dsh.Shader {
