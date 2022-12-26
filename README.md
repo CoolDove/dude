@@ -15,7 +15,11 @@
 
 - [x] Camera
 
+- [ ] Shader preprocessor.
+
 - [ ] View: MODLE_VIEW & UV_EDIT_VIEW 
+- [ ] Interpolation
+- [ ] Mesh importing.
 
 ### Input
 - [ ] Input struct wrapping.

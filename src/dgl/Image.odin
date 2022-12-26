@@ -32,14 +32,55 @@ image_load :: proc (path: string) -> Image {
     // log.debugf("load image from: {}, img size: {}", path, img.size)
     return img
 }
+@(private="file") 
+image_from_mem :: proc(data: []byte) -> Image {
+    width, height, channels : libc.int
+    image.set_flip_vertically_on_load(1)
+
+    data_ := image.load_from_memory(raw_data(data), cast(i32)len(data), &width, &height, &channels, 4)
+    if data_ == nil {
+        log.errorf("Image: Failed to load image from memory: {}", data)
+        return Image{}
+    }
+
+    img := Image{{width, height}, data_, 0}
+    // log.debugf("load image from: {}, img size: {}", path, img.size)
+    return img
+}
 
 image_free :: proc (img: ^Image) {
     image.image_free(img.data)
     img.data = nil
 }
 
+texture_load :: proc {
+    texture_load_by_path,
+    texture_load_from_mem,
+}
+
+texture_load_from_mem :: proc(data: []byte, gen_mipmap := false) -> Image {
+    tex : u32
+    gl.GenTextures(1, &tex)
+    gl.BindTexture(gl.TEXTURE_2D, tex)
+
+    target :u32= gl.TEXTURE_2D
+    gl.TexParameteri(target, gl.TEXTURE_WRAP_S, gl.REPEAT)
+    gl.TexParameteri(target, gl.TEXTURE_WRAP_T, gl.REPEAT)
+    gl.TexParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.TexParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+
+    img := image_from_mem(data)
+    img.texture_id = tex
+    // defer image_free(&img)
+
+    gl.TexImage2D(target, 0, gl.RGBA, img.size.x, img.size.y, 0, gl.RGBA, gl.UNSIGNED_BYTE, img.data)
+    if gen_mipmap do gl.GenerateMipmap(target)
+    return img
+
+}
+
 // Texture
-texture_load :: proc(path: string, gen_mipmap := false) -> Image {
+texture_load_by_path :: proc(path: string, gen_mipmap := false) -> Image {
     tex : u32
     gl.GenTextures(1, &tex)
     gl.BindTexture(gl.TEXTURE_2D, tex)

@@ -159,7 +159,6 @@ imgui_test :: proc(io: ^imgui.IO) {
 		imgui.slider_float3("Slider3Test", &f3, 0, 1)
 
 	    imgui.text_unformatted("YOU WIN!!!")
-
 	}
 	imgui.end()
 
