@@ -25,10 +25,6 @@ Game :: struct {
     test_image : dgl.Image,
     test_obj   : GameObject,
     vao        : u32,
-
-    // GamePlay
-    // rotate     : f32,
-
 }
 
 game : Game
@@ -67,6 +63,7 @@ draw_game :: proc() {
     }
 
     imgui.slider_float3("camera position", &game.camera.position, -10, 10)
+    imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
 
     if imgui.collapsing_header("MainLight") {
         imgui.color_picker4("color", &game.main_light.color)
@@ -75,7 +72,9 @@ draw_game :: proc() {
         game.main_light.direction = linalg.normalize0(game.main_light.direction)
     }
 
-    imgui_debug_framerate()
+    @static show_debug_framerate := true
+    if get_key_down(.F1) do show_debug_framerate = !show_debug_framerate
+    if show_debug_framerate do imgui_debug_framerate()
 
     gl.BindVertexArray(game.vao)
     dgl.set_opengl_state_for_draw_geometry()
@@ -87,10 +86,18 @@ draw_game :: proc() {
 imgui_debug_framerate :: proc() {
     imgui.set_next_window_bg_alpha(.4)
     imgui.set_next_window_pos({10, 10}, .Once, {0, 0})
-    imgui.begin("Window", nil, .NoResize |.NoTitleBar | .NoMove | .AlwaysAutoResize)
+    imgui.begin("Framerate", nil, .NoTitleBar |
+                                  .NoDecoration | 
+                                  .AlwaysAutoResize | 
+                                  .NoSavedSettings | 
+                                  .NoFocusOnAppearing | 
+                                  .NoNav | 
+                                  .NoMove)
 
     frame_ms := time.duration_milliseconds(app.duration_frame)
     total_s  := time.duration_seconds(app.duration_total)
+
+    imgui.text_unformatted("Framerate debug window,\nPress F1 to toggle.\n\n")
 
     imgui.text("Frame time: {} ms", frame_ms)
     imgui.text("Total time: {} s",  total_s)
@@ -98,22 +105,27 @@ imgui_debug_framerate :: proc() {
     imgui.end()
 }
 
-
 update_game :: proc() {
     obj := &game.test_obj
     {using game.camera
         if get_key(.J) && fov < 89 do fov += 1
         if get_key(.K) && fov > 1  do fov -= 1
+        if get_mouse_button(.Right) {
+            motion := get_mouse_motion()
+            r := linalg.quaternion_from_euler_angles(- motion.y * 0.01, - motion.x * 0.01, 0, .XYZ)
+            orientation = linalg.quaternion_mul_quaternion(orientation, r)
+            forward = linalg.quaternion_mul_vector3(r, forward)
+        }
     }
 
     {using obj.transform
         if get_key(.A) {
-            orientation = linalg.quaternion_mul_quaternion(auto_cast orientation, 
-                auto_cast linalg.quaternion_from_euler_angle_y_f32(-.1))
+            orientation = linalg.quaternion_mul_quaternion(orientation, 
+                linalg.quaternion_from_euler_angle_y_f32(-.1))
         } 
         if get_key(.D) {
-            orientation = linalg.quaternion_mul_quaternion(auto_cast orientation, 
-                auto_cast linalg.quaternion_from_euler_angle_y_f32(.1))
+            orientation = linalg.quaternion_mul_quaternion(orientation, 
+                linalg.quaternion_from_euler_angle_y_f32(.1))
         } 
     }
 }
@@ -207,7 +219,7 @@ void main() {
 
     { using game.test_obj.transform
         scale = {1, 1, 1}
-        orientation = cast(quaternion128)linalg.quaternion_from_euler_angles_f32(0, 0, 0, .XYZ)
+        orientation = linalg.quaternion_from_euler_angles_f32(0, 0, 0, .XYZ)
     }
 
 }

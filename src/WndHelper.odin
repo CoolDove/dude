@@ -13,7 +13,7 @@ create_helper_window :: proc (allocator:=context.allocator, loc := #caller_locat
 
 	wnd.window_flags |= {.RESIZABLE};
 	wnd.handler = handler;
-	wnd.render = render_proc;
+	wnd.update = update;
 
     return wnd;
 }
@@ -40,7 +40,12 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 }
 
 @(private="file")
-render_proc :: proc(using wnd:^Window) {
+update :: proc(using wnd: ^Window) {
+	render(wnd)
+}
+
+@(private="file")
+render :: proc(using wnd:^Window) {
 	gl.Viewport(0,0, size.x, size.y);
 	gl.ClearColor(.8, .2, .1, 1);
 	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT);

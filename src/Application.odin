@@ -76,14 +76,12 @@ app_run :: proc() {
 
 		// update and render
 		for id, wnd in &windows {
-			if wnd.render != nil {
-				if wnd.is_opengl_window {
-					assert(sdl.GL_MakeCurrent(wnd.window, wnd.gl_context) == 0, 
-						fmt.tprintf("Failed to switch gl context, because: {}\n", sdl.GetError()))
-				}
-				if wnd.update != nil do wnd.update(wnd)
-				if wnd.render != nil do wnd.render(wnd)
+			if wnd.is_opengl_window {
+				assert(sdl.GL_MakeCurrent(wnd.window, wnd.gl_context) == 0, 
+					fmt.tprintf("Failed to switch gl context, because: {}\n", sdl.GetError()))
 			}
+			if wnd.update != nil do wnd.update(wnd)
+			// if wnd.render != nil do wnd.render(wnd)
 		}
 	}
 

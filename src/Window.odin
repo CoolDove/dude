@@ -36,7 +36,7 @@ Window :: struct {
 
 WindowHandler :: struct {
 	handler  : proc(wnd:^Window, event:sdl.Event), 
-	render   : proc(wnd:^Window),
+	// render   : proc(wnd:^Window),
 	update 	 : proc(wnd:^Window),
 }
 WindowEvents :: struct {
@@ -54,7 +54,7 @@ window_get_basic_template :: proc(name: string, size : IVec2 = IVec2{800, 600}, 
 	wnd : Window
 	wnd.name = name
 	wnd.handler = nil
-	wnd.render = nil
+	// wnd.render = nil
 	wnd.is_opengl_window = is_opengl_window
 	if is_opengl_window {
 		wnd.window_flags |= {.OPENGL}

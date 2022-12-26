@@ -9,7 +9,7 @@ import sdl "vendor:sdl2"
 Input :: struct {
     keys : [sdl.NUM_SCANCODES]KeyState,
     mouse_buttons : [NUM_MOUSE_BUTTONS]MouseButtonState,
-    mouse_position, mouse_motion : Vec2
+    mouse_position, mouse_position_prev, mouse_motion : Vec2
 }
 
 KeyState :: struct {
@@ -19,7 +19,7 @@ KeyState :: struct {
 KeyCode :: distinct sdl.Scancode // c.int
 
 MouseButtonState :: struct {
-    pressed, repeat : bool,
+    pressed, pressed_prev : bool,
     clicks : u8
 }
 MouseButton :: enum u8 {
@@ -37,26 +37,29 @@ NUM_MOUSE_BUTTONS :: 6
 input : Input
 
 get_key :: proc(key: KeyCode) -> bool {
-    state := get_key_state_ptr(key)
+    state := get_key_state(key)
     return state.pressed
 }
 get_key_down :: proc(key: KeyCode) -> bool {
-    state := get_key_state_ptr(key)
+    state := get_key_state(key)
     return state.pressed && !state.pressed_prev
 }
 get_key_up :: proc(key: KeyCode) -> bool {
-    state := get_key_state_ptr(key)
+    state := get_key_state(key)
     return !state.pressed && state.pressed_prev
 }
 
 get_mouse_button :: proc(button: MouseButton) -> bool {
-    return false
+    state := get_mouse_button_state(button)
+    return state.pressed
 }
 get_mouse_button_down :: proc(button: MouseButton) -> bool {
-    return false
+    state := get_mouse_button_state(button)
+    return state.pressed && !state.pressed_prev
 }
 get_mouse_button_up :: proc(button: MouseButton) -> bool {
-    return false
+    state := get_mouse_button_state(button)
+    return !state.pressed && state.pressed_prev
 }
 
 get_mouse_position :: proc() -> Vec2 {
@@ -66,7 +69,6 @@ get_mouse_position :: proc() -> Vec2 {
 get_mouse_motion :: proc() -> Vec2 {
     return input.mouse_motion
 }
-
 
 get_key_state :: proc(key : KeyCode) -> KeyState {
     return get_key_state_ptr(key)^
@@ -97,9 +99,12 @@ input_after_update_sdl2 :: proc() {
         if state.pressed_prev != state.pressed do state.pressed_prev = state.pressed
     }
     for state in &input.mouse_buttons {
-        // if state.pressed_prev != state.pressed do state.pressed_prev = state.pressed
+        if state.pressed_prev != state.pressed do state.pressed_prev = state.pressed
     }
+    input.mouse_motion = input.mouse_position - input.mouse_position_prev
+    input.mouse_position_prev = input.mouse_position
 }
+
 input_handle_sdl2 :: proc(event: sdl.Event) {
     #partial switch event.type {
     case sdl.EventType.KEYDOWN:
@@ -120,8 +125,13 @@ input_handle_sdl2 :: proc(event: sdl.Event) {
         button := event.button
         state := get_mouse_button_state_ptr(cast(MouseButton)button.button)
         state.pressed = false
+        state.clicks = 0
     case sdl.EventType.MOUSEMOTION:
+        @static init := true
         input.mouse_position = {cast(f32)event.motion.x, cast(f32)event.motion.y}
-        input.mouse_motion = {cast(f32)event.motion.xrel, cast(f32)event.motion.yrel}
+        if init {
+            input.mouse_position_prev = input.mouse_position
+            init = false
+        }
     }
 }

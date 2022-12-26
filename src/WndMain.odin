@@ -34,9 +34,7 @@ create_main_window :: proc (allocator:=context.allocator, loc := #caller_locatio
 	wnd := window_get_basic_template("MillionUV")
 
 	wnd.handler = handler
-	wnd.render = render_proc
-	wnd.update = update_proc
-	// wnd.renderer_flags = {.ACCELERATED, .PRESENTVSYNC, .TARGETTEXTURE}
+	wnd.update = update
 
 	wnd.after_instantiate = after_instantiate
 	wnd.before_destroy = before_destroy
@@ -107,7 +105,7 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 }
 
 @(private="file")
-render_proc :: proc(using wnd:^Window) {
+render :: proc(using wnd:^Window) {
 	wnd_data := window_data(WndMainData, wnd)
 
 	dgl.draw_settings.screen_width = cast(f32)wnd.size.x
@@ -168,11 +166,8 @@ imgui_test :: proc(io: ^imgui.IO) {
 }
 
 @(private="file")
-render_gltest :: proc(using wnd:^Window) {
-}
-
-@(private="file")
-update_proc :: proc(using wnd:^Window) {
+update :: proc(using wnd:^Window) {
 	update_game()
+	render(wnd)
 	input_after_update_sdl2()
 }

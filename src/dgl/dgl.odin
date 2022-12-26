@@ -69,7 +69,7 @@ Vec4i :: distinct [4]i32
 
 Transform :: struct {
     position    : Vec3,
-    orientation : quaternion128,
+    orientation : linalg.Quaternionf32,
     scale       : Vec3
 }
 
