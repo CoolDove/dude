@@ -15,13 +15,14 @@
 
 - [x] Camera
 
+- [ ] View: MODLE_VIEW & UV_EDIT_VIEW 
+
 ### Input
 - [ ] Input struct wrapping.
 - [ ] Input handling.
 
 ### Lighting
 - [ ] Lighting fix.
-
 
 ### DGL
 - [ ] Framebuffer

@@ -89,12 +89,13 @@ load_shader :: proc(vertex_source, frag_source : string)  -> dsh.Shader {
 	return shader
 }
 
-
 @(private="file")
 handler :: proc(using wnd:^Window, event:sdl.Event) {
 	wnd_data := window_data(WndMainData, wnd)
 	using wnd_data
 	imsdl.process_event(event, &imgui_state.sdl_state)
+
+	input_handle_sdl2(event)
 
 	window_event := event.window
 
@@ -173,4 +174,5 @@ render_gltest :: proc(using wnd:^Window) {
 @(private="file")
 update_proc :: proc(using wnd:^Window) {
 	update_game()
+	input_after_update_sdl2()
 }

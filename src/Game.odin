@@ -1,6 +1,7 @@
 ﻿package main
 
 import "core:time"
+import "core:log"
 
 import dgl "dgl"
 import sdl "vendor:sdl2"
@@ -26,7 +27,7 @@ Game :: struct {
     vao        : u32,
 
     // GamePlay
-    rotate     : f32,
+    // rotate     : f32,
 
 }
 
@@ -61,11 +62,9 @@ draw_game :: proc() {
             {1, 1, 1, 1},
             img.texture_id
         )
+        imgui.image(cast(imgui.Texture_ID)cast(uintptr)img.texture_id, {64, 64}, {1, 1}, {0, 0})
         img_gallery_x += cast(f32)img.size.x + 10
     }
-
-    
-    imgui.slider_float("MeshRotate", &game.rotate, 0, 1)
 
     imgui.slider_float3("camera position", &game.camera.position, -10, 10)
 
@@ -76,6 +75,7 @@ draw_game :: proc() {
         game.main_light.direction = linalg.normalize0(game.main_light.direction)
     }
 
+    imgui_debug_framerate()
 
     gl.BindVertexArray(game.vao)
     dgl.set_opengl_state_for_draw_geometry()
@@ -83,11 +83,39 @@ draw_game :: proc() {
     
 }
 
+@(private="file")
+imgui_debug_framerate :: proc() {
+    imgui.set_next_window_bg_alpha(.4)
+    imgui.set_next_window_pos({10, 10}, .Once, {0, 0})
+    imgui.begin("Window", nil, .NoResize |.NoTitleBar | .NoMove | .AlwaysAutoResize)
+
+    frame_ms := time.duration_milliseconds(app.duration_frame)
+    total_s  := time.duration_seconds(app.duration_total)
+
+    imgui.text("Frame time: {} ms", frame_ms)
+    imgui.text("Total time: {} s",  total_s)
+
+    imgui.end()
+}
+
+
 update_game :: proc() {
     obj := &game.test_obj
+    {using game.camera
+        if get_key(.J) && fov < 89 do fov += 1
+        if get_key(.K) && fov > 1  do fov -= 1
+    }
 
-    total_ms := cast(f32)time.duration_milliseconds(app.duration_total)
-    obj.transform.orientation = auto_cast linalg.quaternion_from_euler_angle_y(total_ms * 0.001 * game.rotate)
+    {using obj.transform
+        if get_key(.A) {
+            orientation = linalg.quaternion_mul_quaternion(auto_cast orientation, 
+                auto_cast linalg.quaternion_from_euler_angle_y_f32(-.1))
+        } 
+        if get_key(.D) {
+            orientation = linalg.quaternion_mul_quaternion(auto_cast orientation, 
+                auto_cast linalg.quaternion_from_euler_angle_y_f32(.1))
+        } 
+    }
 }
 
 init_game :: proc() {
@@ -151,7 +179,7 @@ void main() {
     FragColor = c * _color * n_dot_l * light_color;
     FragColor.a = 1.0;
 
-    FragColor = vec4(n_dot_l, n_dot_l, n_dot_l, 1);
+    // FragColor = vec4(n_dot_l, n_dot_l, n_dot_l, 1);
 }
 	`
     game.basic_shader = load_shader(vertex_shader_src, fragment_shader_src)
