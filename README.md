@@ -11,9 +11,17 @@
 - [x] Use Makefile for building.
 
 - [ ] Dynamic add and remove windows.
-- [ ] # Basic open gl abstraction, starting from GLObject.Shader.
+- [x] # Basic open gl abstraction, starting from GLObject.Shader.
 
-- [ ] Camera
+- [x] Camera
+
+### Input
+- [ ] Input struct wrapping.
+- [ ] Input handling.
+
+### Lighting
+- [ ] Lighting fix.
+
 
 ### DGL
 - [ ] Framebuffer

@@ -84,7 +84,18 @@ make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
     }
 
     for i in 0..<(6 * 4) do append(&colors, Vec4{1, 1, 1, 1})
-    for i in 0..<(6 * 4) do append(&normals, Vec3{0, 0, 1})
+
+    append_normal :: proc(normals: ^[dynamic]Vec3, normal: Vec3, count: u32) {
+        for i in 0..<count do append(normals, normal)
+    }
+
+    // for i in 0..<(6 * 4) do append(&normals, Vec3{0, 0, 1})
+    append_normal(&normals, { 0,  1,  0}, 4)
+    append_normal(&normals, { 0,  0, -1}, 4)
+    append_normal(&normals, { 1,  0,  0}, 4)
+    append_normal(&normals, { 0,  0,  1}, 4)
+    append_normal(&normals, {-1,  0,  0}, 4)
+    append_normal(&normals, { 0, -1,  0}, 4)
 
     indices := make([dynamic][3]u32, 0, 6 * 2)
 
@@ -137,7 +148,11 @@ set_opengl_state_for_draw_geometry :: proc() {
 }
 
 // @Speed
-draw_mesh :: proc(mesh: ^TriangleMesh, transform: ^Transform, camera : ^Camera) {
+// FIXME: The lighting is incorrect.
+// TODO: Use precalculated normal matrix instead of calculate in vertex shader.
+// TODO: Use uniform block.
+// TODO: Hash-based uniform location management.
+draw_mesh :: proc(mesh: ^TriangleMesh, transform: ^Transform, camera : ^Camera, light: ^LightData) {
     // Maybe i need to set VAO before this.
     assert(mesh.submeshes != nil, "Mesh has no submesh")
     mat_view_projection := camera_get_matrix_vp(camera, draw_settings.screen_width/draw_settings.screen_height)
@@ -155,8 +170,15 @@ draw_mesh :: proc(mesh: ^TriangleMesh, transform: ^Transform, camera : ^Camera) 
         gl.UseProgram(sub_mesh.shader)
         set_vertex_format_PCNU(sub_mesh.shader)
         uni_loc_matrix_view_projection := gl.GetUniformLocation(sub_mesh.shader, "matrix_view_projection")
-        uni_loc_matrix_model := gl.GetUniformLocation(sub_mesh.shader, "matrix_model")
-        uni_loc_main_texture := gl.GetUniformLocation(sub_mesh.shader, "main_texture")
+        uni_loc_matrix_model           := gl.GetUniformLocation(sub_mesh.shader, "matrix_model")
+        uni_loc_main_texture           := gl.GetUniformLocation(sub_mesh.shader, "main_texture")
+        uni_loc_light_direction        := gl.GetUniformLocation(sub_mesh.shader, "light_direction")
+        uni_loc_light_color            := gl.GetUniformLocation(sub_mesh.shader, "light_color")
+
+        { using light
+            gl.Uniform4f(uni_loc_light_color, color.x, color.y, color.z, color.w)
+            gl.Uniform3f(uni_loc_light_direction, direction.x, direction.y, direction.z)
+        }
         
         gl.UniformMatrix4fv(uni_loc_matrix_view_projection, 
             1, false, linalg.matrix_to_ptr(&mat_view_projection))

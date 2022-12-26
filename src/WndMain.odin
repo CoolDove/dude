@@ -76,7 +76,7 @@ after_instantiate :: proc(using wnd: ^Window) {
 before_destroy :: proc(wnd: ^Window) {
 	wdata := window_data(WndMainData, wnd)
 	// TODO(Dove): Clean Render Repository
-
+	
 	log.debug("Resource clear.")
 }
 
