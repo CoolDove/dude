@@ -78,7 +78,13 @@ draw_game :: proc() {
 
     gl.BindVertexArray(game.vao)
     dgl.set_opengl_state_for_draw_geometry()
+
     dgl.draw_mesh(&game.test_obj.mesh, &game.test_obj.transform, &game.camera, &game.main_light)
+
+    copy_transform := game.test_obj.transform
+    copy_transform.position += {1, 0, 0}
+
+    dgl.draw_mesh(&game.test_obj.mesh, &copy_transform, &game.camera, &game.main_light)
     
 }
 
@@ -171,7 +177,6 @@ init_game :: proc() {
         log.debugf("matrix_view_projection: {}", get_uniform_location("matrix_view_projection"))
         log.debugf("matrix_model: {}", get_uniform_location("matrix_model"))
         log.debugf("matrix_model_direction: {}", get_uniform_location("matrix_model_direction"))
-
     }
 
 
@@ -187,6 +192,7 @@ load_shader :: proc(vertex_source, frag_source : string)  -> dsh.Shader {
 
 // TODO(Dove): This is not called now
 quit_game :: proc() {
+    dgl.mesh_release_rendering_resource(&game.test_obj.mesh)
     gl.DeleteTextures(1, &game.test_image.texture_id)
     // dgl.mesh_release()
 }

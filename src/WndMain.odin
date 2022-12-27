@@ -39,6 +39,8 @@ create_main_window :: proc (allocator:=context.allocator, loc := #caller_locatio
 	wnd.after_instantiate = after_instantiate
 	wnd.before_destroy = before_destroy
 
+	wnd.window_flags += { .RESIZABLE }
+
     return wnd
 }
 
