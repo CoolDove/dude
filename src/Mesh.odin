@@ -1,4 +1,4 @@
-﻿package dgl
+﻿package main
 
 import gl "vendor:OpenGL"
 import "core:math/linalg"
@@ -34,7 +34,7 @@ SubMesh :: struct {
     texture    : u32, // Maybe put into material later.
 }
 
-make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
+mesh_make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
     vertices  = make([dynamic]Vec3, 0, 6 * 4)
     uvs       = make([dynamic]Vec2, 0, 6 * 4)
     colors    = make([dynamic]Vec4, 0, 6 * 4)
@@ -83,9 +83,9 @@ make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
     // for i in 0..<(6 * 4) do append(&normals, Vec3{0, 0, 1})
     append_normal(&normals, { 0,  1,  0}, 4)
     append_normal(&normals, { 0,  0, -1}, 4)
-    append_normal(&normals, { 1,  0,  0}, 4)
-    append_normal(&normals, { 0,  0,  1}, 4)
     append_normal(&normals, {-1,  0,  0}, 4)
+    append_normal(&normals, { 0,  0,  1}, 4)
+    append_normal(&normals, { 1,  0,  0}, 4)
     append_normal(&normals, { 0, -1,  0}, 4)
 
     indices := make([dynamic][3]u32, 0, 6 * 2)
@@ -104,8 +104,8 @@ make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
 
     append(&submeshes, triangle_list)
 
-    pncu := mesh_make_pcnu(mesh)
-    mesh.mesh_pcnu = pncu
+    // pncu := mesh_make_pcnu(mesh)
+    // mesh.mesh_pcnu = pncu
 }
 
 
@@ -113,7 +113,19 @@ mesh_is_ready_for_rendering :: proc(using mesh: ^TriangleMesh) -> bool {
     return vbo != 0
 }
 mesh_prepare_for_rendering :: proc(mesh: ^TriangleMesh) {
-    mesh_make_pcnu(mesh)
+    {// Make mesh_pcnu
+        using mesh.mesh_pcnu
+        length := len(mesh.vertices)
+        vertices = make([dynamic]VertexPCNU, 0, length)
+        for i in 0..<length {
+            vertex : VertexPCNU
+            vertex.position = mesh.vertices[i]
+            vertex.color    = mesh.colors[i]
+            vertex.normal   = mesh.normals[i]
+            vertex.uv       = mesh.uvs[i]
+            append(&vertices, vertex)
+        }
+    }
 
     gl.GenBuffers(1, &mesh.vbo)
     gl.BindBuffer(gl.ARRAY_BUFFER, mesh.vbo)
@@ -132,21 +144,6 @@ mesh_release_rendering_resource :: proc(mesh: ^TriangleMesh) {
     if !mesh_is_ready_for_rendering(mesh) do return;
     gl.DeleteBuffers(1, &mesh.vbo)
     for submesh in &mesh.submeshes do gl.DeleteBuffers(1, &submesh.ebo)
-}
-
-mesh_make_pcnu :: proc(mesh: ^TriangleMesh) -> MeshPCNU {
-    m : MeshPCNU
-    length := len(mesh.vertices)
-    m.vertices = make([dynamic]VertexPCNU, 0, length)
-    for i in 0..<length {
-        vertex : VertexPCNU
-        vertex.position = mesh.vertices[i]
-        vertex.color    = mesh.colors[i]
-        vertex.normal   = mesh.normals[i]
-        vertex.uv       = mesh.uvs[i]
-        append(&m.vertices, vertex)
-    }
-    return m
 }
 
 MeshPCNU :: struct {

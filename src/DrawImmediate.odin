@@ -1,8 +1,10 @@
-﻿package dgl
+﻿package main
 
 import gl "vendor:OpenGL"
-import dsh "./shader"
+import dsh "dgl/shader"
 import "core:log"
+
+import "dgl"
 
 
 @(private="file")
@@ -138,7 +140,7 @@ immediate_end :: proc () {
 @(private="file")
 switch_shader :: proc(shader : u32) -> (viewport_size, main_texture : i32) {
     gl.UseProgram(shader)
-    set_vertex_format_PCU(shader)
+    dgl.set_vertex_format_PCU(shader)
 
     viewport_size = gl.GetUniformLocation(shader, "viewport_size")
     main_texture  = gl.GetUniformLocation(shader, "main_texture")

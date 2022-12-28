@@ -1,4 +1,4 @@
-package dgl
+package main
 
 import "core:os"
 import "core:strings"
@@ -10,6 +10,8 @@ import "core:math/linalg"
 
 import gl "vendor:OpenGL"
 
+import "dgl"
+
 DrawSettings :: struct {
     screen_width, screen_height : f32,
     default_texture_white, default_texture_black : u32
@@ -18,8 +20,8 @@ DrawSettings :: struct {
 draw_settings : DrawSettings
 
 init :: proc() {
-    draw_settings.default_texture_white = texture_create(4, 4, [4]u8{0xff, 0xff, 0xff, 0xff})
-    draw_settings.default_texture_black = texture_create(4, 4, [4]u8{0x00, 0x00, 0x00, 0xff})
+    draw_settings.default_texture_white = dgl.texture_create(4, 4, [4]u8{0xff, 0xff, 0xff, 0xff})
+    draw_settings.default_texture_black = dgl.texture_create(4, 4, [4]u8{0x00, 0x00, 0x00, 0xff})
 }
 
 set_opengl_state_for_draw_geometry :: proc() {
@@ -40,8 +42,8 @@ set_opengl_state_for_draw_geometry :: proc() {
 // TODO: Hash-based uniform location management.
 // TODO: Buffer only once!!!
 draw_mesh :: proc(mesh: ^TriangleMesh, transform: ^Transform, camera : ^Camera, light: ^LightData) {
-    // Maybe i need to set VAO before this.
     assert(mesh.submeshes != nil, "Mesh has no submesh")
+    using dgl
 
     if !mesh_is_ready_for_rendering(mesh) do mesh_prepare_for_rendering(mesh)
 

@@ -1,10 +1,6 @@
-package dgl 
-
-
+package main
 
 import gl "vendor:OpenGL"
-
-
 
 LightData :: struct {
     direction : Vec3,

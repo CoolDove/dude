@@ -65,8 +65,8 @@ after_instantiate :: proc(using wnd: ^Window) {
 	wdata := window_data(WndMainData, wnd)
 	init_imgui(&wdata.imgui_state, window)
 
-	dgl.init()
-	dgl.immediate_init()
+	init()
+	immediate_init()
 
 	game.window = wnd
 	init_game()
@@ -110,8 +110,8 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 render :: proc(using wnd:^Window) {
 	wnd_data := window_data(WndMainData, wnd)
 
-	dgl.draw_settings.screen_width = cast(f32)wnd.size.x
-	dgl.draw_settings.screen_height = cast(f32)wnd.size.y
+	draw_settings.screen_width = cast(f32)wnd.size.x
+	draw_settings.screen_height = cast(f32)wnd.size.y
 
 	col := [4]f32{.2, .8, .7, 1}
 	gl.ClearColor(col.r, col.g, col.b, col.a)
@@ -122,11 +122,11 @@ render :: proc(using wnd:^Window) {
     io := imgui.get_io()
 	
 	imgui.new_frame()
-	dgl.immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
+	immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
 
 	draw_game()
 
-	dgl.immediate_end()
+	immediate_end()
 
 	imgui.end_frame()
 	imgui.render()

@@ -3,7 +3,6 @@
 import "core:time"
 import "core:log"
 
-import dgl "dgl"
 import sdl "vendor:sdl2"
 
 import gl "vendor:OpenGL"
@@ -13,15 +12,17 @@ import imgui "pac:imgui"
 import linalg "core:math/linalg"
 
 import dsh "dgl/shader"
+import "dshader"
+import dgl "dgl"
 
 Game :: struct {
     window : ^Window,
 
     basic_shader : dsh.Shader,
 
-    main_light : dgl.LightData,
+    main_light : LightData,
 
-    camera     : dgl.Camera,
+    camera     : Camera,
     test_image : dgl.Image,
     test_obj   : GameObject,
     vao        : u32,
@@ -30,8 +31,8 @@ Game :: struct {
 game : Game
 
 GameObject :: struct {
-    mesh      : dgl.TriangleMesh,
-    transform : dgl.Transform
+    mesh      : TriangleMesh,
+    transform : Transform
 }
 
 draw_game :: proc() {
@@ -77,14 +78,14 @@ draw_game :: proc() {
     if show_debug_framerate do imgui_debug_framerate()
 
     gl.BindVertexArray(game.vao)
-    dgl.set_opengl_state_for_draw_geometry()
+    set_opengl_state_for_draw_geometry()
 
-    dgl.draw_mesh(&game.test_obj.mesh, &game.test_obj.transform, &game.camera, &game.main_light)
+    draw_mesh(&game.test_obj.mesh, &game.test_obj.transform, &game.camera, &game.main_light)
 
     copy_transform := game.test_obj.transform
     copy_transform.position += {1, 0, 0}
 
-    dgl.draw_mesh(&game.test_obj.mesh, &copy_transform, &game.camera, &game.main_light)
+    draw_mesh(&game.test_obj.mesh, &copy_transform, &game.camera, &game.main_light)
     
 }
 
@@ -137,8 +138,9 @@ update_game :: proc() {
 }
 
 init_game :: proc() {
-    game.test_image = dgl.texture_load(DATA_IMG_ICON)
-    dgl.image_free(&game.test_image)
+    using dgl
+    game.test_image = texture_load(DATA_IMG_ICON)
+    image_free(&game.test_image)
 
     gl.GenVertexArrays(1, &game.vao)
 
@@ -147,10 +149,10 @@ init_game :: proc() {
 
     game.basic_shader = load_shader(vertex_shader_src, fragment_shader_src)
 
-    box_img := dgl.texture_load(DATA_IMG_BOX)
-    dgl.image_free(&box_img)
+    box_img := texture_load(DATA_IMG_BOX)
+    image_free(&box_img)
 
-    dgl.make_cube(&game.test_obj.mesh, game.basic_shader.native_id)
+    mesh_make_cube(&game.test_obj.mesh, game.basic_shader.native_id)
     game.test_obj.mesh.submeshes[0].texture = box_img.texture_id
 
     { using game.camera
@@ -174,9 +176,9 @@ init_game :: proc() {
     }
 
     {// @Test: Uniform location test.
-        log.debugf("matrix_view_projection: {}", get_uniform_location("matrix_view_projection"))
-        log.debugf("matrix_model: {}", get_uniform_location("matrix_model"))
-        log.debugf("matrix_model_direction: {}", get_uniform_location("matrix_model_direction"))
+        log.debugf("matrix_view_projection: {}", dshader.get_uniform_location("matrix_view_projection"))
+        log.debugf("matrix_model: {}",           dshader.get_uniform_location("matrix_model"))
+        log.debugf("matrix_model_direction: {}", dshader.get_uniform_location("matrix_model_direction"))
     }
 
 
@@ -192,7 +194,7 @@ load_shader :: proc(vertex_source, frag_source : string)  -> dsh.Shader {
 
 // TODO(Dove): This is not called now
 quit_game :: proc() {
-    dgl.mesh_release_rendering_resource(&game.test_obj.mesh)
+    mesh_release_rendering_resource(&game.test_obj.mesh)
     gl.DeleteTextures(1, &game.test_image.texture_id)
-    // dgl.mesh_release()
+    // mesh_release()
 }
