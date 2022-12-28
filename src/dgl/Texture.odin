@@ -1,8 +1,4 @@
-﻿package texture
-
-
-import basic "../basic"
-
+﻿package dgl
 
 // TODO(Dove): Finish texture abstraction.
 

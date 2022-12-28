@@ -11,14 +11,13 @@ import imgui "pac:imgui"
 
 import linalg "core:math/linalg"
 
-import dsh "dgl/shader"
 import "dshader"
-import dgl "dgl"
+import "dgl"
 
 Game :: struct {
     window : ^Window,
 
-    basic_shader : dsh.Shader,
+    basic_shader : dgl.Shader,
 
     main_light : LightData,
 
@@ -184,11 +183,11 @@ init_game :: proc() {
 
 }
 @(private="file")
-load_shader :: proc(vertex_source, frag_source : string)  -> dsh.Shader {
-	shader_comp_vertex := dsh.create_component(.VERTEX_SHADER, vertex_source)
-	shader_comp_fragment := dsh.create_component(.FRAGMENT_SHADER, frag_source)
-	shader := dsh.create(&shader_comp_vertex, &shader_comp_fragment)
-	dsh.destroy_components(&shader_comp_vertex, &shader_comp_fragment)
+load_shader :: proc(vertex_source, frag_source : string)  -> dgl.Shader {
+	shader_comp_vertex := dgl.shader_create_component(.VERTEX_SHADER, vertex_source)
+	shader_comp_fragment := dgl.shader_create_component(.FRAGMENT_SHADER, frag_source)
+	shader := dgl.shader_create(&shader_comp_vertex, &shader_comp_fragment)
+	dgl.shader_destroy_components(&shader_comp_vertex, &shader_comp_fragment)
 	return shader
 }
 

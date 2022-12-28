@@ -1,4 +1,4 @@
-﻿package basic
+﻿package dgl
 
 import "core:log"
 import gl "vendor:OpenGL"

@@ -1,12 +1,8 @@
-﻿package buffer
+﻿package dgl
 
 import "core:log"
 
 import gl "vendor:OpenGL"
-// import dgl "../"
-import dgl "../basic"
-
-GLObject :: dgl.GLObject
 
 BufferUsage :: enum u32 {
     STREM_DRAW      = gl.STREAM_DRAW,

@@ -1,7 +1,6 @@
 package dgl
 
 import gl "vendor:OpenGL"
-import dbuf "/buffer"
 
 import "core:log"
 import "core:math/linalg"
@@ -50,13 +49,6 @@ set_vertex_format_PCNU :: proc(shader: u32) {
     gl.VertexAttribPointer(C, 4, gl.FLOAT, false, stride, 3 * size_of(f32))
     gl.VertexAttribPointer(N, 3, gl.FLOAT, false, stride, 7 * size_of(f32))
     gl.VertexAttribPointer(U, 2, gl.FLOAT, false, stride, 10 * size_of(f32))
-}
-
-bind_vertex_buffer :: proc(buffer: ^dbuf.Buffer) {
-    gl.BindBuffer(gl.ARRAY_BUFFER, buffer.native_id)
-}
-bind_index_buffer :: proc(buffer: ^dbuf.Buffer) {
-    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.native_id)
 }
 
 Vec2 :: linalg.Vector2f32

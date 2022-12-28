@@ -1,12 +1,8 @@
-package shader
-
-import basic "../basic"
+package dgl
 
 import gl "vendor:OpenGL"
 import "core:log"
 import "core:strings"
-
-GLObject :: basic.GLObject
 
 ShaderType :: enum u32 {
     FRAGMENT_SHADER        = gl.FRAGMENT_SHADER,
@@ -26,7 +22,7 @@ Component :: struct {
     type : ShaderType,
 }
 
-create_component :: proc (type : ShaderType, source : string) -> Component {
+shader_create_component :: proc (type : ShaderType, source : string) -> Component {
     shader: Component
 
     shader.type = type
@@ -52,7 +48,7 @@ create_component :: proc (type : ShaderType, source : string) -> Component {
     return shader
 }
 
-destroy_component :: proc (using component : ^Component) -> bool {
+shader_destroy_component :: proc (using component : ^Component) -> bool {
     if native_id != 0 {
         gl.DeleteShader(native_id)
         native_id = 0
@@ -60,33 +56,33 @@ destroy_component :: proc (using component : ^Component) -> bool {
     }
     return false
 }
-destroy_components :: proc (comps: ..^Component) -> int {
+shader_destroy_components :: proc (comps: ..^Component) -> int {
     count := 0
     for c in comps {
-        if destroy_component(c) do count += 1
+        if shader_destroy_component(c) do count += 1
     }
     return count
 }
 
 
-create :: proc {
-    create_from_components,
+shader_create :: proc {
+    shader_create_from_components,
 }
 
-destroy :: proc {
-    destroy_single,
-    destroy_multiple,
+shader_destroy :: proc {
+    shader_destroy_single,
+    shader_destroy_multiple,
 }
-destroy_single :: proc(using shader: ^Shader) {
+shader_destroy_single :: proc(using shader: ^Shader) {
     gl.DeleteProgram(native_id)
 }
-destroy_multiple :: proc(shaders: ..^Shader) {
+shader_destroy_multiple :: proc(shaders: ..^Shader) {
     for sh in shaders {
         gl.DeleteProgram(sh.native_id)
     }
 }
 
-create_from_components :: proc(comps: ..^Component) -> Shader {
+shader_create_from_components :: proc(comps: ..^Component) -> Shader {
     shader : Shader
     shader.native_id = gl.CreateProgram()
     for c in comps {
@@ -108,10 +104,18 @@ create_from_components :: proc(comps: ..^Component) -> Shader {
     return shader
 }
 
-bind :: proc(using shader: ^Shader) {
+shader_bind :: proc(using shader: ^Shader) {
     if native_id == 0 {
         log.error("DGL Error: Failed to bind shader, the shader is not correctly initialized!")
     } else {
         gl.UseProgram(native_id)
     }
+}
+
+shader_load_vertex_and_fragment :: proc(vertex_source, fragment_source : string) -> Shader {
+	shader_comp_vertex := shader_create_component(.VERTEX_SHADER, vertex_source)
+	shader_comp_fragment := shader_create_component(.FRAGMENT_SHADER, fragment_source)
+	shader := shader_create(&shader_comp_vertex, &shader_comp_fragment)
+	shader_destroy_components(&shader_comp_vertex, &shader_comp_fragment)
+	return shader
 }

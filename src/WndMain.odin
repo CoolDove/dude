@@ -17,9 +17,6 @@ import imsdl "pac:imgui/impl/sdl"
 import "pac:imgui"
 
 import dgl "dgl"
-import dsh "dgl/shader"
-import dbuf "dgl/buffer"
-import dva "dgl/vertex_array"
 
 WndMainData :: struct {
 	imgui_state : ImguiState,
@@ -78,15 +75,6 @@ before_destroy :: proc(wnd: ^Window) {
 	// TODO(Dove): Clean Render Repository
 	
 	log.debug("Resource clear.")
-}
-
-@(private="file") 
-load_shader :: proc(vertex_source, frag_source : string)  -> dsh.Shader {
-	shader_comp_vertex := dsh.create_component(.VERTEX_SHADER, vertex_source)
-	shader_comp_fragment := dsh.create_component(.FRAGMENT_SHADER, frag_source)
-	shader := dsh.create(&shader_comp_vertex, &shader_comp_fragment)
-	dsh.destroy_components(&shader_comp_vertex, &shader_comp_fragment)
-	return shader
 }
 
 @(private="file")

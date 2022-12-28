@@ -1,7 +1,6 @@
 ﻿package main
 
 import gl "vendor:OpenGL"
-import dsh "dgl/shader"
 import "core:log"
 
 import "dgl"
@@ -66,16 +65,7 @@ void main() {
     FragColor = c * _color;
 }
 	`
-    ime_context.basic_shader = load_shader(vertex_shader_src, fragment_shader_src).native_id
-}
-
-@(private="file") 
-load_shader :: proc(vertex_source, frag_source : string)  -> dsh.Shader {
-	shader_comp_vertex := dsh.create_component(.VERTEX_SHADER, vertex_source)
-	shader_comp_fragment := dsh.create_component(.FRAGMENT_SHADER, frag_source)
-	shader := dsh.create(&shader_comp_vertex, &shader_comp_fragment)
-	dsh.destroy_components(&shader_comp_vertex, &shader_comp_fragment)
-	return shader
+    ime_context.basic_shader = dgl.shader_load_vertex_and_fragment(vertex_shader_src, fragment_shader_src).native_id
 }
 
 immediate_begin :: proc (viewport: Vec4i) {
