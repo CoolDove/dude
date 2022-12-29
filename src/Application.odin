@@ -25,6 +25,8 @@ Application :: struct {
 app : ^Application
 
 app_init :: proc() {
+	when ODIN_OS == .Windows do os_windows_set_console_output_cp(65001)
+
 	app = new(Application)
 
 	time.stopwatch_start(&app.stopwatch)
@@ -44,6 +46,7 @@ app_init :: proc() {
 	sdl.GL_GetAttribute(.CONTEXT_PROFILE_MASK, &profile)
 	log.infof("OpenGL version: {}.{}, profile: {}", major, minor, cast(sdl.GLprofile)profile)
 }
+
 app_release :: proc() {
     free(app)
 }

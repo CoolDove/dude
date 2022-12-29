@@ -7,7 +7,8 @@ import sdl "vendor:sdl2"
 
 import gl "vendor:OpenGL"
 
-import imgui "pac:imgui"
+import "pac:imgui"
+import "pac:assimp"
 
 import linalg "core:math/linalg"
 
@@ -180,8 +181,20 @@ init_game :: proc() {
         log.debugf("matrix_model_direction: {}", dshader.get_uniform_location("matrix_model_direction"))
     }
 
-
+    {// Load Models
+        mushroom := assimp.import_file_from_memory(
+            raw_data(DATA_MOD_MUSHROOM_FBX),
+            cast(u32)len(DATA_MOD_MUSHROOM_FBX),
+            cast(u32)assimp.PostProcessSteps.Triangulate, "fbx")
+        defer assimp.release_import(mushroom)
+        for i in 0..<mushroom.mNumMeshes {
+            m := mushroom.mMeshes[i]
+            name := assimp.string_clone_from_ai_string(&m.mName, context.temp_allocator)
+            log.debugf("Mesh: {}: {} vertices", name, m.mNumVertices)
+        }
+    }
 }
+
 @(private="file")
 load_shader :: proc(vertex_source, frag_source : string)  -> dgl.Shader {
 	shader_comp_vertex := dgl.shader_create_component(.VERTEX_SHADER, vertex_source)
