@@ -22,6 +22,8 @@ Game :: struct {
 
     main_light : LightData,
 
+    scene      : Scene,
+
     camera     : Camera,
     test_image : dgl.Image,
     test_obj   : GameObject,
@@ -63,7 +65,7 @@ draw_game :: proc() {
         img_gallery_x += cast(f32)img.size.x + 10
     }
 
-    imgui.slider_float3("camera position", &game.camera.position, -10, 10)
+    imgui.slider_float3("camera position", &game.camera.position, -100, 100)
     imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
 
     if imgui.collapsing_header("MainLight") {
@@ -86,6 +88,23 @@ draw_game :: proc() {
     copy_transform.position += {1, 0, 0}
 
     draw_mesh(&game.test_obj.mesh, &copy_transform, &game.camera, &game.main_light)
+
+
+    scene := game.scene
+    assimp_scene := scene.assimp_scene
+    node := assimp_scene.mRootNode
+    children_count := node.mNumChildren
+    // for node != nil {
+    //     node.mChildren[]
+
+    // }
+    for i in 0..<assimp_scene.mNumMeshes {
+        assimp_mesh_ptr := assimp_scene.mMeshes[i]
+        mesh := scene.meshes[assimp_mesh_ptr]
+
+        draw_mesh(&mesh, &game.test_obj.transform, &game.camera, &game.main_light)
+
+    }
     
 }
 
@@ -185,14 +204,16 @@ init_game :: proc() {
         mushroom := assimp.import_file(
             DATA_MOD_MUSHROOM_FBX,
             assimp.PostProcessSteps.Triangulate, "fbx")
-        defer assimp.release_import(mushroom)
+        // defer assimp.release_import(mushroom)
+        game.scene.assimp_scene = mushroom
+        prepare_scene(&game.scene, game.basic_shader.native_id, draw_settings.default_texture_white)
         for i in 0..<mushroom.mNumMeshes {
             m := mushroom.mMeshes[i]
             name := assimp.string_clone_from_ai_string(&m.mName, context.temp_allocator)
             log.debugf("Mesh: {}: {} vertices", name, m.mNumVertices)
 
-            vertices := m.mVertices[:m.mNumVertices]// a slice
-            log.debugf("vertices: {}", vertices)
+            // vertices := m.mVertices[:m.mNumVertices]// a slice
+            // log.debugf("vertices: {}", vertices)
         }
     }
 
@@ -213,5 +234,6 @@ load_shader :: proc(vertex_source, frag_source : string)  -> dgl.Shader {
 quit_game :: proc() {
     mesh_release_rendering_resource(&game.test_obj.mesh)
     gl.DeleteTextures(1, &game.test_image.texture_id)
+    assimp.release_import(game.scene.assimp_scene)
     // mesh_release()
 }

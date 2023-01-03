@@ -14,7 +14,7 @@ import "dgl"
 
 DrawSettings :: struct {
     screen_width, screen_height : f32,
-    default_texture_white, default_texture_black : u32
+    default_texture_white, default_texture_black : u32,
 }
 
 draw_settings : DrawSettings

@@ -81,12 +81,12 @@ mesh_make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {
     }
 
     // for i in 0..<(6 * 4) do append(&normals, Vec3{0, 0, 1})
-    append_normal(&normals, { 0,  1,  0}, 4)
-    append_normal(&normals, { 0,  0, -1}, 4)
-    append_normal(&normals, {-1,  0,  0}, 4)
+    append_normal(&normals, { 0, -1,  0}, 4)
     append_normal(&normals, { 0,  0,  1}, 4)
     append_normal(&normals, { 1,  0,  0}, 4)
-    append_normal(&normals, { 0, -1,  0}, 4)
+    append_normal(&normals, { 0,  0, -1}, 4)
+    append_normal(&normals, {-1,  0,  0}, 4)
+    append_normal(&normals, { 0,  1,  0}, 4)
 
     indices := make([dynamic][3]u32, 0, 6 * 2)
 
