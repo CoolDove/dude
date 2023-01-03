@@ -3,3 +3,4 @@ bin/
 *.exe
 ols.json
 imgui.ini
+*.blend1

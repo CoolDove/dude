@@ -94,16 +94,11 @@ draw_game :: proc() {
     assimp_scene := scene.assimp_scene
     node := assimp_scene.mRootNode
     children_count := node.mNumChildren
-    // for node != nil {
-    //     node.mChildren[]
-
-    // }
+    
     for i in 0..<assimp_scene.mNumMeshes {
         assimp_mesh_ptr := assimp_scene.mMeshes[i]
         mesh := scene.meshes[assimp_mesh_ptr]
-
         draw_mesh(&mesh, &game.test_obj.transform, &game.camera, &game.main_light)
-
     }
     
 }
