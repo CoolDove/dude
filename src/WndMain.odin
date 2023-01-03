@@ -72,7 +72,7 @@ after_instantiate :: proc(using wnd: ^Window) {
 @(private="file")
 before_destroy :: proc(wnd: ^Window) {
 	wdata := window_data(WndMainData, wnd)
-	// TODO(Dove): Clean Render Repository
+	quit_game()
 	
 	log.debug("Resource clear.")
 }

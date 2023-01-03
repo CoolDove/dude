@@ -2,17 +2,17 @@
 
 import "core:time"
 import "core:log"
+import "core:math/linalg"
 
 import sdl "vendor:sdl2"
-
 import gl "vendor:OpenGL"
 
 import "pac:imgui"
 import "pac:assimp"
 
-import linalg "core:math/linalg"
+// import dsh "dshader"
 
-import "dshader"
+// import "dshader"
 import "dgl"
 
 Game :: struct {
@@ -176,23 +176,29 @@ init_game :: proc() {
     }
 
     {// @Test: Uniform location test.
-        log.debugf("matrix_view_projection: {}", dshader.get_uniform_location("matrix_view_projection"))
-        log.debugf("matrix_model: {}",           dshader.get_uniform_location("matrix_model"))
-        log.debugf("matrix_model_direction: {}", dshader.get_uniform_location("matrix_model_direction"))
+        // log.debugf("matrix_view_projection: {}", dshader.get_uniform_location("matrix_view_projection"))
+        // log.debugf("matrix_model: {}",           dshader.get_uniform_location("matrix_model"))
+        // log.debugf("matrix_model_direction: {}", dshader.get_uniform_location("matrix_model_direction"))
     }
 
     {// Load Models
-        mushroom := assimp.import_file_from_memory(
-            raw_data(DATA_MOD_MUSHROOM_FBX),
-            cast(u32)len(DATA_MOD_MUSHROOM_FBX),
-            cast(u32)assimp.PostProcessSteps.Triangulate, "fbx")
+        mushroom := assimp.import_file(
+            DATA_MOD_MUSHROOM_FBX,
+            assimp.PostProcessSteps.Triangulate, "fbx")
         defer assimp.release_import(mushroom)
         for i in 0..<mushroom.mNumMeshes {
             m := mushroom.mMeshes[i]
             name := assimp.string_clone_from_ai_string(&m.mName, context.temp_allocator)
             log.debugf("Mesh: {}: {} vertices", name, m.mNumVertices)
+
+            vertices := m.mVertices[:m.mNumVertices]// a slice
+            log.debugf("vertices: {}", vertices)
         }
     }
+
+    // source := vertex_shader_src
+    // source := dsh.example_dshader_source
+    // dsh.generate(&source)
 }
 
 @(private="file")
@@ -204,7 +210,6 @@ load_shader :: proc(vertex_source, frag_source : string)  -> dgl.Shader {
 	return shader
 }
 
-// TODO(Dove): This is not called now
 quit_game :: proc() {
     mesh_release_rendering_resource(&game.test_obj.mesh)
     gl.DeleteTextures(1, &game.test_image.texture_id)
