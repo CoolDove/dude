@@ -1,6 +1,8 @@
 ﻿package main
 
 import "core:log"
+import "core:encoding/json"
+import "core:math/linalg"
 
 import "pac:assimp"
 
@@ -9,8 +11,8 @@ Scene :: struct {
     assimp_scene : ^assimp.Scene,
 }
 
-prepare_scene :: proc(scene: ^Scene, shader, texture: u32) {
-    aiscene := scene.assimp_scene
+prepare_scene :: proc(scene: ^Scene, aiscene: ^assimp.Scene, shader, texture: u32) {
+    scene.assimp_scene = aiscene
     for i in 0..<aiscene.mNumMeshes {
         aimesh := aiscene.mMeshes[i]
         scene.meshes[aimesh] = TriangleMesh{}
@@ -18,7 +20,7 @@ prepare_scene :: proc(scene: ^Scene, shader, texture: u32) {
     }
 }
 
-aimesh_to_triangle_mesh :: proc(aimesh: ^assimp.Mesh, triangle_mesh: ^TriangleMesh, shader, texture: u32, scale:f32= 0.01) {
+aimesh_to_triangle_mesh :: proc(aimesh: ^assimp.Mesh, triangle_mesh: ^TriangleMesh, shader, texture: u32, scale:f32= 1) {
     log.debugf("Processing aimesh: {}...", assimp.string_clone_from_ai_string(&aimesh.mName, context.temp_allocator))
 
     reserve(&triangle_mesh.vertices,    cast(int) aimesh.mNumVertices)
@@ -65,4 +67,17 @@ aimesh_to_triangle_mesh :: proc(aimesh: ^assimp.Mesh, triangle_mesh: ^TriangleMe
     append(&triangle_mesh.submeshes, submesh)
     log.debugf("Triangle mesh created.")
 
+}
+
+DoveScene :: struct {
+    name : string,
+    root : DoveSceneNode,
+}
+DoveSceneNode :: struct {
+    mesh : string,
+    position, euler, scal : linalg.Vector3f32,
+    children : [dynamic]DoveSceneNode,
+}
+
+dove_scene_file_test :: proc() {
 }

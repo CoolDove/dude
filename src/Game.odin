@@ -2,6 +2,8 @@
 
 import "core:time"
 import "core:log"
+import "core:fmt"
+import "core:strings"
 import "core:math/linalg"
 
 import sdl "vendor:sdl2"
@@ -38,6 +40,7 @@ GameObject :: struct {
 }
 
 draw_game :: proc() {
+    using linalg
 	using dgl
 
     wnd := game.window
@@ -82,24 +85,29 @@ draw_game :: proc() {
     gl.BindVertexArray(game.vao)
     set_opengl_state_for_draw_geometry()
 
-    draw_mesh(&game.test_obj.mesh, &game.test_obj.transform, &game.camera, &game.main_light)
+    objects := make([dynamic]RenderObject, 0, game.scene.assimp_scene.mNumMeshes)
+    defer delete(objects)
+    make_render_objects(&game.scene, game.scene.assimp_scene.mRootNode, &objects)
+    env := RenderEnvironment{&game.camera, &game.main_light}
+    draw_objects(objects[:], &env)
 
-    copy_transform := game.test_obj.transform
-    copy_transform.position += {1, 0, 0}
+    // draw_mesh(&game.test_obj.mesh, &game.test_obj.transform, &game.camera, &game.main_light)
 
-    draw_mesh(&game.test_obj.mesh, &copy_transform, &game.camera, &game.main_light)
+    // copy_transform := game.test_obj.transform
+    // copy_transform.position += {1, 0, 0}
 
+    // draw_mesh(&game.test_obj.mesh, &copy_transform, &game.camera, &game.main_light)
 
-    scene := game.scene
-    assimp_scene := scene.assimp_scene
-    node := assimp_scene.mRootNode
-    children_count := node.mNumChildren
+    // scene := game.scene
+    // assimp_scene := scene.assimp_scene
+    // node := assimp_scene.mRootNode
+    // children_count := node.mNumChildren
     
-    for i in 0..<assimp_scene.mNumMeshes {
-        assimp_mesh_ptr := assimp_scene.mMeshes[i]
-        mesh := scene.meshes[assimp_mesh_ptr]
-        draw_mesh(&mesh, &game.test_obj.transform, &game.camera, &game.main_light)
-    }
+    // for i in 0..<assimp_scene.mNumMeshes {
+    //     assimp_mesh_ptr := assimp_scene.mMeshes[i]
+    //     mesh := scene.meshes[assimp_mesh_ptr]
+    //     draw_mesh(&mesh, &game.test_obj.transform, &game.camera, &game.main_light)
+    // }
     
 }
 
@@ -198,24 +206,57 @@ init_game :: proc() {
     {// Load Models
         mushroom := assimp.import_file(
             DATA_MOD_MUSHROOM_FBX,
-            assimp.PostProcessSteps.Triangulate, "fbx")
-        // defer assimp.release_import(mushroom)
+            cast(u32) assimp.PostProcessPreset_MaxQuality,
+            "fbx")
+        log.debugf("Load Scene: {}", assimp.string_clone_from_ai_string(&mushroom.mName, context.temp_allocator))
         game.scene.assimp_scene = mushroom
-        prepare_scene(&game.scene, game.basic_shader.native_id, draw_settings.default_texture_white)
+        prepare_scene(&game.scene, mushroom, game.basic_shader.native_id, draw_settings.default_texture_white)
         for i in 0..<mushroom.mNumMeshes {
             m := mushroom.mMeshes[i]
-            name := assimp.string_clone_from_ai_string(&m.mName, context.temp_allocator)
-            log.debugf("Mesh: {}: {} vertices", name, m.mNumVertices)
+            mname := assimp.string_clone_from_ai_string(&m.mName, context.temp_allocator)
+            log.debugf("mesh {}", mname)
+        }
 
-            // vertices := m.mVertices[:m.mNumVertices]// a slice
-            // log.debugf("vertices: {}", vertices)
+        meshes := game.scene.meshes
+        for aimesh, mesh in meshes {
+            mname := assimp.string_clone_from_ai_string(&aimesh.mName, context.temp_allocator)
+            log.debugf("Mesh {}, vertices count: {}", mname, len(mesh.vertices))
         }
     }
-
-    // source := vertex_shader_src
-    // source := dsh.example_dshader_source
-    // dsh.generate(&source)
 }
+
+@(private="file")
+make_render_objects :: proc(scene: ^Scene, node: ^assimp.Node, target: ^[dynamic]RenderObject, ite:u32=0) {
+    aiscene := scene.assimp_scene
+
+    // log.debugf("On Node: {}, children count: {}, children: {}, meshes count: {}, meta data: {}", 
+    //     assimp.string_clone_from_ai_string(&node.mName, context.temp_allocator),
+    //     node.mNumChildren, node.mChildren, node.mNumMeshes, node.mMetaData
+    // )
+    
+    // transform_matrix := linalg.matrix_mul(parent_matrix, node.mTransformation)
+    for i in 0..<node.mNumMeshes {
+        robj : RenderObject
+        mesh_id := node.mMeshes[i]
+        mesh_ptr := aiscene.mMeshes[mesh_id]
+        mesh_name := assimp.string_clone_from_ai_string(&mesh_ptr.mName, context.temp_allocator)
+        mesh, ok := &scene.meshes[mesh_ptr]
+        assert(ok, fmt.tprintf("MakeRenderObjects: Cannot find mesh: {}", mesh_name))
+        robj.mesh = mesh
+        robj.transform_matrix = node.mTransformation
+        append(target, robj)
+        indent : strings.Builder
+        strings.builder_init(&indent)
+        defer strings.builder_destroy(&indent)
+        for i in 0..<ite do strings.write_rune(&indent, '\t')
+    }
+
+    for i in 0..<node.mNumChildren {
+        child := node.mChildren[i]
+        make_render_objects(scene, child, target, ite+1)
+    }
+}
+
 
 @(private="file")
 load_shader :: proc(vertex_source, frag_source : string)  -> dgl.Shader {
