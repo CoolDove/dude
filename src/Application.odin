@@ -72,8 +72,13 @@ app_run :: proc() {
 					wnd.size.x = evt.window.data1
 					wnd.size.y = evt.window.data2
 					log.debugf("Window {} resized to {}.", wid, wnd.size)
+				} else if evt.window.event == .CLOSE {
+					if wnd.before_destroy != nil do wnd.before_destroy(wnd)
+					window_destroy(wnd)
+					remove_window(wid)
+				} else {
+					wnd.handler(wnd, evt)
 				}
-				wnd.handler(wnd, evt)
 			}
 		} 
 
@@ -84,7 +89,6 @@ app_run :: proc() {
 					fmt.tprintf("Failed to switch gl context, because: {}\n", sdl.GetError()))
 			}
 			if wnd.update != nil do wnd.update(wnd)
-			// if wnd.render != nil do wnd.render(wnd)
 		}
 	}
 
@@ -126,12 +130,6 @@ reg_window :: proc(wnd:^Window) {
 	has := id in windows
 	if !has do windows[id] = wnd
 	else do fmt.println("window has been registered")
-
-	// TODO(Dove): Optimize window removing.
-	wnd.before_destroy = proc(wnd:^Window) {
-		remove_id := window_get_id(wnd)
-		remove_window(remove_id)
-	}
 }
 
 remove_window :: proc(id:u32) {

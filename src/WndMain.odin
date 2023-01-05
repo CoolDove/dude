@@ -73,8 +73,7 @@ after_instantiate :: proc(using wnd: ^Window) {
 before_destroy :: proc(wnd: ^Window) {
 	wdata := window_data(WndMainData, wnd)
 	quit_game()
-	
-	log.debug("Resource clear.")
+	log.debug("Main Window Closed")
 }
 
 @(private="file")
@@ -87,11 +86,11 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 
 	window_event := event.window
 
-	#partial switch eid := window_event.event; eid {
-	case .CLOSE :{
-		window_destroy(wnd)
-	}
-	}
+	// #partial switch eid := window_event.event; eid {
+	// case .CLOSE :{
+	// 	window_destroy(wnd)
+	// }
+	// }
 }
 
 @(private="file")

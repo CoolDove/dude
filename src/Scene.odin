@@ -3,6 +3,7 @@
 import "core:log"
 import "core:encoding/json"
 import "core:math/linalg"
+import "core:strings"
 
 import "pac:assimp"
 
@@ -16,12 +17,17 @@ prepare_scene :: proc(scene: ^Scene, aiscene: ^assimp.Scene, shader, texture: u3
     for i in 0..<aiscene.mNumMeshes {
         aimesh := aiscene.mMeshes[i]
         scene.meshes[aimesh] = TriangleMesh{}
-        aimesh_to_triangle_mesh(aimesh, &scene.meshes[aimesh], shader, texture)
+        mesh := &scene.meshes[aimesh]
+        sb_name := &mesh.name
+        strings.builder_init(sb_name, 0, cast(int) aimesh.mName.length)
+        aimesh_to_triangle_mesh(aimesh, mesh, shader, texture)
+        mesh_upload(mesh, {.PCNU, .PCU})
     }
 }
 
 aimesh_to_triangle_mesh :: proc(aimesh: ^assimp.Mesh, triangle_mesh: ^TriangleMesh, shader, texture: u32, scale:f32= 1) {
-    log.debugf("Processing aimesh: {}...", assimp.string_clone_from_ai_string(&aimesh.mName, context.temp_allocator))
+    // log.debugf("Processing aimesh: {}...", assimp.string_clone_from_ai_string(&aimesh.mName, context.temp_allocator))
+    strings.write_bytes(&triangle_mesh.name, aimesh.mName.data[:aimesh.mName.length])
 
     reserve(&triangle_mesh.vertices,    cast(int) aimesh.mNumVertices)
     reserve(&triangle_mesh.uvs,         cast(int) aimesh.mNumVertices)
@@ -65,8 +71,8 @@ aimesh_to_triangle_mesh :: proc(aimesh: ^assimp.Mesh, triangle_mesh: ^TriangleMe
     }
 
     append(&triangle_mesh.submeshes, submesh)
-    log.debugf("Triangle mesh created.")
 
+    // log.debugf("Created TriangleMesh for imported mesh: {}", assimp.string_clone_from_ai_string(&aimesh.mName, context.temp_allocator))
 }
 
 DoveScene :: struct {

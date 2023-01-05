@@ -28,7 +28,7 @@ Game :: struct {
 
     camera     : Camera,
     test_image : dgl.Image,
-    test_obj   : GameObject,
+    // test_obj   : GameObject,
     vao        : u32,
 }
 
@@ -56,7 +56,7 @@ draw_game :: proc() {
     if debug_texture {
         img_gallery_x :f32= 0
         immediate_texture({img_gallery_x, wnd_size.y - 64}, {64, 64}, {1, 1, 1, 1},
-            game.test_obj.mesh.submeshes[0].texture)
+            img.texture_id)
         img_gallery_x += 64 + 10
         immediate_texture(
             {img_gallery_x, cast(f32)wnd_size.y - cast(f32)img.size.y},
@@ -117,7 +117,6 @@ imgui_debug_framerate :: proc() {
 }
 
 update_game :: proc() {
-    obj := &game.test_obj
     {using game.camera
         if get_key(.J) && fov < 89 do fov += 1
         if get_key(.K) && fov > 1  do fov -= 1
@@ -127,17 +126,6 @@ update_game :: proc() {
             orientation = linalg.quaternion_mul_quaternion(orientation, r)
             forward = linalg.quaternion_mul_vector3(r, forward)
         }
-    }
-
-    {using obj.transform
-        if get_key(.A) {
-            orientation = linalg.quaternion_mul_quaternion(orientation, 
-                linalg.quaternion_from_euler_angle_y_f32(-.1))
-        } 
-        if get_key(.D) {
-            orientation = linalg.quaternion_mul_quaternion(orientation, 
-                linalg.quaternion_from_euler_angle_y_f32(.1))
-        } 
     }
 }
 
@@ -156,9 +144,6 @@ init_game :: proc() {
     box_img := texture_load(DATA_IMG_BOX)
     image_free(&box_img)
 
-    mesh_make_cube(&game.test_obj.mesh, game.basic_shader.native_id)
-    game.test_obj.mesh.submeshes[0].texture = box_img.texture_id
-
     { using game.camera
         position = {0, 0, 3.5}
         fov  = 45
@@ -171,12 +156,7 @@ init_game :: proc() {
 
     { using game.main_light
         color = {1, .8, .8, 1}
-        direction = {0, -1, 0}
-    }
-
-    { using game.test_obj.transform
-        scale = {1, 1, 1}
-        orientation = linalg.quaternion_from_euler_angles_f32(0, 0, 0, .XYZ)
+        direction = linalg.normalize(Vec3{-0.9, .3, 0}) 
     }
 
     {// Load Models
@@ -189,13 +169,12 @@ init_game :: proc() {
         for i in 0..<mushroom.mNumMeshes {
             m := mushroom.mMeshes[i]
             mname := assimp.string_clone_from_ai_string(&m.mName, context.temp_allocator)
-            log.debugf("mesh {}", mname)
         }
 
         meshes := game.scene.meshes
         for aimesh, mesh in meshes {
             mname := assimp.string_clone_from_ai_string(&aimesh.mName, context.temp_allocator)
-            log.debugf("Mesh {}, vertices count: {}", mname, len(mesh.vertices))
+            log.debugf("Mesh {} loaded, vertices count: {}", mname, len(mesh.vertices))
         }
     }
 }
@@ -208,8 +187,9 @@ recursive_make_render_objects :: proc(scene: ^Scene, node: ^assimp.Node, target:
         robj : RenderObject
         mesh_ptr := aiscene.mMeshes[node.mMeshes[i]]
         mesh, ok := &scene.meshes[mesh_ptr]
+        mesh_name := assimp.string_clone_from_ai_string(&mesh_ptr.mName, context.temp_allocator)
         assert(ok, fmt.tprintf("MakeRenderObjects: Cannot find mesh: {}", 
-            assimp.string_clone_from_ai_string(&mesh_ptr.mName, context.temp_allocator)))
+            mesh_name))
         robj.mesh = mesh
         robj.transform_matrix = assimp.matrix_convert(node.mTransformation)
         append(target, robj)
@@ -217,6 +197,9 @@ recursive_make_render_objects :: proc(scene: ^Scene, node: ^assimp.Node, target:
         strings.builder_init(&indent)
         defer strings.builder_destroy(&indent)
         for i in 0..<ite do strings.write_rune(&indent, '\t')
+
+        node_name := assimp.string_clone_from_ai_string(&node.mName, context.temp_allocator)
+        // log.debugf("Prepare mesh {} for node {}", mesh_name, node_name)
     }
 
     for i in 0..<node.mNumChildren {
@@ -236,7 +219,10 @@ load_shader :: proc(vertex_source, frag_source : string)  -> dgl.Shader {
 }
 
 quit_game :: proc() {
-    mesh_release_rendering_resource(&game.test_obj.mesh)
-    gl.DeleteTextures(1, &game.test_image.texture_id)
+    for key, mesh in &game.scene.meshes {
+        log.debugf("Destroy Mesh: {}", strings.to_string(mesh.name))
+        mesh_destroy(&mesh)
+    }
+    log.debug("QUIT GAME")
     assimp.release_import(game.scene.assimp_scene)
 }

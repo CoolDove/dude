@@ -36,7 +36,6 @@ Window :: struct {
 
 WindowHandler :: struct {
 	handler  : proc(wnd:^Window, event:sdl.Event), 
-	// render   : proc(wnd:^Window),
 	update 	 : proc(wnd:^Window),
 }
 WindowEvents :: struct {
@@ -63,13 +62,6 @@ window_get_basic_template :: proc(name: string, size : IVec2 = IVec2{800, 600}, 
 	wnd.size = size
     return wnd
 }
-
-// window_instantiate_with_data :: proc($DataType: typeid, using wnd: ^Window) -> bool {
-// 	instantiate_result := window_instantiate(wnd)
-// 	wnd._data = new(typeid)
-// 	wnd._data_type = DataType
-// 	return instantiate_result
-// }
 
 window_instantiate :: proc {
 	window_instantiate_with_data,
@@ -122,8 +114,6 @@ window_data :: proc($Type:typeid, using wnd: ^Window) -> ^Type {
 
 window_destroy :: proc(using wnd:^Window) {
 	if window == nil do return
-
-	if before_destroy!=nil do before_destroy(wnd)
 
 	if _data != nil do free(_data)
 	sdl.DestroyWindow(window)

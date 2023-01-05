@@ -65,6 +65,12 @@ Transform :: struct {
     scale       : Vec3,
 }
 
+VertexTypes :: bit_set[VertexType]
+
+VertexType :: enum u32 {
+    PCU, PCNU,
+}
+
 VertexPCU :: struct {
     position : Vec3,
     color    : Vec4,

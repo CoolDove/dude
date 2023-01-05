@@ -37,7 +37,7 @@ set_opengl_state_for_draw_geometry :: proc() {
 
 RenderObject :: struct {
     mesh : ^TriangleMesh,
-    transform_matrix: linalg.Matrix4x4f32
+    transform_matrix: linalg.Matrix4x4f32,
 }
 RenderEnvironment :: struct {
     camera : ^Camera,
@@ -49,12 +49,18 @@ draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
 
     for obj in objects {
         using obj;
-        assert(mesh.submeshes != nil, "Mesh has no submesh")
-        // log.debugf("Rendering mesh vbo: {}", mesh.vbo)
-        if !mesh_is_ready_for_rendering(mesh) do mesh_prepare_for_rendering(mesh)
-        gl.BindBuffer(gl.ARRAY_BUFFER, mesh.vbo)
+        if mesh.submeshes != nil {
+            log.errorf("Mesh {} has no submesh.", strings.to_string(obj.mesh.name))
+            continue
+        }
+        if mesh.pcnu == nil do mesh_create_pcnu(mesh)
+        gl.BindBuffer(gl.ARRAY_BUFFER, mesh.pcnu.vbo)
         mat_model := transform_matrix
         for submesh in &mesh.submeshes {
+            if submesh.ebo == 0 {
+                log.errorf("Mesh {} is not uploaded.", strings.to_string(obj.mesh.name))
+                break
+            }
             gl.UseProgram(submesh.shader)
             dgl.set_vertex_format_PCNU(submesh.shader)
             uni_loc_matrix_view_projection := gl.GetUniformLocation(submesh.shader, "matrix_view_projection")
@@ -86,21 +92,18 @@ draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
 }
 
 // @Speed
-// FIXME: The lighting is incorrect.
-// TODO: Use precalculated normal matrix instead of calculate in vertex shader.
 // TODO: Use uniform block.
 // TODO: Hash-based uniform location management.
-// TODO: Buffer only once!!!
 draw_mesh :: proc(mesh: ^TriangleMesh, transform: ^Transform, camera : ^Camera, light: ^LightData) {
     assert(mesh.submeshes != nil, "Mesh has no submesh")
     using dgl
 
-    if !mesh_is_ready_for_rendering(mesh) do mesh_prepare_for_rendering(mesh)
+    if mesh.pcnu == nil do mesh_create_pcnu(mesh)
 
     mat_view_projection := camera_get_matrix_vp(camera, draw_settings.screen_width/draw_settings.screen_height)
     mat_model := matrix_srt(transform.scale, transform.orientation, transform.position)
 
-    gl.BindBuffer(gl.ARRAY_BUFFER, mesh.vbo)
+    gl.BindBuffer(gl.ARRAY_BUFFER, mesh.pcnu.vbo)
 
     for submesh in mesh.submeshes {
         gl.UseProgram(submesh.shader)

@@ -28,14 +28,14 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 	}
 
 	if event.window.type == .WINDOWEVENT {
-		#partial switch eid:=window_event.event; eid {
+		// #partial switch eid:=window_event.event; eid {
 		// case .RESIZED : {
 		// 	size = IVec2{event.window.data1, event.window.data2};
 		// }
-		case .CLOSE :{
-			window_destroy(wnd);
-		}
-		}
+		// case .CLOSE :{
+		// 	window_destroy(wnd);
+		// }
+		// }
 	}
 }
 
