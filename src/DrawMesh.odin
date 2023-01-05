@@ -53,11 +53,7 @@ draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
         // log.debugf("Rendering mesh vbo: {}", mesh.vbo)
         if !mesh_is_ready_for_rendering(mesh) do mesh_prepare_for_rendering(mesh)
         gl.BindBuffer(gl.ARRAY_BUFFER, mesh.vbo)
-        // mat_model := transform_matrix
-        mat_model := dgl.matrix_srt(
-            {1, 1, 1}, 
-            linalg.quaternion_from_euler_angles_f32(0,0,0, .XYZ), 
-            {0, 0, 0})
+        mat_model := transform_matrix
         for submesh in &mesh.submeshes {
             gl.UseProgram(submesh.shader)
             dgl.set_vertex_format_PCNU(submesh.shader)

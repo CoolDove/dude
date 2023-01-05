@@ -87,28 +87,10 @@ draw_game :: proc() {
 
     objects := make([dynamic]RenderObject, 0, game.scene.assimp_scene.mNumMeshes)
     defer delete(objects)
-    make_render_objects(&game.scene, game.scene.assimp_scene.mRootNode, &objects)
+    recursive_make_render_objects(&game.scene, game.scene.assimp_scene.mRootNode, &objects)
     env := RenderEnvironment{&game.camera, &game.main_light}
     draw_objects(objects[:], &env)
 
-    // draw_mesh(&game.test_obj.mesh, &game.test_obj.transform, &game.camera, &game.main_light)
-
-    // copy_transform := game.test_obj.transform
-    // copy_transform.position += {1, 0, 0}
-
-    // draw_mesh(&game.test_obj.mesh, &copy_transform, &game.camera, &game.main_light)
-
-    // scene := game.scene
-    // assimp_scene := scene.assimp_scene
-    // node := assimp_scene.mRootNode
-    // children_count := node.mNumChildren
-    
-    // for i in 0..<assimp_scene.mNumMeshes {
-    //     assimp_mesh_ptr := assimp_scene.mMeshes[i]
-    //     mesh := scene.meshes[assimp_mesh_ptr]
-    //     draw_mesh(&mesh, &game.test_obj.transform, &game.camera, &game.main_light)
-    // }
-    
 }
 
 @(private="file")
@@ -197,18 +179,11 @@ init_game :: proc() {
         orientation = linalg.quaternion_from_euler_angles_f32(0, 0, 0, .XYZ)
     }
 
-    {// @Test: Uniform location test.
-        // log.debugf("matrix_view_projection: {}", dshader.get_uniform_location("matrix_view_projection"))
-        // log.debugf("matrix_model: {}",           dshader.get_uniform_location("matrix_model"))
-        // log.debugf("matrix_model_direction: {}", dshader.get_uniform_location("matrix_model_direction"))
-    }
-
     {// Load Models
         mushroom := assimp.import_file(
             DATA_MOD_MUSHROOM_FBX,
             cast(u32) assimp.PostProcessPreset_MaxQuality,
             "fbx")
-        log.debugf("Load Scene: {}", assimp.string_clone_from_ai_string(&mushroom.mName, context.temp_allocator))
         game.scene.assimp_scene = mushroom
         prepare_scene(&game.scene, mushroom, game.basic_shader.native_id, draw_settings.default_texture_white)
         for i in 0..<mushroom.mNumMeshes {
@@ -226,24 +201,17 @@ init_game :: proc() {
 }
 
 @(private="file")
-make_render_objects :: proc(scene: ^Scene, node: ^assimp.Node, target: ^[dynamic]RenderObject, ite:u32=0) {
+recursive_make_render_objects :: proc(scene: ^Scene, node: ^assimp.Node, target: ^[dynamic]RenderObject, ite:u32=0) {
     aiscene := scene.assimp_scene
 
-    // log.debugf("On Node: {}, children count: {}, children: {}, meshes count: {}, meta data: {}", 
-    //     assimp.string_clone_from_ai_string(&node.mName, context.temp_allocator),
-    //     node.mNumChildren, node.mChildren, node.mNumMeshes, node.mMetaData
-    // )
-    
-    // transform_matrix := linalg.matrix_mul(parent_matrix, node.mTransformation)
     for i in 0..<node.mNumMeshes {
         robj : RenderObject
-        mesh_id := node.mMeshes[i]
-        mesh_ptr := aiscene.mMeshes[mesh_id]
-        mesh_name := assimp.string_clone_from_ai_string(&mesh_ptr.mName, context.temp_allocator)
+        mesh_ptr := aiscene.mMeshes[node.mMeshes[i]]
         mesh, ok := &scene.meshes[mesh_ptr]
-        assert(ok, fmt.tprintf("MakeRenderObjects: Cannot find mesh: {}", mesh_name))
+        assert(ok, fmt.tprintf("MakeRenderObjects: Cannot find mesh: {}", 
+            assimp.string_clone_from_ai_string(&mesh_ptr.mName, context.temp_allocator)))
         robj.mesh = mesh
-        robj.transform_matrix = node.mTransformation
+        robj.transform_matrix = assimp.matrix_convert(node.mTransformation)
         append(target, robj)
         indent : strings.Builder
         strings.builder_init(&indent)
@@ -253,7 +221,7 @@ make_render_objects :: proc(scene: ^Scene, node: ^assimp.Node, target: ^[dynamic
 
     for i in 0..<node.mNumChildren {
         child := node.mChildren[i]
-        make_render_objects(scene, child, target, ite+1)
+        recursive_make_render_objects(scene, child, target, ite+1)
     }
 }
 
@@ -271,5 +239,4 @@ quit_game :: proc() {
     mesh_release_rendering_resource(&game.test_obj.mesh)
     gl.DeleteTextures(1, &game.test_image.texture_id)
     assimp.release_import(game.scene.assimp_scene)
-    // mesh_release()
 }
