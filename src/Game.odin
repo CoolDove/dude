@@ -32,6 +32,7 @@ Game :: struct {
     vao        : u32,
     
     // Temp
+    font_unifont : ^DynamicFont,
     ttf_test_texture_id : u32,
     ttf_x, ttf_y, ttf_z, ttf_d, ttf_heart : RuneTex,
 }
@@ -44,7 +45,7 @@ GameObject :: struct {
 }
 
 draw_game :: proc() {
-    using linalg
+    // using linalg
 	using dgl
 
     wnd := game.window
@@ -58,57 +59,61 @@ draw_game :: proc() {
     imgui.checkbox("debug_texture", &debug_texture)
     img := &game.test_image
     if debug_texture {
-        // img_gallery_x :f32= 0
-        // size :f32= 512
-        // immediate_texture({img_gallery_x, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
-        //     game.ttf_test_texture_id)
-        // img_gallery_x += size + 10
-        // immediate_texture(
-        //     {img_gallery_x, cast(f32)wnd_size.y - cast(f32)img.size.y},
-        //     {auto_cast img.size.x, auto_cast img.size.y},
-        //     {1, 1, 1, 1},
-        //     img.texture_id
-        // )
-        // imgui.image(cast(imgui.Texture_ID)cast(uintptr)img.texture_id, {64, 64}, {1, 1}, {0, 0})
-        // img_gallery_x += cast(f32)img.size.x + 10
+        img_gallery_x :f32= 0
+        size :f32= 512
+        immediate_texture({img_gallery_x, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
+            game.ttf_test_texture_id)
+        img_gallery_x += size + 10
+        immediate_texture(
+            {img_gallery_x, cast(f32)wnd_size.y - cast(f32)img.size.y},
+            {auto_cast img.size.x, auto_cast img.size.y},
+            {1, 1, 1, 1},
+            img.texture_id
+        )
+        imgui.image(cast(imgui.Texture_ID)cast(uintptr)img.texture_id, {64, 64}, {1, 1}, {0, 0})
+        img_gallery_x += cast(f32)img.size.x + 10
     }
 
     {
-        draw_rune :: proc(xoffset: ^f32, r: ^RuneTex, posy, scale: f32) {
-            immediate_texture({xoffset^, posy}, {r.width * scale, r.height * scale}, {1, 1, 1, 1},
-                r.id)
-            xoffset^ += r.width * scale;
+        // draw_rune :: proc(xoffset: ^f32, r: ^RuneTex, posy, scale: f32) {
+        //     immediate_texture({xoffset^, posy}, {r.width * scale, r.height * scale}, {1, 1, 1, 1},
+        //         r.id)
+        //     xoffset^ += r.width * scale;
+        // }
+        // xoffset :f32= 0
+        // posy :f32= 100
+        // scale :f32= 3
+        // draw_rune(&xoffset, &game.ttf_z, posy, scale)
+        // draw_rune(&xoffset, &game.ttf_d, posy, scale)
+        // draw_rune(&xoffset, &game.ttf_heart, posy, scale)
+        // draw_rune(&xoffset, &game.ttf_y, posy, scale)
+        // draw_rune(&xoffset, &game.ttf_x, posy, scale)
+        // draw_rune(&xoffset, &game.ttf_y, posy, scale)
+    }
+    {
+        draw_rune :: proc(xoffset: ^f32, r: rune, posy, scale: f32, font: ^DynamicFont) {
+            glyph := font_get_glyph(font, r)
+            immediate_texture({xoffset^, posy}, {cast(f32)glyph.width * scale, cast(f32)glyph.height * scale}, {1, 1, 1, 1},
+                glyph.texture_id)
+            xoffset^ += cast(f32)glyph.width * scale;
         }
+
         xoffset :f32= 0
         posy :f32= 100
         scale :f32= 3
-        draw_rune(&xoffset, &game.ttf_z, posy, scale)
-        draw_rune(&xoffset, &game.ttf_d, posy, scale)
-        draw_rune(&xoffset, &game.ttf_heart, posy, scale)
-        draw_rune(&xoffset, &game.ttf_y, posy, scale)
-        draw_rune(&xoffset, &game.ttf_x, posy, scale)
-        draw_rune(&xoffset, &game.ttf_y, posy, scale)
-        // size :f32= 64
-        // immediate_texture({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
-        //     game.ttf_y)
-        // xoffset += size
-        // immediate_texture({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
-        //     game.ttf_x)
-        // xoffset += size
-        // immediate_texture({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
-        //     game.ttf_y)
-        // xoffset += size
-        // immediate_quad({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1})
-        // xoffset += size
-        // immediate_texture({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
-        //     game.ttf_z)
-        // xoffset += size
-        // immediate_texture({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
-        //     game.ttf_d)
-        // xoffset += size
+        font := game.font_unifont
+        glyphs := font.glyphs
+
+        draw_rune(&xoffset, 'Y', posy, scale, font)
+        draw_rune(&xoffset, 'X', posy, scale, font)
+        draw_rune(&xoffset, 'Y', posy, scale, font)
+        draw_rune(&xoffset, 'Z', posy, scale, font)
+        draw_rune(&xoffset, 'D', posy, scale, font)
+        draw_rune(&xoffset, '好', posy, scale, font)
+        // draw_rune(&xoffset, &game.ttf_y, posy, scale)
+        // draw_rune(&xoffset, &game.ttf_x, posy, scale)
+        // draw_rune(&xoffset, &game.ttf_y, posy, scale)
     }
-
-
 
     imgui.slider_float3("camera position", &game.camera.position, -100, 100)
     imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
@@ -222,11 +227,25 @@ init_game :: proc() {
 
     {// Load font(test)
         // game.ttf_test_texture_id = ttf_test()
+        log.debugf("size of rune: {}", size_of(rune))
         game.ttf_x = get_rune_texture('x', 0.1)
         game.ttf_y = get_rune_texture('y', 0.1)
         game.ttf_z = get_rune_texture('z', 0.1)
         game.ttf_d = get_rune_texture('d', 0.1)
         game.ttf_heart = get_rune_texture('♥', 0.1)
+
+    }
+    {// Dynamic font
+        game.font_unifont = font_load(raw_data(DATA_UNIFONT_TTF), 0.1)
+
+        font_load_glygh(game.font_unifont, 'Y')
+        font_load_glygh(game.font_unifont, 'X')
+        // font_load_glygh(game.font_unifont, 'Y')
+        font_load_glygh(game.font_unifont, 'Z')
+        font_load_glygh(game.font_unifont, 'D')
+        font_load_glygh(game.font_unifont, '好')
+        
+        // defer font_destroy(font)
     }
 
 }
@@ -275,6 +294,10 @@ quit_game :: proc() {
         log.debugf("Destroy Mesh: {}", strings.to_string(mesh.name))
         mesh_destroy(&mesh)
     }
+
+    font_destroy(game.font_unifont)
+
+
     log.debug("QUIT GAME")
     assimp.release_import(game.scene.assimp_scene)
 }
