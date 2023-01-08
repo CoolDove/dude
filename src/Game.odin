@@ -28,13 +28,15 @@ Game :: struct {
 
     camera     : Camera,
     test_image : dgl.Image,
-    // test_obj   : GameObject,
+
+    immediate_draw_wireframe : bool,
+
     vao        : u32,
     
     // Temp
     font_unifont : ^DynamicFont,
+    font_inkfree : ^DynamicFont,
     ttf_test_texture_id : u32,
-    // ttf_x, ttf_y, ttf_z, ttf_d, ttf_heart : RuneTex,
 }
 
 game : Game
@@ -74,47 +76,12 @@ draw_game :: proc() {
         img_gallery_x += cast(f32)img.size.x + 10
     }
 
-    // {
-        // draw_rune :: proc(xoffset: ^f32, r: ^RuneTex, posy, scale: f32) {
-        //     immediate_texture({xoffset^, posy}, {r.width * scale, r.height * scale}, {1, 1, 1, 1},
-        //         r.id)
-        //     xoffset^ += r.width * scale;
-        // }
-        // xoffset :f32= 0
-        // posy :f32= 100
-        // scale :f32= 3
-        // draw_rune(&xoffset, &game.ttf_z, posy, scale)
-        // draw_rune(&xoffset, &game.ttf_d, posy, scale)
-        // draw_rune(&xoffset, &game.ttf_heart, posy, scale)
-        // draw_rune(&xoffset, &game.ttf_y, posy, scale)
-        // draw_rune(&xoffset, &game.ttf_x, posy, scale)
-        // draw_rune(&xoffset, &game.ttf_y, posy, scale)
-    // }
-    {
-        // draw_rune :: proc(xoffset: ^f32, r: rune, posy, scale: f32, font: ^DynamicFont) {
-        //     glyph := font_get_glyph_info(font, r)
-        //     immediate_texture({xoffset^, posy}, {cast(f32)glyph.width * scale, cast(f32)glyph.height * scale}, {1, 1, 1, 1},
-        //         glyph.texture_id)
-        //     xoffset^ += cast(f32)glyph.width * scale;
-        // }
-
-        // xoffset :f32= 0
-        // posy :f32= 100
-        // scale :f32= 3
-        // font := game.font_unifont
-        // glyphs := font.glyphs
-
-        // draw_rune(&xoffset, 'Y', posy, scale, font)
-        // draw_rune(&xoffset, 'X', posy, scale, font)
-        // draw_rune(&xoffset, 'Y', posy, scale, font)
-        // draw_rune(&xoffset, 'Z', posy, scale, font)
-        // draw_rune(&xoffset, 'D', posy, scale, font)
-        // draw_rune(&xoffset, '好', posy, scale, font)
-    }
-
-    immediate_text(game.font_unifont, "Hello, world!", {100, 100}, {1, .6, .2, 1})
+    immediate_text(game.font_inkfree, "click", get_mouse_position(), {.1, .1, .8, 1} if !get_mouse_button(.Left) else {1,1,1,1})
+    immediate_text(game.font_inkfree, "The wind is passing through.", {100, 100}, {1, .6, .2, 1})
     immediate_text(game.font_unifont, "有欲望而无行动者滋生瘟疫。", {100, 500}, {.9, .2, .8, .5})
+    immediate_text(game.font_unifont, "♥🐎🐕😊✔👀😢😜😁", {100, 400}, {.9, .2, .8, .5})
 
+    imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
 
     imgui.slider_float3("camera position", &game.camera.position, -100, 100)
     imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
@@ -143,25 +110,25 @@ draw_game :: proc() {
 
 @(private="file")
 imgui_debug_framerate :: proc() {
-    imgui.set_next_window_bg_alpha(.4)
-    imgui.set_next_window_pos({10, 10}, .Once, {0, 0})
-    imgui.begin("Framerate", nil, .NoTitleBar |
-                                  .NoDecoration | 
-                                  .AlwaysAutoResize | 
-                                  .NoSavedSettings | 
-                                  .NoFocusOnAppearing | 
-                                  .NoNav | 
-                                  .NoMove)
+    // imgui.set_next_window_bg_alpha(.4)
+    // imgui.set_next_window_pos({10, 10}, .Once, {0, 0})
+    // imgui.begin("Framerate", nil, .NoTitleBar |
+    //                               .NoDecoration | 
+    //                               .AlwaysAutoResize | 
+    //                               .NoSavedSettings | 
+    //                               .NoFocusOnAppearing | 
+    //                               .NoNav | 
+    //                               .NoMove)
 
     frame_ms := time.duration_milliseconds(app.duration_frame)
     total_s  := time.duration_seconds(app.duration_total)
 
-    imgui.text_unformatted("Framerate debug window,\nPress F1 to toggle.\n\n")
+    // imgui.text_unformatted("Framerate debug window,\nPress F1 to toggle.\n\n")
 
-    imgui.text("Frame time: {} ms", frame_ms)
-    imgui.text("Total time: {} s",  total_s)
-
-    imgui.end()
+    // imgui.text("Frame time: {} ms", frame_ms)
+    // imgui.text("Total time: {} s",  total_s)
+    // imgui.end()
+    immediate_text(game.font_unifont, fmt.tprintf("FPS: {}", cast(i32)(1000.0/frame_ms)), {10, 70}, {.1, 1, .1, 1})
 }
 
 update_game :: proc() {
@@ -174,6 +141,9 @@ update_game :: proc() {
             orientation = linalg.quaternion_mul_quaternion(orientation, r)
             forward = linalg.quaternion_mul_vector3(r, forward)
         }
+    }
+    {using game
+        if get_key_down(.F2) do immediate_draw_wireframe = !immediate_draw_wireframe
     }
 }
 
@@ -226,25 +196,9 @@ init_game :: proc() {
         }
     }
 
-    // {// Load font(test)
-        // game.ttf_test_texture_id = ttf_test()
-        // log.debugf("size of rune: {}", size_of(rune))
-        // game.ttf_x = get_rune_texture('x', 0.1)
-        // game.ttf_y = get_rune_texture('y', 0.1)
-        // game.ttf_z = get_rune_texture('z', 0.1)
-        // game.ttf_d = get_rune_texture('d', 0.1)
-        // game.ttf_heart = get_rune_texture('♥', 0.1)
-    // }
     {// Dynamic font
         game.font_unifont = font_load(raw_data(DATA_UNIFONT_TTF), 0.1)
-
-        font_load_codepoint(game.font_unifont, 'Y')
-        font_load_codepoint(game.font_unifont, 'X')
-        font_load_codepoint(game.font_unifont, 'Z')
-        font_load_codepoint(game.font_unifont, 'D')
-        font_load_codepoint(game.font_unifont, '好')
-        
-        // defer font_destroy(font)
+        game.font_inkfree = font_load(raw_data(DATA_INKFREE_TTF), 0.1)
     }
 
 }
@@ -295,7 +249,7 @@ quit_game :: proc() {
     }
 
     font_destroy(game.font_unifont)
-
+    font_destroy(game.font_inkfree)
 
     log.debug("QUIT GAME")
     assimp.release_import(game.scene.assimp_scene)

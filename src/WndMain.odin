@@ -85,12 +85,6 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 	input_handle_sdl2(event)
 
 	window_event := event.window
-
-	// #partial switch eid := window_event.event; eid {
-	// case .CLOSE :{
-	// 	window_destroy(wnd)
-	// }
-	// }
 }
 
 @(private="file")
@@ -113,7 +107,7 @@ render :: proc(using wnd:^Window) {
 
 	draw_game()
 
-	immediate_end(true)
+	immediate_end(game.immediate_draw_wireframe)
 
 	imgui.end_frame()
 	imgui.render()

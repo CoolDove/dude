@@ -141,6 +141,15 @@ upload_bitmap_texture :: proc(data: [^]byte, width, height : i32) -> u32 {
     return tex
 }
 
+font_get_kern :: #force_inline proc(font: ^DynamicFont, prev, next: i32) -> i32 {
+    return ttf.GetGlyphKernAdvance(&font.font_info, prev, next)
+}
+
+font_get_space_advance :: proc(font: ^DynamicFont) -> i32 {
+    advance : i32
+    ttf.GetCodepointHMetrics(&font.font_info, ' ', &advance, nil)
+    return advance
+}
 
 font_load_from_path :: proc(path: string, scale: f32) -> ^DynamicFont {
     log.errorf("font_load_from_path is not ready for now.")
@@ -163,39 +172,3 @@ font_load_from_mem :: proc(data: [^]byte, scale: f32) -> ^DynamicFont {
 
     return dfont
 }
-
-
-// get_rune_texture :: proc(r: rune, scale: f32) -> RuneTex {
-//     font : ttf.fontinfo
-    
-//     if !ttf.InitFont(&font, raw_data(DATA_UNIFONT_TTF), 0) {
-//         log.errorf("Failed to load ttf.")
-//     } else {
-//         log.debugf("TTF loaded. Num of glyphs: {}", font.numGlyphs)
-//     }
-    
-//     width, height, xoffset, yoffset : c.int
-//     bitmap := ttf.GetCodepointBitmap(&font, scale, scale, r, &width, &height, &xoffset, &yoffset)
-//     defer ttf.FreeBitmap(bitmap, nil)
-
-//     tex : u32
-//     gl.GenTextures(1, &tex)
-//     gl.BindTexture(gl.TEXTURE_2D, tex)
-
-//     // TODO: Understand: gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
-//     gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
-
-//     target :u32= gl.TEXTURE_2D
-//     gl.TexParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-//     gl.TexParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-//     gl.TexParameteri(target, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-//     gl.TexParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-    
-//     testb : strings.Builder
-//     strings.builder_init(&testb, 0, 16)
-//     defer strings.builder_destroy(&testb)
-
-//     gl.TexImage2D(target, 0, gl.R8, width, height, 0, gl.RED, gl.UNSIGNED_BYTE, bitmap)
-
-//     return RuneTex{tex, cast(f32)width, cast(f32)height}
-// }

@@ -192,7 +192,7 @@ immediate_text :: proc(font: ^DynamicFont, text: string, origin: Vec2, color: Ve
         if r == ' ' do continue
         glyph := font_get_glyph_id(font, r)
         if !font_is_glyph_loaded(font, glyph) {
-            if !font_load_codepoint(font, r) {
+            if !font_load_glyph(font, glyph) {
                 log.errorf("Empty glyph `{}` in font.", r)
             }
         }
@@ -201,41 +201,44 @@ immediate_text :: proc(font: ^DynamicFont, text: string, origin: Vec2, color: Ve
     o := origin
 
     // One draw element per rune currently.
-    for r in text {
+    last_rune := ' '
+    for r, ind in text {
         if r == '\n' || r == '\t' do continue
 
-        elem : ImmediateDrawElement
-        elem.start = cast(u32) len(ime_context.vertices)
-        elem.count = 0
+        glyph := font_get_glyph_info(font, r)
 
-        is_space := r != ' '
-        glyph : ^GlyphInfo
-        if is_space do glyph = font_get_glyph_info(font, r)
+        if glyph != nil {
+            elem : ImmediateDrawElement
+            elem.start = cast(u32) len(ime_context.vertices)
+            elem.count = 0
+            quad := make_quad(color)
+            a, b, c, d := &quad[0], &quad[1], &quad[2], &quad[3]
+            w, h       :f32= cast(f32)glyph.width, cast(f32)glyph.height
+            xoff, yoff :f32= cast(f32)glyph.xoff, cast(f32)glyph.yoff
+            kern := font_get_kern(font, font_get_glyph_id(font, last_rune), font_get_glyph_id(font, r))
+            for v in &quad {
+                v.position = v.position * {w + cast(f32)kern * font.scale, h, 1}
+                v.position += {o.x + xoff, o.y + yoff, 0}
+            }
+            o += {cast(f32)glyph.advance_h * font.scale, 0}
+            last_rune = r
 
-        a, b, c, d := make_quad(color)
-        quad := [4]VertexPCU{a, b, c, d}
-        width := 60
-        w, h :f32= cast(f32)glyph.width, cast(f32)glyph.height
-        for v in &quad {
-            v.position = v.position * ({w, h, 1} if !is_space else {60, 60, 1})
-            v.position += {o.x, o.y, 0}
+            append(&ime_context.vertices, a^, c^, b^, b^, c^, d^)
+            elem.count += 6
+
+            elem.shader = ime_context.font_shader
+            if r != ' ' do elem.texture = font_get_glyph_info(font, r).texture_id
+            append(&ime_context.elements, elem)
+        } else {// for space
+            o += {cast(f32)font_get_space_advance(font) * font.scale, 0}
+            last_rune = r
         }
-        a, b, c, d = quad[0], quad[1], quad[2], quad[3]
-        append(&ime_context.vertices, 
-            a, c, b, b, c, d)
-        elem.count += 6
-
-        o += {w + 10, 0}
-
-        elem.shader = ime_context.font_shader
-        if r != ' ' do elem.texture = font_get_glyph_info(font, r).texture_id
-        append(&ime_context.elements, elem)
     }
 }
 
 // The triangle data should be: {a, c, b, b, c, d}
 @(private="file")
-make_quad :: proc(color: Vec4) -> (a, b, c, d : VertexPCU) {
+make_quad :: proc(color: Vec4) -> [4]VertexPCU {
     /*
       a:(0, 0) d:(1, 1)
       a------b
@@ -243,28 +246,28 @@ make_quad :: proc(color: Vec4) -> (a, b, c, d : VertexPCU) {
       |      |
       c------d
     */
-    a = VertexPCU{
+    a := VertexPCU{
         Vec3{0, 0, 0},
         color,
         Vec2{0, 1},
     }
-    b = VertexPCU{
+    b := VertexPCU{
         Vec3{1, 0, 0},
         color,
         Vec2{1, 1},
     }
-    c = VertexPCU{
+    c := VertexPCU{
         Vec3{0, 1, 0},
         color,
         Vec2{0, 0},
     }
-    d = VertexPCU{
+    d := VertexPCU{
         Vec3{1, 1, 0},
         color,
         Vec2{1, 0},
     }
 
-    return a, b, c, d
+    return { a, b, c, d } 
 }
 
 
