@@ -44,10 +44,11 @@ void main()
 {
     vec2 p = vec2(position.x, position.y);
     p /= viewport_size;
-    p = p * vec2(2, 2) + vec2(-1, -1);
+    p = p * 2 - 1;
 
     gl_Position = vec4(p.x, p.y * -1, 0, 1.0);
 	_uv = uv;
+    _uv.y = 1 - _uv.y;
     _color = color;
 }
 	`

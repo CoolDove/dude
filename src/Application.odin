@@ -58,7 +58,7 @@ app_run :: proc() {
 	helper_window := create_helper_window()
 
 	register_window(&main_window, WndMainData)
-	register_window(&helper_window)
+	// register_window(&helper_window)
 
     evt := sdl.Event{}
 

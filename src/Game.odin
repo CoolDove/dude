@@ -30,6 +30,10 @@ Game :: struct {
     test_image : dgl.Image,
     // test_obj   : GameObject,
     vao        : u32,
+    
+    // Temp
+    ttf_test_texture_id : u32,
+    ttf_x, ttf_y, ttf_z, ttf_d, ttf_heart : RuneTex,
 }
 
 game : Game
@@ -50,23 +54,61 @@ draw_game :: proc() {
 	immediate_quad(Vec2{40, 10}, Vec2{120, 20}, Vec4{ 0, 1, .4, 0.2 })
 	immediate_quad(Vec2{10, 120}, Vec2{90, 20}, Vec4{ 1, 1, 1, 0.9 })
 
-    @static debug_texture := false
+    @static debug_texture := true
     imgui.checkbox("debug_texture", &debug_texture)
     img := &game.test_image
     if debug_texture {
-        img_gallery_x :f32= 0
-        immediate_texture({img_gallery_x, wnd_size.y - 64}, {64, 64}, {1, 1, 1, 1},
-            img.texture_id)
-        img_gallery_x += 64 + 10
-        immediate_texture(
-            {img_gallery_x, cast(f32)wnd_size.y - cast(f32)img.size.y},
-            {auto_cast img.size.x, auto_cast img.size.y},
-            {1, 1, 1, 1},
-            img.texture_id
-        )
-        imgui.image(cast(imgui.Texture_ID)cast(uintptr)img.texture_id, {64, 64}, {1, 1}, {0, 0})
-        img_gallery_x += cast(f32)img.size.x + 10
+        // img_gallery_x :f32= 0
+        // size :f32= 512
+        // immediate_texture({img_gallery_x, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
+        //     game.ttf_test_texture_id)
+        // img_gallery_x += size + 10
+        // immediate_texture(
+        //     {img_gallery_x, cast(f32)wnd_size.y - cast(f32)img.size.y},
+        //     {auto_cast img.size.x, auto_cast img.size.y},
+        //     {1, 1, 1, 1},
+        //     img.texture_id
+        // )
+        // imgui.image(cast(imgui.Texture_ID)cast(uintptr)img.texture_id, {64, 64}, {1, 1}, {0, 0})
+        // img_gallery_x += cast(f32)img.size.x + 10
     }
+
+    {
+        draw_rune :: proc(xoffset: ^f32, r: ^RuneTex, posy, scale: f32) {
+            immediate_texture({xoffset^, posy}, {r.width * scale, r.height * scale}, {1, 1, 1, 1},
+                r.id)
+            xoffset^ += r.width * scale;
+        }
+        xoffset :f32= 0
+        posy :f32= 100
+        scale :f32= 3
+        draw_rune(&xoffset, &game.ttf_z, posy, scale)
+        draw_rune(&xoffset, &game.ttf_d, posy, scale)
+        draw_rune(&xoffset, &game.ttf_heart, posy, scale)
+        draw_rune(&xoffset, &game.ttf_y, posy, scale)
+        draw_rune(&xoffset, &game.ttf_x, posy, scale)
+        draw_rune(&xoffset, &game.ttf_y, posy, scale)
+        // size :f32= 64
+        // immediate_texture({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
+        //     game.ttf_y)
+        // xoffset += size
+        // immediate_texture({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
+        //     game.ttf_x)
+        // xoffset += size
+        // immediate_texture({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
+        //     game.ttf_y)
+        // xoffset += size
+        // immediate_quad({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1})
+        // xoffset += size
+        // immediate_texture({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
+        //     game.ttf_z)
+        // xoffset += size
+        // immediate_texture({xoffset, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
+        //     game.ttf_d)
+        // xoffset += size
+    }
+
+
 
     imgui.slider_float3("camera position", &game.camera.position, -100, 100)
     imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
@@ -177,6 +219,16 @@ init_game :: proc() {
             log.debugf("Mesh {} loaded, vertices count: {}", mname, len(mesh.vertices))
         }
     }
+
+    {// Load font(test)
+        // game.ttf_test_texture_id = ttf_test()
+        game.ttf_x = get_rune_texture('x', 0.1)
+        game.ttf_y = get_rune_texture('y', 0.1)
+        game.ttf_z = get_rune_texture('z', 0.1)
+        game.ttf_d = get_rune_texture('d', 0.1)
+        game.ttf_heart = get_rune_texture('♥', 0.1)
+    }
+
 }
 
 @(private="file")
