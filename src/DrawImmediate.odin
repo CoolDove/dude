@@ -343,6 +343,6 @@ uniform sampler2D main_texture;
 void main() { 
     float c = texture(main_texture, _uv).r;
     FragColor = _color;
-    FragColor.a = c;
+    FragColor.a *= c;
 }
 	`
