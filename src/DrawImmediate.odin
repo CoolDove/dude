@@ -208,18 +208,24 @@ immediate_text :: proc(font: ^DynamicFont, text: string, origin: Vec2, color: Ve
         elem.start = cast(u32) len(ime_context.vertices)
         elem.count = 0
 
+        is_space := r != ' '
+        glyph : ^GlyphInfo
+        if is_space do glyph = font_get_glyph_info(font, r)
+
         a, b, c, d := make_quad(color)
         quad := [4]VertexPCU{a, b, c, d}
         width := 60
+        w, h :f32= cast(f32)glyph.width, cast(f32)glyph.height
         for v in &quad {
-            v.position = v.position * 60
+            v.position = v.position * ({w, h, 1} if !is_space else {60, 60, 1})
             v.position += {o.x, o.y, 0}
         }
         a, b, c, d = quad[0], quad[1], quad[2], quad[3]
         append(&ime_context.vertices, 
             a, c, b, b, c, d)
         elem.count += 6
-        o += {cast(f32) width + 10, 0}
+
+        o += {w + 10, 0}
 
         elem.shader = ime_context.font_shader
         if r != ' ' do elem.texture = font_get_glyph_info(font, r).texture_id
