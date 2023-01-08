@@ -54,8 +54,7 @@ set_opengl_state_for_draw_immediate :: proc() {
     gl.CullFace(gl.BACK)
 }
 
-
-immediate_end :: proc () {
+immediate_end :: proc (wireframe:= false) {
     using ime_context
     set_opengl_state_for_draw_immediate()
     gl.BindVertexArray(vao)
@@ -92,6 +91,30 @@ immediate_end :: proc () {
 
         gl.DrawArrays(gl.TRIANGLES, cast(i32)e.start, cast(i32)e.count)
     }
+
+    // Draw wireframe
+    if wireframe {
+        gl.Disable(gl.BLEND)
+
+        polygon_mode_stash : u32
+        gl.GetIntegerv(gl.POLYGON_MODE, cast(^i32)&polygon_mode_stash)
+        gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+
+        gl.UseProgram(basic_shader)
+        dgl.set_vertex_format_PCU(basic_shader)
+        loc_viewport_size, loc_main_texture = switch_shader(basic_shader)
+
+        for e in elements {
+            gl.ActiveTexture(gl.TEXTURE0)
+            gl.BindTexture(gl.TEXTURE_2D, draw_settings.default_texture_white) 
+            gl.Uniform1i(loc_main_texture, 0)
+            gl.DrawArrays(gl.TRIANGLES, cast(i32)e.start, cast(i32)e.count)
+        }
+
+        gl.PolygonMode(gl.FRONT_AND_BACK, polygon_mode_stash)
+    }
+
+
 }
 
 // return uniform location

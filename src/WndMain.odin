@@ -113,7 +113,7 @@ render :: proc(using wnd:^Window) {
 
 	draw_game()
 
-	immediate_end()
+	immediate_end(true)
 
 	imgui.end_frame()
 	imgui.render()
