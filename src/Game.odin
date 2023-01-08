@@ -34,14 +34,14 @@ Game :: struct {
     // Temp
     font_unifont : ^DynamicFont,
     ttf_test_texture_id : u32,
-    ttf_x, ttf_y, ttf_z, ttf_d, ttf_heart : RuneTex,
+    // ttf_x, ttf_y, ttf_z, ttf_d, ttf_heart : RuneTex,
 }
 
 game : Game
 
 GameObject :: struct {
     mesh      : TriangleMesh,
-    transform : Transform
+    transform : Transform,
 }
 
 draw_game :: proc() {
@@ -74,7 +74,7 @@ draw_game :: proc() {
         img_gallery_x += cast(f32)img.size.x + 10
     }
 
-    {
+    // {
         // draw_rune :: proc(xoffset: ^f32, r: ^RuneTex, posy, scale: f32) {
         //     immediate_texture({xoffset^, posy}, {r.width * scale, r.height * scale}, {1, 1, 1, 1},
         //         r.id)
@@ -89,31 +89,32 @@ draw_game :: proc() {
         // draw_rune(&xoffset, &game.ttf_y, posy, scale)
         // draw_rune(&xoffset, &game.ttf_x, posy, scale)
         // draw_rune(&xoffset, &game.ttf_y, posy, scale)
-    }
+    // }
     {
-        draw_rune :: proc(xoffset: ^f32, r: rune, posy, scale: f32, font: ^DynamicFont) {
-            glyph := font_get_glyph(font, r)
-            immediate_texture({xoffset^, posy}, {cast(f32)glyph.width * scale, cast(f32)glyph.height * scale}, {1, 1, 1, 1},
-                glyph.texture_id)
-            xoffset^ += cast(f32)glyph.width * scale;
-        }
+        // draw_rune :: proc(xoffset: ^f32, r: rune, posy, scale: f32, font: ^DynamicFont) {
+        //     glyph := font_get_glyph_info(font, r)
+        //     immediate_texture({xoffset^, posy}, {cast(f32)glyph.width * scale, cast(f32)glyph.height * scale}, {1, 1, 1, 1},
+        //         glyph.texture_id)
+        //     xoffset^ += cast(f32)glyph.width * scale;
+        // }
 
-        xoffset :f32= 0
-        posy :f32= 100
-        scale :f32= 3
-        font := game.font_unifont
-        glyphs := font.glyphs
+        // xoffset :f32= 0
+        // posy :f32= 100
+        // scale :f32= 3
+        // font := game.font_unifont
+        // glyphs := font.glyphs
 
-        draw_rune(&xoffset, 'Y', posy, scale, font)
-        draw_rune(&xoffset, 'X', posy, scale, font)
-        draw_rune(&xoffset, 'Y', posy, scale, font)
-        draw_rune(&xoffset, 'Z', posy, scale, font)
-        draw_rune(&xoffset, 'D', posy, scale, font)
-        draw_rune(&xoffset, '好', posy, scale, font)
-        // draw_rune(&xoffset, &game.ttf_y, posy, scale)
-        // draw_rune(&xoffset, &game.ttf_x, posy, scale)
-        // draw_rune(&xoffset, &game.ttf_y, posy, scale)
+        // draw_rune(&xoffset, 'Y', posy, scale, font)
+        // draw_rune(&xoffset, 'X', posy, scale, font)
+        // draw_rune(&xoffset, 'Y', posy, scale, font)
+        // draw_rune(&xoffset, 'Z', posy, scale, font)
+        // draw_rune(&xoffset, 'D', posy, scale, font)
+        // draw_rune(&xoffset, '好', posy, scale, font)
     }
+
+    immediate_text(game.font_unifont, "Hello, world!", {100, 100}, {1, .6, .2, 1})
+    immediate_text(game.font_unifont, "有欲望而无行动者滋生瘟疫。", {100, 500}, {.9, .2, .8, .5})
+
 
     imgui.slider_float3("camera position", &game.camera.position, -100, 100)
     imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
@@ -225,25 +226,23 @@ init_game :: proc() {
         }
     }
 
-    {// Load font(test)
+    // {// Load font(test)
         // game.ttf_test_texture_id = ttf_test()
-        log.debugf("size of rune: {}", size_of(rune))
-        game.ttf_x = get_rune_texture('x', 0.1)
-        game.ttf_y = get_rune_texture('y', 0.1)
-        game.ttf_z = get_rune_texture('z', 0.1)
-        game.ttf_d = get_rune_texture('d', 0.1)
-        game.ttf_heart = get_rune_texture('♥', 0.1)
-
-    }
+        // log.debugf("size of rune: {}", size_of(rune))
+        // game.ttf_x = get_rune_texture('x', 0.1)
+        // game.ttf_y = get_rune_texture('y', 0.1)
+        // game.ttf_z = get_rune_texture('z', 0.1)
+        // game.ttf_d = get_rune_texture('d', 0.1)
+        // game.ttf_heart = get_rune_texture('♥', 0.1)
+    // }
     {// Dynamic font
         game.font_unifont = font_load(raw_data(DATA_UNIFONT_TTF), 0.1)
 
-        font_load_glygh(game.font_unifont, 'Y')
-        font_load_glygh(game.font_unifont, 'X')
-        // font_load_glygh(game.font_unifont, 'Y')
-        font_load_glygh(game.font_unifont, 'Z')
-        font_load_glygh(game.font_unifont, 'D')
-        font_load_glygh(game.font_unifont, '好')
+        font_load_codepoint(game.font_unifont, 'Y')
+        font_load_codepoint(game.font_unifont, 'X')
+        font_load_codepoint(game.font_unifont, 'Z')
+        font_load_codepoint(game.font_unifont, 'D')
+        font_load_codepoint(game.font_unifont, '好')
         
         // defer font_destroy(font)
     }

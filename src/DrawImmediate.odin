@@ -2,6 +2,7 @@
 
 import gl "vendor:OpenGL"
 import "core:log"
+import "core:strings"
 
 import "dgl"
 
@@ -18,7 +19,10 @@ ImmediateDrawContext :: struct {
     viewport : Vec4i,
     vertices : [dynamic]VertexPCU,
     elements : [dynamic]ImmediateDrawElement,
-    vao, basic_shader : u32,
+
+    // OpenGL
+    vao : u32,
+    basic_shader, font_shader : u32,
 
 }
 
@@ -28,45 +32,8 @@ ime_context : ImmediateDrawContext
 immediate_init :: proc () {
     gl.GenVertexArrays(1, &ime_context.vao)
 
-	vertex_shader_src := `
-#version 440 core
-
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec4 color;
-layout (location = 2) in vec2 uv;
-
-layout(location = 0) out vec2 _uv;
-layout(location = 1) out vec4 _color;
-
-uniform vec2 viewport_size;
-
-void main()
-{
-    vec2 p = vec2(position.x, position.y);
-    p /= viewport_size;
-    p = p * 2 - 1;
-
-    gl_Position = vec4(p.x, p.y * -1, 0, 1.0);
-	_uv = uv;
-    _uv.y = 1 - _uv.y;
-    _color = color;
-}
-	`
-	fragment_shader_src :=`
-#version 440 core
-out vec4 FragColor;
-
-layout(location = 0) in vec2 _uv;
-layout(location = 1) in vec4 _color;
-
-uniform sampler2D main_texture;
-
-void main() { 
-    vec4 c = texture(main_texture, _uv);
-    FragColor = c * _color;
-}
-	`
-    ime_context.basic_shader = dgl.shader_load_vertex_and_fragment(vertex_shader_src, fragment_shader_src).native_id
+    ime_context.basic_shader = dgl.shader_load_vertex_and_fragment(SHADER_SRC_BASIC_VERTEX, SHADER_SRC_BASIC_FRAGMENT).native_id
+    ime_context.font_shader  = dgl.shader_load_vertex_and_fragment(SHADER_SRC_FONT_VERTEX, SHADER_SRC_FONT_FRAGMENT).native_id
 }
 
 immediate_begin :: proc (viewport: Vec4i) {
@@ -138,6 +105,12 @@ switch_shader :: proc(shader : u32) -> (viewport_size, main_texture : i32) {
     return viewport_size, main_texture
 }
 
+
+
+// NOTE: How to add a new immediate draw element
+// Push some new vertices to the ime_context.vertices, 
+// and mark the start and end in the ImmediateDrawElement.
+
 /*
 (0,0)-------------*
 |                 |
@@ -190,3 +163,163 @@ immediate_texture :: proc(leftup, size: Vec2, color: Vec4, texture : u32) -> ^Im
     quad.texture = texture
     return quad
 }
+
+immediate_text :: proc(font: ^DynamicFont, text: string, origin: Vec2, color: Vec4) {
+    for r in text {
+        if r == ' ' do continue
+        glyph := font_get_glyph_id(font, r)
+        if !font_is_glyph_loaded(font, glyph) {
+            if !font_load_codepoint(font, r) {
+                log.errorf("Empty glyph `{}` in font.", r)
+            }
+        }
+    }
+
+    o := origin
+
+    // One draw element per rune currently.
+    for r in text {
+        if r == '\n' || r == '\t' do continue
+
+        elem : ImmediateDrawElement
+        elem.start = cast(u32) len(ime_context.vertices)
+        elem.count = 0
+
+        a, b, c, d := make_quad(color)
+        quad := [4]VertexPCU{a, b, c, d}
+        width := 60
+        for v in &quad {
+            v.position = v.position * 60
+            v.position += {o.x, o.y, 0}
+        }
+        a, b, c, d = quad[0], quad[1], quad[2], quad[3]
+        append(&ime_context.vertices, 
+            a, c, b, b, c, d)
+        elem.count += 6
+        o += {cast(f32) width + 10, 0}
+
+        elem.shader = ime_context.font_shader
+        if r != ' ' do elem.texture = font_get_glyph_info(font, r).texture_id
+        append(&ime_context.elements, elem)
+    }
+}
+
+// The triangle data should be: {a, c, b, b, c, d}
+@(private="file")
+make_quad :: proc(color: Vec4) -> (a, b, c, d : VertexPCU) {
+    /*
+      a:(0, 0) d:(1, 1)
+      a------b
+      |      |
+      |      |
+      c------d
+    */
+    a = VertexPCU{
+        Vec3{0, 0, 0},
+        color,
+        Vec2{0, 1},
+    }
+    b = VertexPCU{
+        Vec3{1, 0, 0},
+        color,
+        Vec2{1, 1},
+    }
+    c = VertexPCU{
+        Vec3{0, 1, 0},
+        color,
+        Vec2{0, 0},
+    }
+    d = VertexPCU{
+        Vec3{1, 1, 0},
+        color,
+        Vec2{1, 0},
+    }
+
+    return a, b, c, d
+}
+
+
+// Built-in shaders
+
+@(private="file")
+SHADER_SRC_BASIC_VERTEX :: `
+#version 440 core
+
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec4 color;
+layout (location = 2) in vec2 uv;
+
+layout(location = 0) out vec2 _uv;
+layout(location = 1) out vec4 _color;
+
+uniform vec2 viewport_size;
+
+void main()
+{
+    vec2 p = vec2(position.x, position.y);
+    p /= viewport_size;
+    p = p * 2 - 1;
+
+    gl_Position = vec4(p.x, p.y * -1, 0, 1.0);
+	_uv = uv;
+    _uv.y = 1 - _uv.y;
+    _color = color;
+}
+	`
+@(private="file")
+SHADER_SRC_BASIC_FRAGMENT :=`
+#version 440 core
+out vec4 FragColor;
+
+layout(location = 0) in vec2 _uv;
+layout(location = 1) in vec4 _color;
+
+uniform sampler2D main_texture;
+
+void main() { 
+    vec4 c = texture(main_texture, _uv);
+    FragColor = c * _color;
+}
+	`
+
+@(private="file")
+SHADER_SRC_FONT_VERTEX :: `
+#version 440 core
+
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec4 color;
+layout (location = 2) in vec2 uv;
+
+layout(location = 0) out vec2 _uv;
+layout(location = 1) out vec4 _color;
+
+uniform vec2 viewport_size;
+
+void main()
+{
+    vec2 p = vec2(position.x, position.y);
+    p /= viewport_size;
+    p = p * 2 - 1;
+
+    gl_Position = vec4(p.x, p.y * -1, 0, 1.0);
+	_uv = uv;
+    _uv.y = 1 - _uv.y;
+    _color = color;
+}
+	`
+@(private="file")
+SHADER_SRC_FONT_FRAGMENT :=`
+#version 440 core
+out vec4 FragColor;
+
+layout(location = 0) in vec2 _uv;
+layout(location = 1) in vec4 _color;
+
+uniform sampler2D main_texture;
+
+void main() { 
+    float c = texture(main_texture, _uv).r;
+    FragColor = _color;
+    FragColor.a = c;
+}
+	`
