@@ -10,8 +10,12 @@ import "core:c/libc"
 import path "core:path/filepath"
 
 
+
 /*
 ./build.exe run debug release
+
+Run `./update_builder.bat`,
+a builder program will be generated to build the project.
 
 */
 

@@ -1,5 +1,9 @@
 # Just a SDL demo.
 
+## How to build
+Run `./update_builder.bat`, then a builder program will be generated to build the project.
+
+
 ## TODO
 
 - [x] Replace core:fmt with core:log.
