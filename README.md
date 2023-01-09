@@ -1,6 +1,5 @@
 # Just a SDL demo.
 
-
 ## TODO
 
 - [x] Replace core:fmt with core:log.
@@ -16,17 +15,20 @@
 - [x] Camera
 
 - [ ] Shader preprocessor.
-
 - [ ] View: MODLE_VIEW & UV_EDIT_VIEW 
-- [ ] Interpolation
 - [ ] Mesh importing.
 
+- [x] **Font Rendering**
+    - [ ] Better font rendering API.
+- [ ] Tweening system.
+- [ ] IME Input.
+
 ### Input
-- [ ] Input struct wrapping.
-- [ ] Input handling.
+- [x] Input struct wrapping.
+- [x] Input handling.
 
 ### Lighting
-- [ ] Lighting fix.
+- [x] Lighting fix.
 
 ### DGL
 - [ ] Framebuffer
