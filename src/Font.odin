@@ -37,12 +37,11 @@ DynamicFont :: struct {
 GlyphInfo :: struct {
     texture_id : u32,
     width, height, xoff, yoff : i32,
-    advance_h, advance_v, left_side_bearing : i32
+    advance_h, advance_v, left_side_bearing : i32,
 
     // Draw Data
     // atlas_x, atlas_y, atlas_width, atlas_height : f32, // uv coordinate in font atlas
 }
-
 
 font_load :: proc {
     font_load_from_path,
@@ -151,17 +150,18 @@ font_get_space_advance :: proc(font: ^DynamicFont) -> i32 {
     return advance
 }
 
-font_load_from_path :: proc(path: string, scale: f32) -> ^DynamicFont {
+font_load_from_path :: proc(path: string, px: f32) -> ^DynamicFont {
     log.errorf("font_load_from_path is not ready for now.")
     return nil
 }
-font_load_from_mem :: proc(data: [^]byte, scale: f32) -> ^DynamicFont {
+font_load_from_mem :: proc(data: [^]byte, px: f32) -> ^DynamicFont {
     font_info : ttf.fontinfo
-
     if !ttf.InitFont(&font_info, data, 0) {
         log.errorf("Failed to load ttf.")
         return nil
     }
+
+    scale := ttf.ScaleForPixelHeight(&font_info, px)
 
     glyphs_count := font_info.numGlyphs
 

@@ -79,7 +79,6 @@ draw_game :: proc() {
     immediate_text(game.font_inkfree, "click", get_mouse_position(), {.1, .1, .8, 1} if !get_mouse_button(.Left) else {1,1,1,1})
     immediate_text(game.font_inkfree, "The wind is passing through.", {100, 100}, {1, .6, .2, 1})
     immediate_text(game.font_unifont, "有欲望而无行动者滋生瘟疫。", {100, 500}, {.9, .2, .8, .5})
-    immediate_text(game.font_unifont, "♥🐎🐕😊✔👀😢😜😁", {100, 400}, {.9, .2, .8, .5})
 
     imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
 
@@ -112,23 +111,12 @@ draw_game :: proc() {
 imgui_debug_framerate :: proc() {
     // imgui.set_next_window_bg_alpha(.4)
     // imgui.set_next_window_pos({10, 10}, .Once, {0, 0})
-    // imgui.begin("Framerate", nil, .NoTitleBar |
-    //                               .NoDecoration | 
-    //                               .AlwaysAutoResize | 
-    //                               .NoSavedSettings | 
-    //                               .NoFocusOnAppearing | 
-    //                               .NoNav | 
-    //                               .NoMove)
-
     frame_ms := time.duration_milliseconds(app.duration_frame)
     total_s  := time.duration_seconds(app.duration_total)
-
-    // imgui.text_unformatted("Framerate debug window,\nPress F1 to toggle.\n\n")
-
-    // imgui.text("Frame time: {} ms", frame_ms)
-    // imgui.text("Total time: {} s",  total_s)
-    // imgui.end()
-    immediate_text(game.font_unifont, fmt.tprintf("FPS: {}", cast(i32)(1000.0/frame_ms)), {10, 70}, {.1, 1, .1, 1})
+    @static framerate : i32
+    real_framerate := cast(i32)(1000.0/frame_ms)
+    framerate = cast(i32) (cast(f32) (real_framerate - framerate) * 0.5 + cast(f32) framerate)
+    immediate_text(game.font_unifont, fmt.tprintf("FPS: {}", framerate), {10, 32+10}, {.1, 1, .1, 1})
 }
 
 update_game :: proc() {
@@ -197,8 +185,8 @@ init_game :: proc() {
     }
 
     {// Dynamic font
-        game.font_unifont = font_load(raw_data(DATA_UNIFONT_TTF), 0.1)
-        game.font_inkfree = font_load(raw_data(DATA_INKFREE_TTF), 0.1)
+        game.font_unifont = font_load(raw_data(DATA_UNIFONT_TTF), 32)
+        game.font_inkfree = font_load(raw_data(DATA_INKFREE_TTF), 32)
     }
 
 }
