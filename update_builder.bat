@@ -1,1 +1,2 @@
-@odin run build.odin -file -out:build.exe
+@odin build build.odin -file -out:build.exe
+@echo *BUILDER PROGRAM GENERATED*

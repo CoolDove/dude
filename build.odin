@@ -39,7 +39,7 @@ main :: proc() {
     current := os.get_current_directory()
     defer delete(current)
     
-    log.debugf("Building program, current directory: {}", current)
+    log.debugf("Building program {}, current directory: {}", NAME, current)
 
     log.debugf("**Copy DLLs**")
     copy_file(
@@ -51,7 +51,7 @@ main :: proc() {
 
 
     build_all := ! (BuildFlag.Debug in flags) && ! (BuildFlag.Release in flags)
-    run_mode := BuildFlag.Run in flags
+    run_mode  := BuildFlag.Run in flags
 
     if BuildFlag.Debug in flags || build_all {
         log.debugf("**Build Debug**")
@@ -60,7 +60,6 @@ main :: proc() {
             true, run_mode)
         defer delete(command)
         libc.system(strings.clone_to_cstring(command))
-        // libc.system("odin build ./src -out:bin/debug/MillionUV_debug.exe -debug -collection:pac=./pac/")
     }
 
     if BuildFlag.Release in flags || build_all {
@@ -70,7 +69,6 @@ main :: proc() {
             false, run_mode)
         defer delete(command)
         libc.system(strings.clone_to_cstring(command, context.temp_allocator))
-        // libc.system( "odin build ./src -out:bin/release/MillionUV_release.exe  -no-bounds-check -subsystem:windows -o:speed -collection:pac=./pac/")
     }
 }
 
@@ -90,7 +88,6 @@ get_flags :: proc() -> BuildFlags {
     return flags
 }
 
-// "odin build ./src -out:bin/debug/MillionUV_debug.exe -debug -collection:pac=./pac/")
 make_odin_command :: proc(name, src, args, collection_str: string, debug, run: bool, allocator:= context.allocator) -> string {
     dorr :string= "debug" if debug else "release"
 
