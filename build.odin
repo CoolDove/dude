@@ -1,0 +1,174 @@
+﻿package main
+
+import "core:mem"
+import "core:strings"
+import "core:os"
+import "core:io"
+import "core:log"
+import "core:fmt"
+import "core:c/libc"
+import path "core:path/filepath"
+
+
+/*
+./build.exe run debug release
+
+*/
+
+when ODIN_OS == .Windows {
+
+BuildFlag :: enum {
+    Run, 
+    Debug,
+    Release,
+}
+
+BuildFlags :: bit_set[ BuildFlag ]
+
+
+NAME :: "MillionUV"
+SRC  :: "./src"
+COLLECTION_STR :: "-collection:pac=./pac/"
+
+main :: proc() {
+    logger := log.create_console_logger(.Debug, {.Level, .Terminal_Color})
+    context.logger = logger
+
+    flags := get_flags()
+
+    current := os.get_current_directory()
+    defer delete(current)
+    
+    log.debugf("Building program, current directory: {}", current)
+
+    log.debugf("**Copy DLLs**")
+    copy_file(
+        "./pac/assimp/lib/assimp-vc143-mt.dll",
+        "./bin/release/assimp-vc143-mt.dll")
+    copy_file(
+        "./pac/assimp/lib/assimp-vc143-mtd.dll",
+        "./bin/debug/assimp-vc143-mtd.dll")
+
+
+    build_all := ! (BuildFlag.Debug in flags) && ! (BuildFlag.Release in flags)
+    run_mode := BuildFlag.Run in flags
+
+    if BuildFlag.Debug in flags || build_all {
+        log.debugf("**Build Debug**")
+        command := make_odin_command(
+            NAME, SRC, "", COLLECTION_STR, 
+            true, run_mode)
+        defer delete(command)
+        libc.system(strings.clone_to_cstring(command))
+        // libc.system("odin build ./src -out:bin/debug/MillionUV_debug.exe -debug -collection:pac=./pac/")
+    }
+
+    if BuildFlag.Release in flags || build_all {
+        log.debugf("**Build Release**")
+        command := make_odin_command(
+            NAME, SRC, "-no-bounds-check -subsystem:windows -o:speed", COLLECTION_STR, 
+            false, run_mode)
+        defer delete(command)
+        libc.system(strings.clone_to_cstring(command, context.temp_allocator))
+        // libc.system( "odin build ./src -out:bin/release/MillionUV_release.exe  -no-bounds-check -subsystem:windows -o:speed -collection:pac=./pac/")
+    }
+}
+
+// ## Builder
+get_flags :: proc() -> BuildFlags {
+    args := os.args
+    defer delete(args)
+
+    flags : BuildFlags
+
+    for arg in args {
+        if arg == "debug" do incl(&flags, BuildFlag.Debug)
+        else if arg == "release" do incl(&flags, BuildFlag.Release)
+        else if arg == "run" do incl(&flags, BuildFlag.Run)
+    }
+
+    return flags
+}
+
+// "odin build ./src -out:bin/debug/MillionUV_debug.exe -debug -collection:pac=./pac/")
+make_odin_command :: proc(name, src, args, collection_str: string, debug, run: bool, allocator:= context.allocator) -> string {
+    dorr :string= "debug" if debug else "release"
+
+    sb : strings.Builder
+    strings.builder_init(&sb, 0, 256)
+
+    strings.write_string(&sb, "odin ")
+    strings.write_string(&sb, "run " if run else "build ")
+    strings.write_string(&sb, src)
+    strings.write_string(&sb, fmt.tprintf(" -out:bin/{}/{}.exe ", dorr, name))
+    if debug do strings.write_string(&sb, "-debug ")
+
+    strings.write_string(&sb, args)
+    strings.write_string(&sb, " ")
+    strings.write_string(&sb, collection_str)
+
+    cmd := strings.to_string(sb)
+    log.debugf("Odin Command: {}", cmd)
+
+    return cmd
+}
+
+
+// ## Utils
+mkdir :: proc(dir : string) -> bool {
+    directory, new_alloc := path.to_slash(dir)
+    if new_alloc do defer delete(directory)
+
+    sb : strings.Builder
+    strings.builder_init(&sb, 0, len(directory))
+    defer strings.builder_destroy(&sb)
+
+    for str in strings.split_after_iterator(&directory, "/") {
+        strings.write_string(&sb, str)
+        current := strings.to_string(sb)
+        if !os.exists(current) {
+            err := os.make_directory(current)
+            if err != 0 {
+                log.errorf("Failed to create directory: {}", current)
+                return false
+            } else {
+                log.debugf("mkdir: {}", current)
+            }
+        }
+    }
+    return true
+}
+
+copy_dir :: proc(src, dst : string, ext : []string) {
+    assert(false)
+}
+
+copy_file :: proc(src, dst : string) {
+    if !os.exists(src) {
+        log.errorf("Copy src: {} doesn't exist!", src)
+        return
+    }
+    if !os.is_file(src) {
+        log.errorf("Copy src: {} is not a file!", src)
+        return
+    } 
+
+    data, _ := os.read_entire_file(src)
+    defer delete(data)
+
+    directory := path.dir(dst)
+    defer delete(directory)
+
+    mkdir(directory)
+
+    if os.exists(dst) do os.remove(dst)
+
+    if os.write_entire_file(dst, data) {
+        log.debugf("Copy file: {} to {}.", src, dst)
+    } else {
+        log.errorf("Failed to copy file: {} to {}.", src, dst)
+    } 
+}
+
+
+}

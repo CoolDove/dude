@@ -1,0 +1,1 @@
+@odin run build.odin -file -out:build.exe
