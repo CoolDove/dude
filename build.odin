@@ -55,7 +55,7 @@ main :: proc() {
 
 
     build_all := ! (BuildFlag.Debug in flags) && ! (BuildFlag.Release in flags)
-    run_mode  := BuildFlag.Run in flags
+    run_mode  := BuildFlag.Run in flags && !build_all
 
     if BuildFlag.Debug in flags || build_all {
         log.debugf("**Build Debug**")
@@ -64,6 +64,7 @@ main :: proc() {
             true, run_mode)
         defer delete(command)
         libc.system(strings.clone_to_cstring(command))
+        libc.system("treesize bin/debug")
     }
 
     if BuildFlag.Release in flags || build_all {
@@ -73,7 +74,9 @@ main :: proc() {
             false, run_mode)
         defer delete(command)
         libc.system(strings.clone_to_cstring(command, context.temp_allocator))
+        libc.system("treesize bin/release")
     }
+    log.debugf("DONE")
 }
 
 // ## Builder
