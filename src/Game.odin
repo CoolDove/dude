@@ -12,9 +12,6 @@ import gl "vendor:OpenGL"
 import "pac:imgui"
 import "pac:assimp"
 
-// import dsh "dshader"
-
-// import "dshader"
 import "dgl"
 
 Game :: struct {
@@ -47,7 +44,6 @@ GameObject :: struct {
 }
 
 draw_game :: proc() {
-    // using linalg
 	using dgl
 
     wnd := game.window
@@ -56,25 +52,6 @@ draw_game :: proc() {
 	immediate_quad(Vec2{wnd_size.x * 0.05, 0}, Vec2{wnd_size.x * 0.9, 20}, Vec4{ 1, 0, 0, 0.2 })
 	immediate_quad(Vec2{40, 10}, Vec2{120, 20}, Vec4{ 0, 1, .4, 0.2 })
 	immediate_quad(Vec2{10, 120}, Vec2{90, 20}, Vec4{ 1, 1, 1, 0.9 })
-
-    @static debug_texture := true
-    imgui.checkbox("debug_texture", &debug_texture)
-    img := &game.test_image
-    if debug_texture {
-        img_gallery_x :f32= 0
-        size :f32= 512
-        immediate_texture({img_gallery_x, wnd_size.y - size}, {size, size}, {1, 1, 1, 1},
-            game.ttf_test_texture_id)
-        img_gallery_x += size + 10
-        immediate_texture(
-            {img_gallery_x, cast(f32)wnd_size.y - cast(f32)img.size.y},
-            {auto_cast img.size.x, auto_cast img.size.y},
-            {1, 1, 1, 1},
-            img.texture_id
-        )
-        imgui.image(cast(imgui.Texture_ID)cast(uintptr)img.texture_id, {64, 64}, {1, 1}, {0, 0})
-        img_gallery_x += cast(f32)img.size.x + 10
-    }
 
     immediate_text(game.font_inkfree, "click", get_mouse_position(), {.1, .1, .8, 1} if !get_mouse_button(.Left) else {1,1,1,1})
     immediate_text(game.font_inkfree, "The wind is passing through.", {100, 100}, {1, .6, .2, 1})
@@ -92,6 +69,7 @@ draw_game :: proc() {
         game.main_light.direction = linalg.normalize0(game.main_light.direction)
     }
 
+    // Shouldn't be here.
     @static show_debug_framerate := true
     if get_key_down(.F1) do show_debug_framerate = !show_debug_framerate
     if show_debug_framerate do imgui_debug_framerate()
@@ -109,8 +87,6 @@ draw_game :: proc() {
 
 @(private="file")
 imgui_debug_framerate :: proc() {
-    // imgui.set_next_window_bg_alpha(.4)
-    // imgui.set_next_window_pos({10, 10}, .Once, {0, 0})
     frame_ms := time.duration_milliseconds(app.duration_frame)
     total_s  := time.duration_seconds(app.duration_total)
     @static framerate : i32
