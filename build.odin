@@ -60,7 +60,7 @@ main :: proc() {
     if BuildFlag.Debug in flags || build_all {
         log.debugf("**Build Debug**")
         command := make_odin_command(
-            NAME, SRC, "", COLLECTION_STR, 
+            NAME, SRC, " -resource:app.rc ", COLLECTION_STR, 
             true, run_mode)
         defer delete(command)
         libc.system(strings.clone_to_cstring(command))
@@ -70,7 +70,7 @@ main :: proc() {
     if BuildFlag.Release in flags || build_all {
         log.debugf("**Build Release**")
         command := make_odin_command(
-            NAME, SRC, "-no-bounds-check -subsystem:windows -o:speed", COLLECTION_STR, 
+            NAME, SRC, " -resource:app.rc -no-bounds-check -subsystem:windows -o:speed", COLLECTION_STR, 
             false, run_mode)
         defer delete(command)
         libc.system(strings.clone_to_cstring(command, context.temp_allocator))
