@@ -72,7 +72,7 @@ draw_game :: proc() {
     // Shouldn't be here.
     @static show_debug_framerate := true
     if get_key_down(.F1) do show_debug_framerate = !show_debug_framerate
-    if show_debug_framerate do imgui_debug_framerate()
+    if show_debug_framerate do debug_framerate()
 
     gl.BindVertexArray(game.vao)
     set_opengl_state_for_draw_geometry()
@@ -86,13 +86,15 @@ draw_game :: proc() {
 }
 
 @(private="file")
-imgui_debug_framerate :: proc() {
+debug_framerate :: proc() {
     frame_ms := time.duration_milliseconds(app.duration_frame)
     total_s  := time.duration_seconds(app.duration_total)
     @static framerate : i32
     real_framerate := cast(i32)(1000.0/frame_ms)
     framerate = cast(i32) (cast(f32) (real_framerate - framerate) * 0.5 + cast(f32) framerate)
     immediate_text(game.font_unifont, fmt.tprintf("FPS: {}", framerate), {10, 32+10}, {.1, 1, .1, 1})
+    immediate_text(game.font_unifont, fmt.tprintf("Fullscreen: {}", game.window.fullscreen), 
+        {10, 32+10+32+10}, {.1, 1, .1, 1})
 }
 
 update_game :: proc() {
@@ -108,6 +110,16 @@ update_game :: proc() {
     }
     {using game
         if get_key_down(.F2) do immediate_draw_wireframe = !immediate_draw_wireframe
+        if get_key_down(.F11) {
+            switch window.fullscreen {
+            case .Fullscreen:
+                window->toggle_fullscreen(.Windowed)
+            case .FullscreenDesktop:
+                window->toggle_fullscreen(.Windowed)
+            case .Windowed:
+                window->toggle_fullscreen(.Fullscreen)
+            }
+        } 
     }
 }
 

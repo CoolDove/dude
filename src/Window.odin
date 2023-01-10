@@ -14,8 +14,10 @@ Window :: struct {
 	// NOTE(Dove): 
 	// The GLContext is not correct during `handler`, 
 	// so do not use any OpenGL things in `handler`.
+	using vtable : ^Window_VTable,
 	using window_handler : WindowHandler,
 	using window_events : WindowEvents,
+	using state : WindowState,
 
 	position, size : IVec2,
 
@@ -32,6 +34,19 @@ Window :: struct {
 
 	_data_type : typeid,
 	_data : rawptr, // This is invalid before instantiated.
+}
+
+WindowState :: struct {
+	fullscreen : WindowFullscreenMode,
+}
+
+Window_VTable :: struct {
+	toggle_fullscreen : proc(wnd:^Window, mode: WindowFullscreenMode),
+}
+window_vtable := Window_VTable { toggle_fullscreen }
+
+WindowFullscreenMode :: enum {
+	Fullscreen, Windowed, FullscreenDesktop,
 }
 
 WindowHandler :: struct {
@@ -69,6 +84,7 @@ window_instantiate :: proc {
 }
 
 window_instantiate_with_data :: proc(using wnd:^Window, $DataType: typeid) -> bool {
+	vtable = &window_vtable
 	create_result := create_window_and_init_opengl(wnd)
 	_data = new(DataType)
 	_data_type = DataType
@@ -77,10 +93,23 @@ window_instantiate_with_data :: proc(using wnd:^Window, $DataType: typeid) -> bo
 	return create_result
 }
 window_instantiate_without_data :: proc(using wnd:^Window) -> bool {
+	vtable = &window_vtable
 	create_result := create_window_and_init_opengl(wnd)
 	if after_instantiate != nil do after_instantiate(wnd)
 	return create_result
 }
+
+// ## VTable
+// FIXME: FullscreenDesktop mode is not correctly working, viewport and resolution broken.
+@(private="file")
+toggle_fullscreen :: proc (using wnd: ^Window, mode: WindowFullscreenMode) {
+	zero :u32= 0
+	flags : sdl.WindowFlags = transmute(sdl.WindowFlags)zero
+	if mode == .FullscreenDesktop do flags = sdl.WINDOW_FULLSCREEN_DESKTOP
+	else if mode == .Fullscreen do flags = sdl.WINDOW_FULLSCREEN
+	if sdl.SetWindowFullscreen(window, flags) >= 0 do fullscreen = mode
+}
+
 
 @(private="file")
 create_window_and_init_opengl :: proc(using wnd: ^Window)  -> bool {
@@ -93,6 +122,11 @@ create_window_and_init_opengl :: proc(using wnd: ^Window)  -> bool {
         fmt.println("failed to instantiate window: ", name)
 		return false
 	}
+
+	if .FULLSCREEN in wnd.window_flags {
+		if sdl.WindowFlag._INTERNAL_FULLSCREEN_DESKTOP in window_flags do fullscreen = .FullscreenDesktop
+		else do fullscreen = .Fullscreen
+	} else do fullscreen = .Windowed
 
 	if is_opengl_window {
 		gl_context = sdl.GL_CreateContext(window)

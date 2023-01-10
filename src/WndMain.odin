@@ -41,6 +41,8 @@ create_main_window :: proc (allocator:=context.allocator, loc := #caller_locatio
     return wnd
 }
 
+
+
 @(private="file")
 init_imgui :: proc(imgui_state:^ImguiState, wnd: ^sdl.Window) {
 	imgui.create_context()
