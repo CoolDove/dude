@@ -15,8 +15,9 @@ Window :: struct {
 	// The GLContext is not correct during `handler`, 
 	// so do not use any OpenGL things in `handler`.
 	using vtable : ^Window_VTable,
-	using window_handler : WindowHandler,
-	using window_events : WindowEvents,
+	using derive_vtable : ^Window_DeriveVTable,
+	// using window_handler : WindowHandler,
+	// using window_events : WindowEvents,
 	using state : WindowState,
 
 	position, size : IVec2,
@@ -43,19 +44,19 @@ WindowState :: struct {
 Window_VTable :: struct {
 	toggle_fullscreen : proc(wnd:^Window, mode: WindowFullscreenMode),
 }
-window_vtable := Window_VTable { toggle_fullscreen }
+Window_DeriveVTable :: struct {
+	handler  : proc(wnd:^Window, event:sdl.Event), 
+	update 	 : proc(wnd:^Window),
+	before_destroy : proc(wnd:^Window),
+	after_instantiate : proc(wnd:^Window),
+}
+
+window_vtable := Window_VTable { 
+	toggle_fullscreen,
+}
 
 WindowFullscreenMode :: enum {
 	Fullscreen, Windowed, FullscreenDesktop,
-}
-
-WindowHandler :: struct {
-	handler  : proc(wnd:^Window, event:sdl.Event), 
-	update 	 : proc(wnd:^Window),
-}
-WindowEvents :: struct {
-	before_destroy : proc(wnd:^Window),
-	after_instantiate : proc(wnd:^Window),
 }
 
 IVec2 :: [2]i32
@@ -67,7 +68,7 @@ Event :: struct {
 window_get_basic_template :: proc(name: string, size : IVec2 = IVec2{800, 600}, is_opengl_window : bool = true) -> Window {
 	wnd : Window
 	wnd.name = name
-	wnd.handler = nil
+	// wnd.handler = nil
 	// wnd.render = nil
 	wnd.is_opengl_window = is_opengl_window
 	if is_opengl_window {

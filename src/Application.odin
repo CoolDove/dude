@@ -10,7 +10,6 @@ import "core:log"
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
 
-import "pac:imgui"
 
 Application :: struct {
     windows : map[u32]^Window,
@@ -54,7 +53,7 @@ app_release :: proc() {
 app_run :: proc() {
 	using app
 
-	main_window := create_main_window()
+	main_window   := create_main_window()
 	helper_window := create_helper_window()
 
 	register_window(&main_window, WndMainData)

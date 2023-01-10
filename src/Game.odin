@@ -9,7 +9,7 @@ import "core:math/linalg"
 import sdl "vendor:sdl2"
 import gl "vendor:OpenGL"
 
-import "pac:imgui"
+when ODIN_DEBUG do import "pac:imgui"
 import "pac:assimp"
 
 import "dgl"
@@ -57,18 +57,6 @@ draw_game :: proc() {
     immediate_text(game.font_inkfree, "The wind is passing through.", {100, 100}, {1, .6, .2, 1})
     immediate_text(game.font_unifont, "有欲望而无行动者滋生瘟疫。", {100, 500}, {.9, .2, .8, .5})
 
-    imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
-
-    imgui.slider_float3("camera position", &game.camera.position, -100, 100)
-    imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
-
-    if imgui.collapsing_header("MainLight") {
-        imgui.color_picker4("color", &game.main_light.color)
-        imgui.slider_float3("direction", &game.main_light.direction, -1, 1)
-
-        game.main_light.direction = linalg.normalize0(game.main_light.direction)
-    }
-
     // Shouldn't be here.
     @static show_debug_framerate := true
     if get_key_down(.F1) do show_debug_framerate = !show_debug_framerate
@@ -82,6 +70,21 @@ draw_game :: proc() {
     recursive_make_render_objects(&game.scene, game.scene.assimp_scene.mRootNode, &objects)
     env := RenderEnvironment{&game.camera, &game.main_light}
     draw_objects(objects[:], &env)
+}
+
+when ODIN_DEBUG {
+draw_game_imgui :: proc() {
+    imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
+
+    imgui.slider_float3("camera position", &game.camera.position, -100, 100)
+    imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
+
+    if imgui.collapsing_header("MainLight") {
+        imgui.color_picker4("color", &game.main_light.color)
+        imgui.slider_float3("direction", &game.main_light.direction, -1, 1)
+        game.main_light.direction = linalg.normalize0(game.main_light.direction)
+    }
+}
 
 }
 

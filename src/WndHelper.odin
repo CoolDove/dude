@@ -12,10 +12,17 @@ create_helper_window :: proc (allocator:=context.allocator, loc := #caller_locat
 	wnd := window_get_basic_template("helper", IVec2{256, 100});
 
 	wnd.window_flags |= {.RESIZABLE};
-	wnd.handler = handler;
-	wnd.update = update;
+	wnd.derive_vtable = &helper_wnd_vtable
+	// wnd.handler = handler;
+	// wnd.update = update;
 
     return wnd;
+}
+
+@(private="file")
+helper_wnd_vtable := Window_DeriveVTable {
+	handler, update,
+	nil, nil
 }
 
 
