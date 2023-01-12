@@ -40,7 +40,6 @@ tween_destroy :: proc() {
 // ## types
 Tween :: struct {
     using vtable : ^Tween_VTable,
-    value_type : typeid,
 
     data : ^TweenableValue,
     begin_value, end_value : TweenableValue,
@@ -75,16 +74,17 @@ tween_cancel :: proc(tween: ^Tween, call_on_complete:= false) {
     }
 }
 
-tween :: proc(value: ^$T, target : TweenableValue, duration : f32) -> ^Tween {
-    value_ptr := type_info_of(^T).variant.(runtime.Type_Info_Pointer)
-    if !tween_type_is_valid(value_ptr.elem.id) do return nil
+tween :: proc(value: ^$T, target : T, duration : f32) -> ^Tween {
+    ptr_type := type_info_of(^T).variant.(runtime.Type_Info_Pointer).elem.id
+    assert(tween_type_is_valid(ptr_type), 
+        "Invalid tween invoke.")
 
     tween : Tween
     _init_tween(&tween)
 
     tween.data = transmute(^TweenableValue)value
     tween.begin_value = value^
-    tween.end_value = target
+    tween.end_value = cast(TweenableValue)target
     tween.duration = duration
 
     append(&tweens, tween)

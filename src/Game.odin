@@ -36,6 +36,7 @@ Game :: struct {
     ttf_test_texture_id : u32,
 
     test_value : f32,
+    tweened_color : Vec4,
 }
 
 game : Game
@@ -60,8 +61,8 @@ draw_game :: proc() {
 
     if game.test_value > 0.0 {
         text := fmt.tprintf("Tweening: {}", game.test_value)
-        color := Vec4{.9, .8, .2, game.test_value}
-        immediate_text(game.font_inkfree, text, get_mouse_position(), color)
+        // color := Vec4{.9, .8, .2, game.test_value}
+        immediate_text(game.font_inkfree, text, get_mouse_position(), game.tweened_color)
     }
 
     // Shouldn't be here.
@@ -132,8 +133,10 @@ update_game :: proc() {
 
         if get_mouse_button_down(.Left) {
             game.test_value = 1.0
-            tween(&game.test_value, 0.0, 0.8)->set_on_complete(
+            tween(&game.test_value, 0, 0.8)->set_on_complete(
                 proc(d:rawptr){log.debugf("End")}, nil)
+            game.tweened_color = {1, 0, 0, 1}
+            tween(&game.tweened_color, Vec4{0, 0, 1, 0}, 0.8)
         } 
     }
 
