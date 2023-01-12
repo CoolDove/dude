@@ -132,7 +132,7 @@ update_game :: proc() {
 
         if get_mouse_button_down(.Left) {
             game.test_value = 1.0
-            tween_f32(&game.test_value, 0.0, 0.8)->set_on_complete(
+            tween(&game.test_value, 0.0, 0.8)->set_on_complete(
                 proc(d:rawptr){log.debugf("End")}, nil)
         } 
     }
