@@ -58,11 +58,12 @@ draw_game :: proc() {
 
     immediate_text(game.font_inkfree, "The wind is passing through.", {100, 100}, {1, .6, .2, 1})
     immediate_text(game.font_unifont, "有欲望而无行动者滋生瘟疫。", {100, 500}, {.9, .2, .8, .5})
+    immediate_text(game.font_unifont, "Press T to show the tweeeeeen。", {100, 350}, {.9, .2, .8, .5})
 
     if game.test_value > 0.0 {
         text := fmt.tprintf("Tweening: {}", game.test_value)
-        // color := Vec4{.9, .8, .2, game.test_value}
-        immediate_text(game.font_inkfree, text, get_mouse_position(), game.tweened_color)
+        pos :Vec2= {game.test_value * wnd_size.x, wnd_size.y * 0.5}
+        immediate_text(game.font_inkfree, text, pos, game.tweened_color)
     }
 
     // Shouldn't be here.
@@ -131,12 +132,12 @@ update_game :: proc() {
             }
         } 
 
-        if get_mouse_button_down(.Left) {
+        if get_key_down(.T) {
             game.test_value = 1.0
-            tween(&game.test_value, 0, 0.8)->set_on_complete(
-                proc(d:rawptr){log.debugf("End")}, nil)
+            tween(&game.test_value, 0, 0.8)->set_easing(easing_proc_outexpo)
             game.tweened_color = {1, 0, 0, 1}
-            tween(&game.tweened_color, Vec4{0, 0, 1, 0}, 0.8)
+            tween(&game.tweened_color, Vec4{0, 0, 1, 0}, 0.8)->set_on_complete(
+                proc(d:rawptr){log.debugf("End")}, nil)
         } 
     }
 

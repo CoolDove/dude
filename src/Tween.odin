@@ -22,7 +22,7 @@ tween_update :: proc() {
     for tween in &tweens {
         if tween.done do continue
         interp :f32= cast(f32)time.duration_seconds(app.duration_total - tween.start_time) / tween.duration
-        eased_value := tween.easing_proc(0, 1, interp)
+        eased_value := tween.easing_proc(interp)
         value := tween_value(tween.begin_value, tween.end_value, eased_value)
         tween.data^ = value
         if interp > 1.0 {
@@ -48,7 +48,7 @@ Tween :: struct {
 
     done : bool,
 
-    easing_proc : proc(begin, end, interp : f32) -> f32,
+    easing_proc : EasingProc,
 
     on_complete : proc(user_data: rawptr),
     user_data : rawptr,
@@ -56,6 +56,7 @@ Tween :: struct {
 
 Tween_VTable :: struct {
     set_on_complete : type_of(_set_on_complete),
+    set_easing : type_of(_set_easing),
 }
 
 when ODIN_DEBUG {
@@ -95,16 +96,25 @@ tween :: proc(value: ^$T, target : T, duration : f32) -> ^Tween {
 @(private="file")
 tween_vtable := Tween_VTable {
     _set_on_complete,
+    _set_easing,
 }
 _set_on_complete :: proc(tween: ^Tween, callback: proc(use_data: rawptr), user_data: rawptr) -> ^Tween {
     tween.on_complete = callback
     tween.user_data = user_data
     return tween
 }
+_set_easing :: proc(tween: ^Tween, easing_proc : EasingProc) {
+    tween.easing_proc = easing_proc
+}
 
 // ## easing proc
-easing_proc_linear :: proc(begin, end, interp : f32) -> f32 {
-    return (end - begin) * interp + begin
+EasingProc :: proc(interp : f32) -> f32
+
+easing_proc_linear :: proc(interp : f32) -> f32 {
+    return interp
+}
+easing_proc_outexpo :: proc(interp : f32) -> f32 {
+    return 1 if interp == 1 else (1 - math.pow(2, -10 * interp))
 }
 
 // ## tween implements
@@ -165,7 +175,6 @@ _init_tween :: proc(tween: ^Tween) {
     tween.start_time = app.duration_total
     tween.easing_proc = easing_proc_linear
 }
-
 
 // ## internal proc
 @(private="file")
