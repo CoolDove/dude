@@ -4,6 +4,7 @@ import "core:time"
 import "core:log"
 import "core:fmt"
 import "core:strings"
+import "core:math"
 import "core:math/linalg"
 
 import sdl "vendor:sdl2"
@@ -87,13 +88,18 @@ when ODIN_DEBUG {
 draw_game_imgui :: proc() {
     imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
 
-    imgui.slider_float3("camera position", &game.camera.position, -100, 100)
-    imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
+    // imgui.slider_float3("camera position", &game.camera.position, -100, 100)
+    // imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
 
-    if imgui.collapsing_header("MainLight") {
-        imgui.color_picker4("color", &game.main_light.color)
-        imgui.slider_float3("direction", &game.main_light.direction, -1, 1)
-        game.main_light.direction = linalg.normalize0(game.main_light.direction)
+    // if imgui.collapsing_header("MainLight") {
+    //     imgui.color_picker4("color", &game.main_light.color)
+    //     imgui.slider_float3("direction", &game.main_light.direction, -1, 1)
+    //     game.main_light.direction = linalg.normalize0(game.main_light.direction)
+    // }
+
+    for t, ind in &tweens {
+        text := fmt.tprintf("{}: {}", ind, "working" if !t.done else "done.")
+        imgui.selectable(text, !t.done)
     }
 }
 }
@@ -124,7 +130,7 @@ update_game :: proc() {
     {using game
         if get_key_down(.F1) {
             using game.settings
-            if status_window_alpha == 0 do tween(&status_window_alpha, 1.0, 0.2)
+            if status_window_alpha == 0 do tween(&status_window_alpha, 1.0, 0.2)->set_easing(ease_outbounce)
             else if status_window_alpha == 1 do tween(&status_window_alpha, 0.0, 0.2)
         }
         if get_key_down(.F2) do immediate_draw_wireframe = !immediate_draw_wireframe
@@ -139,12 +145,20 @@ update_game :: proc() {
             }
         } 
 
+        // tween example
         if get_key_down(.T) {
             game.test_value = 1.0
-            tween(&game.test_value, 0, 0.8)->set_easing(easing_proc_outexpo)
+            tween(&game.test_value, 0, 0.8)->set_easing(ease_outexpo)
             game.tweened_color = {1, 0, 0, 1}
-            tween(&game.tweened_color, Vec4{0, 0, 1, 0}, 0.8)->set_on_complete(
-                proc(d:rawptr){log.debugf("End")}, nil)
+
+            tween(&game.tweened_color, Vec4{0, 0, 1, 0}, 0.8)->
+            set_on_complete(
+                proc(d:rawptr){
+                    ptr := cast(^f32)d
+                    ptr^ = 1 - clamp(ptr^, 0, 1)
+                }, 
+                &game.settings.status_window_alpha
+            )
         } 
     }
 

@@ -169,7 +169,7 @@ copy_dir :: proc(src, dst : string, ext : []string) {
 }
 
 copy_file :: proc(src, dst : string) {
-    if src == "" {
+    if len(src) == 0 {
         log.errorf("Copy src is empty.", src)
         return
     }
