@@ -25,6 +25,7 @@ BuildFlag :: enum {
     Run, 
     Debug,
     Release,
+    Treesize,
 }
 
 BuildFlags :: bit_set[ BuildFlag ]
@@ -49,7 +50,6 @@ main :: proc() {
     log.debugf("Building program {}, current directory: {}", NAME, current)
     defer log.debugf("DONE")
 
-
     create_app_rc()
     defer delete_app_rc()
 
@@ -71,7 +71,7 @@ main :: proc() {
             true, run_mode)
         defer delete(command)
         libc.system(strings.clone_to_cstring(command))
-        libc.system("treesize bin/debug")
+        if BuildFlag.Treesize in flags do libc.system("treesize bin/debug")
     }
 
     if BuildFlag.Release in flags || build_all {
@@ -81,7 +81,7 @@ main :: proc() {
             false, run_mode)
         defer delete(command)
         libc.system(strings.clone_to_cstring(command, context.temp_allocator))
-        libc.system("treesize bin/release")
+        if BuildFlag.Treesize in flags do libc.system("treesize bin/release")
     }
 
 }
@@ -93,10 +93,12 @@ get_flags :: proc() -> BuildFlags {
 
     flags : BuildFlags
 
-    for arg in args {
+    for arg in args[1:] {
         if arg == "debug" do incl(&flags, BuildFlag.Debug)
         else if arg == "release" do incl(&flags, BuildFlag.Release)
         else if arg == "run" do incl(&flags, BuildFlag.Run)
+        else if arg == "size" do incl(&flags, BuildFlag.Treesize)
+        else do log.errorf("Unkown arg: {}", arg)
     }
 
     return flags
@@ -145,7 +147,10 @@ mkdir :: proc(dir : string) -> bool {
 
     for str in strings.split_after_iterator(&directory, "/") {
         strings.write_string(&sb, str)
+
         current := strings.to_string(sb)
+        log.debugf("path: {}", current)
+
         if current != "" && !os.exists(current) {
             err := os.make_directory(current)
             if err != 0 {
