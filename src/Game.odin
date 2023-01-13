@@ -134,6 +134,19 @@ update_game :: proc() {
             r := linalg.quaternion_from_euler_angles(motion.y * 0.01, - motion.x * 0.01, 0, .XYZ)
             orientation = linalg.quaternion_mul_quaternion(orientation, r)
         }
+
+        forward := linalg.quaternion_mul_vector3(orientation, FORWARD3)
+        up := linalg.quaternion_mul_vector3(orientation, UP3)
+        right := linalg.cross(forward, up)
+
+        speed :f32= 0.5
+        dspeed :f32= speed * cast(f32)time.duration_milliseconds(app.duration_frame)
+        if get_key(.D) do position += right * speed
+        if get_key(.A) do position -= right * speed
+        if get_key(.W) do position += forward * speed
+        if get_key(.S) do position -= forward * speed
+        if get_key(.E) do position += up * speed
+        if get_key(.Q) do position -= up * speed
     }
     {using game
         if get_key_down(.F1) {

@@ -16,6 +16,14 @@ VertexPCNU :: dgl.VertexPCNU
 
 Transform :: dgl.Transform
 
+FORWARD3 :: Vec3{0, 0, 1}
+UP3 :: Vec3{0, 1, 0}
+RIGHT3 :: Vec3{1, 0, 0}
+
+UP2 :: Vec2{0, 1}
+RIGHT2 :: Vec2{1, 1}
+
+
 Camera :: struct {
     using dglcam : dgl.Camera,
 }
