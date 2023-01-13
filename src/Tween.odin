@@ -6,9 +6,10 @@ import "core:math"
 import "core:math/linalg"
 import "core:runtime"
 
-
 // NOTE:
 // Do not keep the ^Tween, it's not stable.
+// TODO:
+// Cancel token.
 
 // tween setup
 tween_init :: proc() {
@@ -323,10 +324,4 @@ _init_tween :: proc(tween: ^Tween) {
     tween.start_time = app.duration_total
     tween.easing_proc = ease_linear
     tween.done = false
-}
-
-// ## internal proc
-@(private="file")
-tweens_clean_completed :: proc() {
-    // ...
 }

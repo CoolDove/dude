@@ -88,8 +88,17 @@ when ODIN_DEBUG {
 draw_game_imgui :: proc() {
     imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
 
-    // imgui.slider_float3("camera position", &game.camera.position, -100, 100)
-    // imgui.slider_float3("camera forward", &game.camera.forward, -1, 1)
+    if imgui.collapsing_header("Camera") {
+        using game.camera
+        euler : Vec3
+        euler.x, euler.y, euler.z = linalg.euler_angles_from_quaternion(orientation, .XYZ)
+
+        euler /= math.RAD_PER_DEG
+        imgui.slider_float3("eluer", &euler, -360, 360)
+        euler *= math.RAD_PER_DEG
+
+        orientation = linalg.quaternion_from_euler_angles(euler.x, euler.y, euler.z, .XYZ)
+    }
 
     // if imgui.collapsing_header("MainLight") {
     //     imgui.color_picker4("color", &game.main_light.color)
@@ -122,9 +131,8 @@ update_game :: proc() {
         if get_key(.K) && fov > 1  do fov -= 1
         if get_mouse_button(.Right) {
             motion := get_mouse_motion()
-            r := linalg.quaternion_from_euler_angles(- motion.y * 0.01, - motion.x * 0.01, 0, .XYZ)
+            r := linalg.quaternion_from_euler_angles(motion.y * 0.01, - motion.x * 0.01, 0, .XYZ)
             orientation = linalg.quaternion_mul_quaternion(orientation, r)
-            forward = linalg.quaternion_mul_vector3(r, forward)
         }
     }
     {using game
@@ -188,8 +196,7 @@ init_game :: proc() {
         fov  = 45
         near = .1
         far  = 300
-        // orientation = cast(quaternion128)linalg.quaternion_from_forward_and_up(Vec3{0, 0, 1}, Vec3{0, 1, 0})
-        forward = {0, 0, -1}
+        orientation = linalg.quaternion_from_forward_and_up(Vec3{0, 0, 1}, Vec3{0, 1, 0})
         scale = {1, 1, 1}
     }
 
