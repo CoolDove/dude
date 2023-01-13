@@ -34,6 +34,8 @@ Game :: struct {
     font_unifont : ^DynamicFont,
     font_inkfree : ^DynamicFont,
     ttf_test_texture_id : u32,
+
+    test_value : f32,
 }
 
 game : Game
@@ -53,9 +55,14 @@ draw_game :: proc() {
 	immediate_quad(Vec2{40, 10}, Vec2{120, 20}, Vec4{ 0, 1, .4, 0.2 })
 	immediate_quad(Vec2{10, 120}, Vec2{90, 20}, Vec4{ 1, 1, 1, 0.9 })
 
-    immediate_text(game.font_inkfree, "click", get_mouse_position(), {.1, .1, .8, 1} if !get_mouse_button(.Left) else {1,1,1,1})
     immediate_text(game.font_inkfree, "The wind is passing through.", {100, 100}, {1, .6, .2, 1})
     immediate_text(game.font_unifont, "有欲望而无行动者滋生瘟疫。", {100, 500}, {.9, .2, .8, .5})
+
+    if game.test_value > 0.0 {
+        text := fmt.tprintf("Tweening: {}", game.test_value)
+        color := Vec4{.9, .8, .2, game.test_value}
+        immediate_text(game.font_inkfree, text, get_mouse_position(), color)
+    }
 
     // Shouldn't be here.
     @static show_debug_framerate := true
@@ -85,7 +92,6 @@ draw_game_imgui :: proc() {
         game.main_light.direction = linalg.normalize0(game.main_light.direction)
     }
 }
-
 }
 
 @(private="file")
@@ -123,7 +129,15 @@ update_game :: proc() {
                 window->toggle_fullscreen(.Fullscreen)
             }
         } 
+
+        if get_mouse_button_down(.Left) {
+            game.test_value = 1.0
+            tween_f32(&game.test_value, 0.0, 0.8)->set_on_complete(
+                proc(d:rawptr){log.debugf("End")}, nil)
+        } 
     }
+
+    tween_update()
 }
 
 init_game :: proc() {
@@ -180,6 +194,8 @@ init_game :: proc() {
         game.font_inkfree = font_load(raw_data(DATA_INKFREE_TTF), 32)
     }
 
+    tween_init()
+
 }
 
 @(private="file")
@@ -222,6 +238,8 @@ load_shader :: proc(vertex_source, frag_source : string)  -> dgl.Shader {
 }
 
 quit_game :: proc() {
+    tween_destroy()
+
     for key, mesh in &game.scene.meshes {
         log.debugf("Destroy Mesh: {}", strings.to_string(mesh.name))
         mesh_destroy(&mesh)
@@ -232,4 +250,5 @@ quit_game :: proc() {
 
     log.debug("QUIT GAME")
     assimp.release_import(game.scene.assimp_scene)
+
 }
