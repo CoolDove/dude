@@ -9,7 +9,7 @@ import sdl "vendor:sdl2"
 Input :: struct {
     keys : [sdl.NUM_SCANCODES]KeyState,
     mouse_buttons : [NUM_MOUSE_BUTTONS]MouseButtonState,
-    mouse_position, mouse_position_prev, mouse_motion : Vec2
+    mouse_position, mouse_position_prev, mouse_motion : Vec2,
 }
 
 KeyState :: struct {
@@ -20,7 +20,7 @@ KeyCode :: distinct sdl.Scancode // c.int
 
 MouseButtonState :: struct {
     pressed, pressed_prev : bool,
-    clicks : u8
+    clicks : u8,
 }
 MouseButton :: enum u8 {
     Left = 1, 

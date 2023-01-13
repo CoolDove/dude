@@ -17,5 +17,5 @@ VertexPCNU :: dgl.VertexPCNU
 Transform :: dgl.Transform
 
 Camera :: struct {
-    using dglcam : dgl.Camera
+    using dglcam : dgl.Camera,
 }

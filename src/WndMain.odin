@@ -27,7 +27,7 @@ when ODIN_DEBUG {
 import dgl "dgl"
 
 WndMainData :: struct {
-	data : u32
+	data : u32,
 }
 
 create_main_window :: proc (allocator:=context.allocator, loc := #caller_location) -> Window {

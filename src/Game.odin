@@ -42,7 +42,7 @@ Game :: struct {
 }
 
 GameSettings :: struct {
-    status_window_alpha : f32
+    status_window_alpha : f32,
 }
 
 game : Game
@@ -157,7 +157,7 @@ update_game :: proc() {
                     ptr := cast(^f32)d
                     ptr^ = 1 - clamp(ptr^, 0, 1)
                 }, 
-                &game.settings.status_window_alpha
+                &game.settings.status_window_alpha,
             )
         } 
     }

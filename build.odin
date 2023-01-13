@@ -71,6 +71,7 @@ main :: proc() {
             true, run_mode)
         defer delete(command)
         libc.system(strings.clone_to_cstring(command))
+        log_congratulations()
         if BuildFlag.Treesize in flags do libc.system("treesize bin/debug")
     }
 
@@ -81,6 +82,7 @@ main :: proc() {
             false, run_mode)
         defer delete(command)
         libc.system(strings.clone_to_cstring(command, context.temp_allocator))
+        log_congratulations()
         if BuildFlag.Treesize in flags do libc.system("treesize bin/release")
     }
 
@@ -113,6 +115,13 @@ delete_app_rc :: proc() {
     res := fmt.tprintf("{}.res", path.stem(APP_RC))
     if os.exists(res) do os.remove(res)
     log.debugf("Remove windows rc file: {}, {}", APP_RC, res)
+}
+
+log_congratulations :: proc() {
+    log.debug(`
+========
+Good Job
+========`)
 }
 
 make_odin_command :: proc(name, src, args, collection_str: string, debug, run: bool, allocator:= context.allocator) -> string {
@@ -169,8 +178,8 @@ copy_dir :: proc(src, dst : string, ext : []string) {
 }
 
 copy_file :: proc(src, dst : string) {
-    if len(src) == 0 {
-        log.errorf("Copy src is empty.", src)
+    if len(src) == 0 || len(dst) == 0{
+        log.errorf("Copy src/dst is empty.", src)
         return
     }
     if !os.exists(src) {

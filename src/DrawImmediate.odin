@@ -11,7 +11,7 @@ import "dgl"
 ImmediateDrawElement :: struct {
     shader : u32,
     start, count : u32,
-    texture : u32
+    texture : u32,
 }
 
 @(private="file")
@@ -145,8 +145,7 @@ immediate_quad :: proc (leftup, size: Vec2, color: Vec4) -> ^ImmediateDrawElemen
     element := ImmediateDrawElement{
         ime_context.basic_shader,
         cast(u32)len(ime_context.vertices), 6,
-        0
-    }
+        0}
 
     rightdown := leftup + size
     vertices := &ime_context.vertices

@@ -22,7 +22,7 @@ create_helper_window :: proc (allocator:=context.allocator, loc := #caller_locat
 @(private="file")
 helper_wnd_vtable := Window_DeriveVTable {
 	handler, update,
-	nil, nil
+	nil, nil,
 }
 
 

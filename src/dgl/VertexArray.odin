@@ -8,7 +8,7 @@ import gl "vendor:OpenGL"
 VertexArray :: struct {
     using obj : GLObject,
     attributes : [dynamic]VertexAttribute,
-    stride : u32
+    stride : u32,
 }
 
 AttributeType :: enum u32 {
@@ -33,7 +33,7 @@ AttributeType :: enum u32 {
 
 // https://www.khronos.org/opengl/wiki/Vertex_Shader
 AttributeShaderType :: enum u8 {
-    Float, Int, Vector
+    Float, Int, Vector,
 }
 
 VertexAttribute :: struct {

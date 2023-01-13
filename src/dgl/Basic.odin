@@ -5,5 +5,5 @@ import gl "vendor:OpenGL"
 
 // The base object of all the OpenGL objects.
 GLObject :: struct {
-    native_id : u32
+    native_id : u32,
 }

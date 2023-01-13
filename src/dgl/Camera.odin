@@ -8,7 +8,7 @@ Camera :: struct {
     using transform : Transform,
     forward : Vec3,// @Temp
     fov : f32,
-    near, far : f32
+    near, far : f32,
 }
 
 camera_get_matrix_vp :: proc(cam: ^Camera, aspect: f32) -> linalg.Matrix4x4f32 {
