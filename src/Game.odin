@@ -139,14 +139,14 @@ update_game :: proc() {
         up := linalg.quaternion_mul_vector3(orientation, UP3)
         right := linalg.cross(forward, up)
 
-        speed :f32= 0.5
+        speed :f32= 0.2
         dspeed :f32= speed * cast(f32)time.duration_milliseconds(app.duration_frame)
         if get_key(.D) do position += right * speed
         if get_key(.A) do position -= right * speed
         if get_key(.W) do position += forward * speed
         if get_key(.S) do position -= forward * speed
-        if get_key(.E) do position += up * speed
-        if get_key(.Q) do position -= up * speed
+        if get_key(.E) do position += UP3 * speed
+        if get_key(.Q) do position -= UP3 * speed
     }
     {using game
         if get_key_down(.F1) {
