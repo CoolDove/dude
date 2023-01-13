@@ -15,6 +15,7 @@ import "pac:assimp"
 import "dgl"
 
 Game :: struct {
+    using settings : ^GameSettings,
     window : ^Window,
 
     basic_shader : dgl.Shader,
@@ -37,6 +38,10 @@ Game :: struct {
 
     test_value : f32,
     tweened_color : Vec4,
+}
+
+GameSettings :: struct {
+    status_window_alpha : f32
 }
 
 game : Game
@@ -66,10 +71,7 @@ draw_game :: proc() {
         immediate_text(game.font_inkfree, text, pos, game.tweened_color)
     }
 
-    // Shouldn't be here.
-    @static show_debug_framerate := true
-    if get_key_down(.F1) do show_debug_framerate = !show_debug_framerate
-    if show_debug_framerate do debug_framerate()
+    if game.settings.status_window_alpha > 0 do draw_status()
 
     gl.BindVertexArray(game.vao)
     set_opengl_state_for_draw_geometry()
@@ -97,15 +99,15 @@ draw_game_imgui :: proc() {
 }
 
 @(private="file")
-debug_framerate :: proc() {
+draw_status :: proc() {
     frame_ms := time.duration_milliseconds(app.duration_frame)
-    total_s  := time.duration_seconds(app.duration_total)
-    @static framerate : i32
-    real_framerate := cast(i32)(1000.0/frame_ms)
-    framerate = cast(i32) (cast(f32) (real_framerate - framerate) * 0.5 + cast(f32) framerate)
-    immediate_text(game.font_unifont, fmt.tprintf("FPS: {}", framerate), {10, 32+10}, {.1, 1, .1, 1})
+    framerate := cast(i32)(1000.0/frame_ms)
+    color := Vec4{.1, 1, .1, 1}
+    color.a *= game.settings.status_window_alpha
+
+    immediate_text(game.font_unifont, fmt.tprintf("FPS: {}", framerate), {10, 32+10}, color)
     immediate_text(game.font_unifont, fmt.tprintf("Fullscreen: {}", game.window.fullscreen), 
-        {10, 32+10+32+10}, {.1, 1, .1, 1})
+        {10, 32+10+32+10}, color)
 }
 
 update_game :: proc() {
@@ -120,6 +122,11 @@ update_game :: proc() {
         }
     }
     {using game
+        if get_key_down(.F1) {
+            using game.settings
+            if status_window_alpha == 0 do tween(&status_window_alpha, 1.0, 0.2)
+            else if status_window_alpha == 1 do tween(&status_window_alpha, 0.0, 0.2)
+        }
         if get_key_down(.F2) do immediate_draw_wireframe = !immediate_draw_wireframe
         if get_key_down(.F11) {
             switch window.fullscreen {
@@ -146,6 +153,9 @@ update_game :: proc() {
 
 init_game :: proc() {
     using dgl
+
+    game.settings = new(GameSettings)
+
     game.test_image = texture_load(DATA_IMG_ICON)
     image_free(&game.test_image)
 
@@ -199,6 +209,7 @@ init_game :: proc() {
     }
 
     tween_init()
+
 
 }
 
@@ -254,5 +265,7 @@ quit_game :: proc() {
 
     log.debug("QUIT GAME")
     assimp.release_import(game.scene.assimp_scene)
+
+    free(game.settings)
 
 }
