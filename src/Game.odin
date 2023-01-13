@@ -155,6 +155,11 @@ update_game :: proc() {
             else if status_window_alpha == 1 do tween(&status_window_alpha, 0.0, 0.2)
         }
         if get_key_down(.F2) do immediate_draw_wireframe = !immediate_draw_wireframe
+
+        if get_key_down(.F3) {
+
+        }
+
         if get_key_down(.F11) {
             switch window.fullscreen {
             case .Fullscreen:
@@ -168,18 +173,37 @@ update_game :: proc() {
 
         // tween example
         if get_key_down(.T) {
-            game.test_value = 1.0
-            tween(&game.test_value, 0, 0.8)->set_easing(ease_outexpo)
-            game.tweened_color = {1, 0, 0, 1}
+            anim_duration :f32= 0.8
 
-            tween(&game.tweened_color, Vec4{0, 0, 1, 0}, 0.8)->
-            set_on_complete(
-                proc(d:rawptr){
-                    ptr := cast(^f32)d
-                    ptr^ = 1 - clamp(ptr^, 0, 1)
-                }, 
-                &game.settings.status_window_alpha,
-            )
+            @static red_light :i32= 0
+            tweened := false
+            if red_light == 1 {
+                red_light = -1
+                tween(&game.main_light.color, Vec4{0, 0, 1, 1}, anim_duration) -> set_on_complete(
+                    proc(p:rawptr) {
+                        ptr := transmute(^i32)p
+                        ptr^ = 0
+                    },
+                    &red_light,
+                ) -> set_easing(ease_outexpo)
+                tweened = true
+            } else if red_light == 0 {
+                red_light = -1
+                tween(&game.main_light.color, Vec4{1, 0, 0, 1}, anim_duration) -> set_on_complete(
+                    proc(p:rawptr) {
+                        ptr := transmute(^i32)p
+                        ptr^ = 1
+                    },
+                    &red_light,
+                ) -> set_easing(ease_outexpo)
+                tweened = true
+            }
+            if tweened {
+                game.test_value = 1.0
+                tween(&game.test_value, 0, anim_duration)->set_easing(ease_outexpo)
+                game.tweened_color = {1, 0, 0, 1}
+                tween(&game.tweened_color, Vec4{0, 0, 1, 0}, anim_duration)
+            }
         } 
     }
 

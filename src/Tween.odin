@@ -22,12 +22,15 @@ tween_init :: proc() {
 tween_update :: proc() {
     for tween, ind in &tweens {
         if tween.done do continue
+
         interp :f32= cast(f32)time.duration_seconds(app.duration_total - tween.start_time) / tween.duration
         eased_value := tween.easing_proc(interp)
         value := tween_value(tween.begin_value, tween.end_value, eased_value)
-        tween.data^ = value
+
+        tween_set_data(tween.data, value)
+    
         if interp > 1.0 {
-            tween.data^ = tween.end_value
+            tween_set_data(tween.data, tween.end_value)
             tween.done = true
             if tween.on_complete != nil do tween.on_complete(tween.user_data)
             if cast(i32)ind < tween_reuse_ptr || tween_reuse_ptr < 0 {
@@ -44,7 +47,7 @@ tween_destroy :: proc() {
 Tween :: struct {
     using vtable : ^Tween_VTable,
 
-    data : ^TweenableValue,
+    data : rawptr,
     begin_value, end_value : TweenableValue,
     duration : f32,// in sec
     start_time : time.Duration,
@@ -105,7 +108,7 @@ tween :: proc(value: ^$T, target : T, duration : f32) -> ^Tween {
         tween : ^Tween = &tweens[tween_reuse_ptr]
         _init_tween(tween)
 
-        tween.data = transmute(^TweenableValue)value
+        tween.data = transmute(rawptr)value
         tween.begin_value = value^
         tween.end_value = cast(TweenableValue)target
         tween.duration = duration
@@ -288,6 +291,26 @@ tween_value :: proc(begin, end: TweenableValue, interp: f32) -> TweenableValue {
         return _tween_impl_quaternionf32(begin.(linalg.Quaternionf32), end.(linalg.Quaternionf32), interp)
     }
     return 0.0
+}
+tween_set_data :: proc(ptr: rawptr, value: TweenableValue) {
+    using linalg
+    switch i in value {
+    case f32:
+        data := transmute(^f32)ptr
+        data^ = value.(f32)
+    case Vec2:
+        data := transmute(^Vec2)ptr
+        data^ = value.(Vec2)
+    case Vec3:
+        data := transmute(^Vec3)ptr
+        data^ = value.(Vec3)
+    case Vec4:
+        data := transmute(^Vec4)ptr
+        data^ = value.(Vec4)
+    case Quaternionf32:
+        data := transmute(^Quaternionf32)ptr
+        data^ = value.(Quaternionf32)
+    }
 }
 
 tween_type_is_valid :: proc(T: typeid) -> bool {
