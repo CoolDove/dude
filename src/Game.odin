@@ -14,6 +14,7 @@ when ODIN_DEBUG do import "pac:imgui"
 import "pac:assimp"
 
 import "dgl"
+import "ecs"
 
 Game :: struct {
     using settings : ^GameSettings,
@@ -268,6 +269,32 @@ init_game :: proc() {
 
     tween_init()
 
+    // {using game
+    //     ecs.world_init(world)
+    //     ecs.push_system(world, render_system_update);
+    //     {
+    //         hero := ecs.make_entity(world)
+    //         sprite_renderer := ecs.add_component(world, hero, SpriteRenderer)
+    //         sprite_renderer.texture_id = game.test_image.texture_id
+    //         sprite_renderer.size = {1024, 1024}
+    //         sprite_renderer.pivot = {1024, 1024}
+    //         sprite_renderer.size = {1024, 1024}
+    //     }
+    // }
+
+    {// ## Sparse set test
+        sset := ecs.spsset_make(4096 * 5)
+        log.debugf("A sparse set is allocated, capacity: {}, buffer size: {}", 
+            ecs.spsset_cap(&sset), ecs.spsset_cap(&sset) * size_of(u32))
+        ecs.spsset_add_multiple(&sset, 16, 2, 3, 4, 6, 7, 8)
+        log.debugf("set content: {}", sset.dense)
+        ecs.spsset_remove_multiple(&sset, 16, 3, 7)
+        log.debugf("removed something")
+        log.debugf("set content: {}", sset.dense)
+        ecs.spsset_remove_multiple(&sset, 8, 6)
+        log.debugf("removed something")
+        log.debugf("set content: {}", sset.dense)
+    }
 
 }
 
