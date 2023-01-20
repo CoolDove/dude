@@ -282,17 +282,26 @@ init_game :: proc() {
     //     }
     // }
 
+    TestData :: struct {
+        name : string,
+        // components : [dynamic]^ecs.Component,
+    }
+
     {// ## Sparse set test
-        sset := ecs.spsset_make(4096 * 5)
-        log.debugf("A sparse set is allocated, capacity: {}, buffer size: {}", 
-            ecs.spsset_cap(&sset), ecs.spsset_cap(&sset) * size_of(u32))
-        ecs.spsset_add_multiple(&sset, 16, 2, 3, 4, 6, 7, 8)
+        using ecs
+        sset := spsset_make(string, 4096 * 5)
+        spsset_add(&sset, 2, "Dove")
+        spsset_add(&sset, 4, "Sol")
+        spsset_add(&sset, 12, "Jet")
+        spsset_add(&sset, 32, "Spike")
+        spsset_add(&sset, 32, "Fay") // fail
+        
+        if data , ok := spsset_get(&sset, 12); ok {
+            log.debugf("id 12: {}", data)
+        }
+
         log.debugf("set content: {}", sset.dense)
-        ecs.spsset_remove_multiple(&sset, 16, 3, 7)
-        log.debugf("removed something")
-        log.debugf("set content: {}", sset.dense)
-        ecs.spsset_remove_multiple(&sset, 8, 6)
-        log.debugf("removed something")
+        spsset_remove(&sset, 4)
         log.debugf("set content: {}", sset.dense)
     }
 
