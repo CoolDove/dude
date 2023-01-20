@@ -287,7 +287,7 @@ init_game :: proc() {
         // components : [dynamic]^ecs.Component,
     }
 
-    {// ## Sparse set test
+    if false {// ## Sparse set test
         using ecs
         sset := spsset_make(string, 4096 * 5)
         spsset_add(&sset, 2, "Dove")
@@ -303,6 +303,24 @@ init_game :: proc() {
         log.debugf("set content: {}", sset.dense)
         spsset_remove(&sset, 4)
         log.debugf("set content: {}", sset.dense)
+    }
+
+    {// ## ECS test
+        using ecs
+        world := world_create()
+        defer world_destroy(world)
+
+        {
+            dove := add_entity(world)
+            add_component(world, dove, SpriteRenderer)
+            add_component(world, dove, TextRenderer)
+        }
+        {
+            jet := add_entity(world)
+            add_component(world, jet, SpriteRenderer)
+        }
+
+        log.debugf("sprite renderers: {}", get_components(world, SpriteRenderer))
     }
 
 }

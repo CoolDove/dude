@@ -12,6 +12,10 @@ spsset_make :: proc($T: typeid, count: u32, allocator:= context.allocator) -> Sp
     spsset.sparse = make([dynamic]u32, count, count)
     return spsset
 }
+spsset_destroy :: proc(using spsset: ^$T/SparseSet) {
+    delete(dense)
+    delete(sparse)
+}
 
 spsset_contain :: proc(using spsset: ^$T/SparseSet, id: u32) -> bool {
     if id >= cast(u32)len(sparse) do return false
@@ -20,9 +24,15 @@ spsset_contain :: proc(using spsset: ^$T/SparseSet, id: u32) -> bool {
     return dense[index].id == id
 }
 
+// Get the data copy.
 spsset_get :: proc(using spsset: ^SparseSet($T), id : u32) -> (data: T, ok: bool) #optional_ok {
     if !spsset_contain(spsset, id) do return T{}, false
     return dense[sparse[id]].data, true
+}
+// Find the data address.
+spsset_find :: proc(using spsset: ^SparseSet($T), id : u32) -> (data: ^T, ok: bool) #optional_ok {
+    if !spsset_contain(spsset, id) do return nil, false
+    return &dense[sparse[id]].data, true
 }
 
 spsset_add :: proc(using spsset: ^$SSet/SparseSet, index: u32, data : $T) -> bool {
