@@ -269,40 +269,27 @@ init_game :: proc() {
 
     tween_init()
 
-    // {using game
-    //     ecs.world_init(world)
-    //     ecs.push_system(world, render_system_update);
-    //     {
-    //         hero := ecs.make_entity(world)
-    //         sprite_renderer := ecs.add_component(world, hero, SpriteRenderer)
-    //         sprite_renderer.texture_id = game.test_image.texture_id
-    //         sprite_renderer.size = {1024, 1024}
-    //         sprite_renderer.pivot = {1024, 1024}
-    //         sprite_renderer.size = {1024, 1024}
-    //     }
-    // }
-
     TestData :: struct {
         name : string,
         // components : [dynamic]^ecs.Component,
     }
 
     if false {// ## Sparse set test
-        using ecs
-        sset := spsset_make(string, 4096 * 5)
-        spsset_add(&sset, 2, "Dove")
-        spsset_add(&sset, 4, "Sol")
-        spsset_add(&sset, 12, "Jet")
-        spsset_add(&sset, 32, "Spike")
-        spsset_add(&sset, 32, "Fay") // fail
+        // using ecs
+        // sset := spsset_make(string, 4096 * 5)
+        // spsset_add(&sset, 2, "Dove")
+        // spsset_add(&sset, 4, "Sol")
+        // spsset_add(&sset, 12, "Jet")
+        // spsset_add(&sset, 32, "Spike")
+        // spsset_add(&sset, 32, "Fay") // fail
         
-        if data , ok := spsset_get(&sset, 12); ok {
-            log.debugf("id 12: {}", data)
-        }
+        // if data , ok := spsset_get(&sset, 12); ok {
+        //     log.debugf("id 12: {}", data)
+        // }
 
-        log.debugf("set content: {}", sset.dense)
-        spsset_remove(&sset, 4)
-        log.debugf("set content: {}", sset.dense)
+        // log.debugf("set content: {}", sset.dense)
+        // spsset_remove(&sset, 4)
+        // log.debugf("set content: {}", sset.dense)
     }
 
     {// ## ECS test
@@ -310,17 +297,30 @@ init_game :: proc() {
         world := world_create()
         defer world_destroy(world)
 
-        {
-            dove := add_entity(world)
-            add_component(world, dove, SpriteRenderer)
-            add_component(world, dove, TextRenderer)
-        }
-        {
-            jet := add_entity(world)
-            add_component(world, jet, SpriteRenderer)
-        }
+        spike := add_entity(world)
+        add_component(world, spike, Transform)
+        add_component(world, spike, SpriteRenderer)
+        add_component(world, spike, TextRenderer)
 
+        dove := add_entity(world)
+        add_component(world, dove, Transform)
+        add_component(world, dove, SpriteRenderer)
+        add_component(world, dove, TextRenderer)
+        
+        jet := add_entity(world)
+        add_component(world, jet, Transform)
+        add_component(world, jet, SpriteRenderer)
+        
         log.debugf("sprite renderers: {}", get_components(world, SpriteRenderer))
+        remove_component(world, jet, SpriteRenderer)
+        log.debugf("sprite renderers: {}", get_components(world, SpriteRenderer))
+        remove_component(world, spike, SpriteRenderer)
+        log.debugf("Dove components: {}", get_components(world, dove, context.temp_allocator))
+
+        dove_sprite_renderer := get_component(world, dove, SpriteRenderer)
+
+        log.debugf("Dove Sprite Renderer: {}", dove_sprite_renderer)
+
     }
 
 }

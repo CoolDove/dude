@@ -17,14 +17,19 @@ import "core:mem"
 // - **components**: A map from `typeid` to `ComponentPool`. You could use a type to find
 // the existing components.
 World :: struct {
-    entities   : SparseSet([dynamic]EntityComponentInfo),
+    entities   : SparseSet(EntityInfo),
     components : ComponentMap,
     // systems_update : [dynamic]SystemUpdateProc,
+}
+
+EntityInfo :: struct {
+    // nothing.
 }
 
 EntityComponentInfo :: struct {
     id   : u32,
     type : typeid,
+    is_valid : bool,
 }
 
 // API
@@ -32,7 +37,8 @@ world_create :: proc(allocator:= context.allocator) -> ^World{
     context.allocator = allocator
     world := new(World)
     
-    world.entities = spsset_make([dynamic]EntityComponentInfo, 4096 * 4)
+    // world.entities = spsset_make([dynamic]EntityComponentInfo, 4096 * 4)
+    world.entities = spsset_make(EntityInfo, 4096 * 4)
     world.components = make(ComponentMap)
 
     return world
@@ -54,7 +60,7 @@ add_entity :: proc(world: ^World) -> Entity {
     spsset_add(
         &world.entities,
         entity_id,
-        make([dynamic]EntityComponentInfo),
+        EntityInfo{},
     )
     return cast(Entity)entity_id
 }
