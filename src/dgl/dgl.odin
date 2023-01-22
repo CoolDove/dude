@@ -59,11 +59,11 @@ Vec2i :: distinct [2]i32
 Vec3i :: distinct [3]i32
 Vec4i :: distinct [4]i32
 
-Transform :: struct {
-    position    : Vec3,
-    orientation : linalg.Quaternionf32,
-    scale       : Vec3,
-}
+// Transform :: struct {
+//     position    : Vec3,
+//     orientation : linalg.Quaternionf32,
+//     scale       : Vec3,
+// }
 
 VertexTypes :: bit_set[VertexType]
 

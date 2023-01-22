@@ -8,9 +8,11 @@ import "core:strings"
 import "pac:assimp"
 
 Scene :: struct {
+    // Old things, remove after the real scene is done.
     meshes : map[^assimp.Mesh]TriangleMesh,
     assimp_scene : ^assimp.Scene,
 }
+
 
 prepare_scene :: proc(scene: ^Scene, aiscene: ^assimp.Scene, shader, texture: u32) {
     scene.assimp_scene = aiscene
@@ -83,7 +85,4 @@ DoveSceneNode :: struct {
     mesh : string,
     position, euler, scal : linalg.Vector3f32,
     children : [dynamic]DoveSceneNode,
-}
-
-dove_scene_file_test :: proc() {
 }

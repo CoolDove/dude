@@ -99,13 +99,6 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 
 @(private="file")
 update :: proc(using wnd:^Window) {
-	update_game()
-	render(wnd)
-	input_after_update_sdl2()
-}
-
-@(private="file")
-render :: proc(using wnd:^Window) {
 	wnd_data := window_data(WndMainData, wnd)
 
 	draw_settings.screen_width = cast(f32)wnd.size.x
@@ -115,12 +108,14 @@ render :: proc(using wnd:^Window) {
 	gl.ClearColor(col.r, col.g, col.b, col.a)
 	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT)
 
+	immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
+
+	update_game()
+
 	when ODIN_DEBUG {
 		imsdl.new_frame()
 	    io := imgui.get_io()
 	}
-	
-	immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
 
 	draw_game()
 
@@ -137,4 +132,6 @@ render :: proc(using wnd:^Window) {
 	when ODIN_DEBUG do imgl.imgui_render(draw_data, imgui_state.opengl_state)
 
 	sdl.GL_SwapWindow(wnd.window)
+
+	input_after_update_sdl2()
 }

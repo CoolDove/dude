@@ -1,5 +1,7 @@
 ﻿package ecs
 
+import "core:log"
+import "core:fmt"
 import "core:strings"
 import "core:math/linalg"
 import "core:runtime"
@@ -23,10 +25,14 @@ add_component :: proc {
     add_component_by_type,
     add_component_by_data,
 }
-add_component_by_type :: proc(world: ^World, entity: Entity, $T: typeid) -> ^T {
+add_component_by_type :: proc(world: ^World, entity: Entity, $T: typeid) -> ^T 
+    where intrinsics.type_is_struct(T)
+{
     return add_component(world, entity, T{})
 }
-add_component_by_data :: proc(world: ^World, entity: Entity, component: $T) -> ^T {
+add_component_by_data :: proc(world: ^World, entity: Entity, component: $T) -> ^T 
+    where intrinsics.type_is_struct(T)
+{
     component_type := component_type_check(T)
     if component_type == ComponentType.Invalid do return nil
 
@@ -91,10 +97,22 @@ get_components :: proc {
 }
 
 get_components_of_type :: proc(world: ^World, $T: typeid) -> []T {
+    // sb: strings.Builder
+    // strings.builder_init(&sb)
+    // defer strings.builder_destroy(&sb)
+    // list_components(world, &sb)
+    // log.debugf("Get Component from: {}", strings.to_string(sb))
     if comps, ok := world.components[T]; ok {
         return (transmute([dynamic]T)comps.components)[:]
     } else {
         return nil
+    }
+}
+
+@(private="file")
+list_components :: proc(world: ^World, sb: ^strings.Builder) {
+    for key, value in world.components {
+        strings.write_string(sb, fmt.tprintf("{}[{}] ", key, len(transmute([dynamic]any)value.components)))
     }
 }
 
@@ -122,23 +140,23 @@ ComponentInfo :: struct {
 
 // ## Test Components
 // Some built-in components to test the ecs system.
-Transform :: struct {
-    position    : linalg.Vector3f32,
-    orientation : linalg.Quaternionf32,
-    scale       : linalg.Vector3f32,
-}
+// Transform :: struct {
+//     position    : linalg.Vector3f32,
+//     orientation : linalg.Quaternionf32,
+//     scale       : linalg.Vector3f32,
+// }
 
-SpriteRenderer :: struct {
-    using component : Component,// THIS IS WHAT A GAME COMPONENT NEEDS! SHOULD BE PLACED AT FIRST.
-    texture_id : u32,
-    size, pos, pivot : linalg.Vector2f32,
-}
+// SpriteRenderer :: struct {
+//     using component : Component,// THIS IS WHAT A GAME COMPONENT NEEDS! SHOULD BE PLACED AT FIRST.
+//     texture_id : u32,
+//     size, pos, pivot : linalg.Vector2f32,
+// }
 
-TextRenderer :: struct {
-    text : ^strings.Builder,
-    dirty_flag : bool,
-    pos : linalg.Vector2f32,
-}
+// TextRenderer :: struct {
+//     text : ^strings.Builder,
+//     dirty_flag : bool,
+//     pos : linalg.Vector2f32,
+// }
 
 // ## Dead code
 

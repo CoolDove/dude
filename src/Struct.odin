@@ -11,10 +11,12 @@ Vec2i :: dgl.Vec2i
 Vec3i :: dgl.Vec3i
 Vec4i :: dgl.Vec4i
 
+Quaternion :: linalg.Quaternionf32
+
 VertexPCU  :: dgl.VertexPCU
 VertexPCNU :: dgl.VertexPCNU
 
-Transform :: dgl.Transform
+// Transform :: dgl.Transform
 
 FORWARD3 :: Vec3{0, 0, 1}
 UP3 :: Vec3{0, 1, 0}
@@ -23,7 +25,16 @@ RIGHT3 :: Vec3{1, 0, 0}
 UP2 :: Vec2{0, 1}
 RIGHT2 :: Vec2{1, 1}
 
+Transform :: struct {
+    position    : Vec3,
+    orientation : linalg.Quaternionf32,
+    scale       : Vec3,
+}
 
 Camera :: struct {
-    using dglcam : dgl.Camera,
+    position : Vec3,
+    orientation : Quaternion,
+    fov : f32,
+    near, far : f32,
+    tag : string,
 }

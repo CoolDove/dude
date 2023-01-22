@@ -20,14 +20,16 @@ Game :: struct {
     using settings : ^GameSettings,
     window : ^Window,
 
+    main_world : ^ecs.World,
+
     basic_shader : dgl.Shader,
 
-    main_light : LightData,
+    // main_light : LightData,
 
     scene      : Scene,
 
-    camera     : Camera,
-    test_image : dgl.Image,
+    // camera     : Camera,
+    // test_image : dgl.Image,
 
     immediate_draw_wireframe : bool,
 
@@ -55,57 +57,17 @@ GameObject :: struct {
 
 draw_game :: proc() {
 	using dgl
-
     wnd := game.window
 
-	wnd_size := Vec2{cast(f32)wnd.size.x, cast(f32)wnd.size.y}
-	immediate_quad(Vec2{wnd_size.x * 0.05, 0}, Vec2{wnd_size.x * 0.9, 20}, Vec4{ 1, 0, 0, 0.2 })
-	immediate_quad(Vec2{40, 10}, Vec2{120, 20}, Vec4{ 0, 1, .4, 0.2 })
-	immediate_quad(Vec2{10, 120}, Vec2{90, 20}, Vec4{ 1, 1, 1, 0.9 })
-
-    immediate_text(game.font_inkfree, "The wind is passing through.", {100, 100}, {1, .6, .2, 1})
     immediate_text(game.font_unifont, "有欲望而无行动者滋生瘟疫。", {100, 500}, {.9, .2, .8, .5})
-    immediate_text(game.font_unifont, "Press T to show the tweeeeeen。", {100, 350}, {.9, .2, .8, .5})
-
-    if game.test_value > 0.0 {
-        text := fmt.tprintf("Tweening: {}", game.test_value)
-        pos :Vec2= {game.test_value * wnd_size.x, wnd_size.y * 0.5}
-        immediate_text(game.font_inkfree, text, pos, game.tweened_color)
-    }
 
     if game.settings.status_window_alpha > 0 do draw_status()
 
-    gl.BindVertexArray(game.vao)
-    set_opengl_state_for_draw_geometry()
-
-    objects := make([dynamic]RenderObject, 0, game.scene.assimp_scene.mNumMeshes)
-    defer delete(objects)
-    recursive_make_render_objects(&game.scene, game.scene.assimp_scene.mRootNode, &objects)
-    env := RenderEnvironment{&game.camera, &game.main_light}
-    draw_objects(objects[:], &env)
 }
 
 when ODIN_DEBUG {
 draw_game_imgui :: proc() {
     imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
-
-    if imgui.collapsing_header("Camera") {
-        using game.camera
-        euler : Vec3
-        euler.x, euler.y, euler.z = linalg.euler_angles_from_quaternion(orientation, .XYZ)
-
-        euler /= math.RAD_PER_DEG
-        imgui.slider_float3("eluer", &euler, -360, 360)
-        euler *= math.RAD_PER_DEG
-
-        orientation = linalg.quaternion_from_euler_angles(euler.x, euler.y, euler.z, .XYZ)
-    }
-
-    // if imgui.collapsing_header("MainLight") {
-    //     imgui.color_picker4("color", &game.main_light.color)
-    //     imgui.slider_float3("direction", &game.main_light.direction, -1, 1)
-    //     game.main_light.direction = linalg.normalize0(game.main_light.direction)
-    // }
 
     for t, ind in &tweens {
         text := fmt.tprintf("{}: {}", ind, "working" if !t.done else "done.")
@@ -127,87 +89,7 @@ draw_status :: proc() {
 }
 
 update_game :: proc() {
-    {using game.camera
-        if get_key(.J) && fov < 89 do fov += 1
-        if get_key(.K) && fov > 1  do fov -= 1
-        if get_mouse_button(.Right) {
-            motion := get_mouse_motion()
-            r := linalg.quaternion_from_euler_angles(motion.y * 0.01, - motion.x * 0.01, 0, .XYZ)
-            orientation = linalg.quaternion_mul_quaternion(orientation, r)
-        }
-
-        forward := linalg.quaternion_mul_vector3(orientation, FORWARD3)
-        up := linalg.quaternion_mul_vector3(orientation, UP3)
-        right := linalg.cross(forward, up)
-
-        speed :f32= 0.2
-        dspeed :f32= speed * cast(f32)time.duration_milliseconds(app.duration_frame)
-        if get_key(.D) do position += right * speed
-        if get_key(.A) do position -= right * speed
-        if get_key(.W) do position += forward * speed
-        if get_key(.S) do position -= forward * speed
-        if get_key(.E) do position += UP3 * speed
-        if get_key(.Q) do position -= UP3 * speed
-    }
-    {using game
-        if get_key_down(.F1) {
-            using game.settings
-            if status_window_alpha == 0 do tween(&status_window_alpha, 1.0, 0.2)->set_easing(ease_outbounce)
-            else if status_window_alpha == 1 do tween(&status_window_alpha, 0.0, 0.2)
-        }
-        if get_key_down(.F2) do immediate_draw_wireframe = !immediate_draw_wireframe
-
-        if get_key_down(.F3) {
-
-        }
-
-        if get_key_down(.F11) {
-            switch window.fullscreen {
-            case .Fullscreen:
-                window->toggle_fullscreen(.Windowed)
-            case .FullscreenDesktop:
-                window->toggle_fullscreen(.Windowed)
-            case .Windowed:
-                window->toggle_fullscreen(.Fullscreen)
-            }
-        } 
-
-        // tween example
-        if get_key_down(.T) {
-            anim_duration :f32= 0.8
-
-            @static red_light :i32= 0
-            tweened := false
-            if red_light == 1 {
-                red_light = -1
-                tween(&game.main_light.color, Vec4{0, 0, 1, 1}, anim_duration) -> set_on_complete(
-                    proc(p:rawptr) {
-                        ptr := transmute(^i32)p
-                        ptr^ = 0
-                    },
-                    &red_light,
-                ) -> set_easing(ease_outexpo)
-                tweened = true
-            } else if red_light == 0 {
-                red_light = -1
-                tween(&game.main_light.color, Vec4{1, 0, 0, 1}, anim_duration) -> set_on_complete(
-                    proc(p:rawptr) {
-                        ptr := transmute(^i32)p
-                        ptr^ = 1
-                    },
-                    &red_light,
-                ) -> set_easing(ease_outexpo)
-                tweened = true
-            }
-            if tweened {
-                game.test_value = 1.0
-                tween(&game.test_value, 0, anim_duration)->set_easing(ease_outexpo)
-                game.tweened_color = {1, 0, 0, 1}
-                tween(&game.tweened_color, Vec4{0, 0, 1, 0}, anim_duration)
-            }
-        } 
-    }
-
+    ecs.world_update(game.main_world)
     tween_update()
 }
 
@@ -216,8 +98,8 @@ init_game :: proc() {
 
     game.settings = new(GameSettings)
 
-    game.test_image = texture_load(DATA_IMG_ICON)
-    image_free(&game.test_image)
+    // game.test_image = texture_load(DATA_IMG_ICON)
+    // image_free(&game.test_image)
 
     gl.GenVertexArrays(1, &game.vao)
 
@@ -226,22 +108,8 @@ init_game :: proc() {
 
     game.basic_shader = load_shader(vertex_shader_src, fragment_shader_src)
 
-    box_img := texture_load(DATA_IMG_BOX)
-    image_free(&box_img)
-
-    { using game.camera
-        position = {0, 0, 3.5}
-        fov  = 45
-        near = .1
-        far  = 300
-        orientation = linalg.quaternion_from_forward_and_up(Vec3{0, 0, 1}, Vec3{0, 1, 0})
-        scale = {1, 1, 1}
-    }
-
-    { using game.main_light
-        color = {1, .8, .8, 1}
-        direction = linalg.normalize(Vec3{-0.9, .3, 0}) 
-    }
+    // box_img := texture_load(DATA_IMG_BOX)
+    // image_free(&box_img)
 
     {// Load Models
         mushroom := assimp.import_file(
@@ -249,6 +117,7 @@ init_game :: proc() {
             cast(u32) assimp.PostProcessPreset_MaxQuality,
             "fbx")
         game.scene.assimp_scene = mushroom
+        // TODO: This is not a `scene`, a fbx should be loaded as a MeshFile or ...
         prepare_scene(&game.scene, mushroom, game.basic_shader.native_id, draw_settings.default_texture_white)
         for i in 0..<mushroom.mNumMeshes {
             m := mushroom.mMeshes[i]
@@ -269,63 +138,86 @@ init_game :: proc() {
 
     tween_init()
 
-    TestData :: struct {
-        name : string,
-        // components : [dynamic]^ecs.Component,
+    {// Res test
+        res_load_texture("texture/box.png")
     }
 
-    if false {// ## Sparse set test
-        // using ecs
-        // sset := spsset_make(string, 4096 * 5)
-        // spsset_add(&sset, 2, "Dove")
-        // spsset_add(&sset, 4, "Sol")
-        // spsset_add(&sset, 12, "Jet")
-        // spsset_add(&sset, 32, "Spike")
-        // spsset_add(&sset, 32, "Fay") // fail
-        
-        // if data , ok := spsset_get(&sset, 12); ok {
-        //     log.debugf("id 12: {}", data)
-        // }
-
-        // log.debugf("set content: {}", sset.dense)
-        // spsset_remove(&sset, 4)
-        // log.debugf("set content: {}", sset.dense)
-    }
-
-    {// ## ECS test
+    {// Init the world
+        using game
         using ecs
-        world := world_create()
-        defer world_destroy(world)
+        main_world = ecs.world_create()
+        world := main_world
+        ecs.add_system(main_world, render_system_update)
 
-        spike := add_entity(world)
-        add_component(world, spike, Transform)
-        add_component(world, spike, SpriteRenderer)
-        add_component(world, spike, TextRenderer)
-
-        dove := add_entity(world)
-        add_component(world, dove, Transform)
-        add_component(world, dove, SpriteRenderer)
-        add_component(world, dove, TextRenderer)
-        
-        jet := add_entity(world)
-        add_component(world, jet, Transform)
-        add_component(world, jet, SpriteRenderer)
-        
-        log.debugf("sprite renderers: {}", get_components(world, SpriteRenderer))
-        remove_component(world, jet, SpriteRenderer)
-        log.debugf("sprite renderers: {}", get_components(world, SpriteRenderer))
-        remove_component(world, spike, SpriteRenderer)
-        log.debugf("Dove components: {}", get_components(world, dove, context.temp_allocator))
-
-        dove_sprite_renderer := get_component(world, dove, SpriteRenderer)
-
-        log.debugf("Dove Sprite Renderer: {}", dove_sprite_renderer)
-
+        {// Add the camera and light.
+            log.debugf("Create Camera and Light")
+            {// main camera
+                camera := add_entity(world)
+                cam := add_component(world, camera, Camera)
+                {using cam
+                    position = {0, 0, 3.5}
+                    fov  = 45
+                    near = .1
+                    far  = 300
+                    orientation = linalg.quaternion_from_forward_and_up(Vec3{0, 0, 1}, Vec3{0, 1, 0})
+                }
+                add_component(world, camera, DebugInfo{"MainCamera"})
+            }
+            {// main light
+                light := add_entity(world)
+                l : Light
+                {using l
+                    color = {1, .8, .8, 1}
+                    direction = linalg.normalize(Vec3{-0.9, .3, 0}) 
+                }
+                add_component(world, light, l)
+                add_component(world, light, DebugInfo{"MainLight"})
+            }
+            log.debugf("Camera and Light created ")
+        }
+        {// Add MeshRenderers.
+            recursive_add_mesh_renderer(world, &game.scene, game.scene.assimp_scene.mRootNode)
+            log.debugf("MeshRenderers created")
+        }
+        {// Add test SpriteRenderer.
+            dove := ecs.add_entity(main_world)
+            sprite := ecs.add_component(main_world, dove, SpriteRenderer)
+            sprite.texture_id = res_get_texture("texture/box.png").texture_id
+            sprite.size = {64, 64}
+            sprite.pos = {0, 0}
+            sprite.pivot = {0.0, 0.0}
+        }
     }
 
 }
 
 @(private="file")
+recursive_add_mesh_renderer :: proc(world: ^ecs.World, scene: ^Scene, node: ^assimp.Node, ite:u32=0) {
+    aiscene := scene.assimp_scene
+
+    for i in 0..<node.mNumMeshes {
+        mesh_ptr := aiscene.mMeshes[node.mMeshes[i]]
+        mesh := &scene.meshes[mesh_ptr]
+        if !(mesh_ptr in scene.meshes) {
+            mesh_name := assimp.string_clone_from_ai_string(&mesh_ptr.mName, context.temp_allocator)
+            log.errorf("MakeRenderObjects: Cannot find mesh: {}", mesh_name)
+            return
+        }
+
+        ent := ecs.add_entity(world)
+        ecs.add_component(world, ent, DebugInfo{})
+        // mesh_renderer := ecs.add_component(world, ent, MeshRenderer)
+        ecs.add_component(world, ent, 
+            DebugInfo{fmt.tprintf("MeshRenderer: {}", strings.to_string(mesh.name))})
+    }
+
+    for i in 0..<node.mNumChildren {
+        child := node.mChildren[i]
+        recursive_add_mesh_renderer(world, scene, child, ite+1)
+    }
+}
+
+@(private="file")// dead
 recursive_make_render_objects :: proc(scene: ^Scene, node: ^assimp.Node, target: ^[dynamic]RenderObject, ite:u32=0) {
     aiscene := scene.assimp_scene
 
@@ -333,19 +225,16 @@ recursive_make_render_objects :: proc(scene: ^Scene, node: ^assimp.Node, target:
         robj : RenderObject
         mesh_ptr := aiscene.mMeshes[node.mMeshes[i]]
         mesh, ok := &scene.meshes[mesh_ptr]
-        mesh_name := assimp.string_clone_from_ai_string(&mesh_ptr.mName, context.temp_allocator)
-        assert(ok, fmt.tprintf("MakeRenderObjects: Cannot find mesh: {}", 
-            mesh_name))
+        if !ok {
+            mesh_name := assimp.string_clone_from_ai_string(&mesh_ptr.mName, context.temp_allocator)
+            log.errorf("MakeRenderObjects: Cannot find mesh: {}", mesh_name)
+            return
+        }
         robj.mesh = mesh
         robj.transform_matrix = assimp.matrix_convert(node.mTransformation)
         append(target, robj)
-        indent : strings.Builder
-        strings.builder_init(&indent)
-        defer strings.builder_destroy(&indent)
-        for i in 0..<ite do strings.write_rune(&indent, '\t')
 
         node_name := assimp.string_clone_from_ai_string(&node.mName, context.temp_allocator)
-        // log.debugf("Prepare mesh {} for node {}", mesh_name, node_name)
     }
 
     for i in 0..<node.mNumChildren {
@@ -365,18 +254,21 @@ load_shader :: proc(vertex_source, frag_source : string)  -> dgl.Shader {
 }
 
 quit_game :: proc() {
+    ecs.world_destroy(game.main_world)
+    
     tween_destroy()
 
     for key, mesh in &game.scene.meshes {
         log.debugf("Destroy Mesh: {}", strings.to_string(mesh.name))
         mesh_destroy(&mesh)
     }
+    assimp.release_import(game.scene.assimp_scene)
+    delete(game.scene.meshes)
 
     font_destroy(game.font_unifont)
     font_destroy(game.font_inkfree)
 
     log.debug("QUIT GAME")
-    assimp.release_import(game.scene.assimp_scene)
 
     free(game.settings)
 
