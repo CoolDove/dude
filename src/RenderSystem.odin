@@ -13,7 +13,6 @@ import "ecs"
 render_game_vao : u32
 
 render_system_update :: proc(world: ^ecs.World) {
-
     camera : ^Camera = get_main_camera(world)
     light : ^Light = get_main_light(world)
 
@@ -22,25 +21,14 @@ render_system_update :: proc(world: ^ecs.World) {
     if render_game_vao == 0 do gl.GenVertexArrays(1, &render_game_vao)
     gl.BindVertexArray(render_game_vao)
 
-    meshes := ecs.get_components(world, MeshRenderer)
-    // log.debugf("Trying to render {} meshes.", len(meshes))
-
-    {
-        meshes := game.scene.meshes
-        for _, mesh in meshes {
-            // log.debugf("Mesh: {}", strings.to_string(mesh.name))
-        }
+    { // Mesh renderer
+        set_opengl_state_for_draw_geometry()
+        meshes := cast([]MeshRenderer)ecs.get_components(world, MeshRenderer)
+        render_objs := slice.mapper(meshes, mesh_renderer_to_render_object)
+        defer delete(render_objs)
+        render_env := RenderEnvironment{camera, light}
+        draw_objects(render_objs, &render_env)
     }
-
-    // if false {
-    //     // Mesh renderer
-    //     set_opengl_state_for_draw_geometry()
-    //     meshes := ecs.get_components(world, MeshRenderer)
-    //     render_objs := slice.mapper(meshes, mesh_renderer_to_render_object)
-    //     defer delete(render_objs)
-    //     render_env := RenderEnvironment{camera, light}
-    //     draw_objects(render_objs, &render_env)
-    // }
 
     {// Sprite renderer (current immediately)
         // Currently draw sprite in screen space.
@@ -70,6 +58,8 @@ get_main_camera :: proc(world: ^ecs.World) -> ^Camera {
 // Temporary
 @(private="file")
 mesh_renderer_to_render_object :: proc(mesh: MeshRenderer) -> RenderObject {
-    // return RenderObject{mesh.mesh, mesh.transform_matrix}
-    return RenderObject{nil, mesh.transform_matrix}
+    robj : RenderObject
+    robj.mesh = mesh.mesh
+    robj.transform_matrix = mesh.transform_matrix
+    return robj
 }

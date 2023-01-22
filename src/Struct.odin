@@ -30,11 +30,3 @@ Transform :: struct {
     orientation : linalg.Quaternionf32,
     scale       : Vec3,
 }
-
-Camera :: struct {
-    position : Vec3,
-    orientation : Quaternion,
-    fov : f32,
-    near, far : f32,
-    tag : string,
-}

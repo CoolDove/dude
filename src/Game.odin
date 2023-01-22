@@ -11,7 +11,7 @@ import sdl "vendor:sdl2"
 import gl "vendor:OpenGL"
 
 when ODIN_DEBUG do import "pac:imgui"
-import "pac:assimp"
+// import "pac:assimp"
 
 import "dgl"
 import "ecs"
@@ -23,15 +23,6 @@ Game :: struct {
     main_world : ^ecs.World,
 
     basic_shader : dgl.Shader,
-
-    // main_light : LightData,
-
-    scene      : Scene,
-
-    // camera     : Camera,
-    // test_image : dgl.Image,
-
-    immediate_draw_wireframe : bool,
 
     vao        : u32,
     
@@ -46,6 +37,8 @@ Game :: struct {
 
 GameSettings :: struct {
     status_window_alpha : f32,
+    render_wireframe : bool,
+    immediate_draw_wireframe : bool,
 }
 
 game : Game
@@ -89,7 +82,15 @@ draw_status :: proc() {
 }
 
 update_game :: proc() {
+
+    {// Global input handling
+        if get_key_down(.F1) {
+            game.immediate_draw_wireframe = !game.immediate_draw_wireframe
+        }
+    }
+
     ecs.world_update(game.main_world)
+
     tween_update()
 }
 
@@ -98,38 +99,12 @@ init_game :: proc() {
 
     game.settings = new(GameSettings)
 
-    // game.test_image = texture_load(DATA_IMG_ICON)
-    // image_free(&game.test_image)
-
     gl.GenVertexArrays(1, &game.vao)
 
 	vertex_shader_src :: string(#load("../res/shader/basic_3d_vertex.glsl"))
 	fragment_shader_src :: string(#load("../res/shader/basic_3d_fragment.glsl"))
 
     game.basic_shader = load_shader(vertex_shader_src, fragment_shader_src)
-
-    // box_img := texture_load(DATA_IMG_BOX)
-    // image_free(&box_img)
-
-    {// Load Models
-        mushroom := assimp.import_file(
-            DATA_MOD_MUSHROOM_FBX,
-            cast(u32) assimp.PostProcessPreset_MaxQuality,
-            "fbx")
-        game.scene.assimp_scene = mushroom
-        // TODO: This is not a `scene`, a fbx should be loaded as a MeshFile or ...
-        prepare_scene(&game.scene, mushroom, game.basic_shader.native_id, draw_settings.default_texture_white)
-        for i in 0..<mushroom.mNumMeshes {
-            m := mushroom.mMeshes[i]
-            mname := assimp.string_clone_from_ai_string(&m.mName, context.temp_allocator)
-        }
-
-        meshes := game.scene.meshes
-        for aimesh, mesh in meshes {
-            mname := assimp.string_clone_from_ai_string(&aimesh.mName, context.temp_allocator)
-            log.debugf("Mesh {} loaded, vertices count: {}", mname, len(mesh.vertices))
-        }
-    }
 
     {// Dynamic font
         game.font_unifont = font_load(raw_data(DATA_UNIFONT_TTF), 32)
@@ -139,7 +114,11 @@ init_game :: proc() {
     tween_init()
 
     {// Res test
+        res_add_embbed("texture/box.png", DATA_IMG_BOX)
+        res_add_embbed("texture/walk_icon.png", DATA_IMG_ICON)
         res_load_texture("texture/box.png")
+        res_load_texture("texture/walk_icon.png")
+        res_load_model("model/mushroom.fbx", game.basic_shader.native_id, draw_settings.default_texture_white, 0.01)
     }
 
     {// Init the world
@@ -176,7 +155,8 @@ init_game :: proc() {
             log.debugf("Camera and Light created ")
         }
         {// Add MeshRenderers.
-            recursive_add_mesh_renderer(world, &game.scene, game.scene.assimp_scene.mRootNode)
+            log.debugf("Create MeshRenderers")
+            add_mesh_renderers(world, res_get_model("model/mushroom.fbx"))
             log.debugf("MeshRenderers created")
         }
         {// Add test SpriteRenderer.
@@ -192,57 +172,18 @@ init_game :: proc() {
 }
 
 @(private="file")
-recursive_add_mesh_renderer :: proc(world: ^ecs.World, scene: ^Scene, node: ^assimp.Node, ite:u32=0) {
-    aiscene := scene.assimp_scene
-
-    for i in 0..<node.mNumMeshes {
-        mesh_ptr := aiscene.mMeshes[node.mMeshes[i]]
-        mesh := &scene.meshes[mesh_ptr]
-        if !(mesh_ptr in scene.meshes) {
-            mesh_name := assimp.string_clone_from_ai_string(&mesh_ptr.mName, context.temp_allocator)
-            log.errorf("MakeRenderObjects: Cannot find mesh: {}", mesh_name)
-            return
-        }
-
+add_mesh_renderers :: proc(world: ^ecs.World, asset : ^ModelAsset) {
+    for name, mesh in &asset.meshes {
         ent := ecs.add_entity(world)
-        ecs.add_component(world, ent, DebugInfo{})
-        // mesh_renderer := ecs.add_component(world, ent, MeshRenderer)
-        ecs.add_component(world, ent, 
-            DebugInfo{fmt.tprintf("MeshRenderer: {}", strings.to_string(mesh.name))})
-    }
-
-    for i in 0..<node.mNumChildren {
-        child := node.mChildren[i]
-        recursive_add_mesh_renderer(world, scene, child, ite+1)
+        
+        mesh_renderer := ecs.add_component(world, ent, MeshRenderer)
+        mesh_renderer.mesh = &mesh
+        mesh_renderer.transform_matrix = linalg.MATRIX4F32_IDENTITY
+        ecs.add_component(world, ent, DebugInfo{
+            fmt.aprintf("DBGNAME: {}", strings.to_string(mesh_renderer.mesh.name)),
+        })
     }
 }
-
-@(private="file")// dead
-recursive_make_render_objects :: proc(scene: ^Scene, node: ^assimp.Node, target: ^[dynamic]RenderObject, ite:u32=0) {
-    aiscene := scene.assimp_scene
-
-    for i in 0..<node.mNumMeshes {
-        robj : RenderObject
-        mesh_ptr := aiscene.mMeshes[node.mMeshes[i]]
-        mesh, ok := &scene.meshes[mesh_ptr]
-        if !ok {
-            mesh_name := assimp.string_clone_from_ai_string(&mesh_ptr.mName, context.temp_allocator)
-            log.errorf("MakeRenderObjects: Cannot find mesh: {}", mesh_name)
-            return
-        }
-        robj.mesh = mesh
-        robj.transform_matrix = assimp.matrix_convert(node.mTransformation)
-        append(target, robj)
-
-        node_name := assimp.string_clone_from_ai_string(&node.mName, context.temp_allocator)
-    }
-
-    for i in 0..<node.mNumChildren {
-        child := node.mChildren[i]
-        recursive_make_render_objects(scene, child, target, ite+1)
-    }
-}
-
 
 @(private="file")
 load_shader :: proc(vertex_source, frag_source : string)  -> dgl.Shader {
@@ -258,12 +199,9 @@ quit_game :: proc() {
     
     tween_destroy()
 
-    for key, mesh in &game.scene.meshes {
-        log.debugf("Destroy Mesh: {}", strings.to_string(mesh.name))
-        mesh_destroy(&mesh)
-    }
-    assimp.release_import(game.scene.assimp_scene)
-    delete(game.scene.meshes)
+    res_unload_texture("texture/box.png")
+    res_unload_texture("texture/walk_icon.png")
+    res_unload_model("model/mushroom.fbx")
 
     font_destroy(game.font_unifont)
     font_destroy(game.font_inkfree)
