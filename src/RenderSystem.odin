@@ -16,7 +16,10 @@ render_system_update :: proc(world: ^ecs.World) {
     camera : ^Camera = get_main_camera(world)
     light : ^Light = get_main_light(world)
 
-    assert(camera != nil && light != nil, "Main camera and main light must exist.")
+    if camera == nil || light == nil do return;
+    // assert(camera != nil && light != nil, "Main camera and main light must exist.")
+
+    camera_transform := ecs.get_component(world, camera.entity, Transform)
 
     if render_game_vao == 0 do gl.GenVertexArrays(1, &render_game_vao)
     gl.BindVertexArray(render_game_vao)
@@ -26,7 +29,7 @@ render_system_update :: proc(world: ^ecs.World) {
         meshes := cast([]MeshRenderer)ecs.get_components(world, MeshRenderer)
         render_objs := slice.mapper(meshes, mesh_renderer_to_render_object)
         defer delete(render_objs)
-        render_env := RenderEnvironment{camera, light}
+        render_env := RenderEnvironment{camera_transform, camera, nil, light}
         draw_objects(render_objs, &render_env)
     }
 

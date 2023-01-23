@@ -25,7 +25,8 @@ MODEL_ASSETS :: true
 
 ResourceError :: enum {
     Invalid_Path,
-    Failed_To_Load_Texture,
+    Dont_Support_Embbed_Load,
+    Only_Embbed_Load,
     Embbed_Key_Has_Exists,
     Key_Has_Exists,
 }
@@ -44,18 +45,14 @@ Texture :: struct {
 }
 
 // path relative to the ./res/
-res_load_texture :: proc(path: string, allocator:= context.allocator) -> (^Texture, ResourceError) {
+res_load_texture :: proc(key: string, allocator:= context.allocator) -> (^Texture, ResourceError) {
     context.allocator = allocator
 
     using resource_manager
-    key := make_path_key(path)
-    fpath := make_path(path)
+    fpath := make_path(key)
     defer delete(fpath)
 
-    if key in resources {
-        delete(key)
-        return nil, .Key_Has_Exists
-    }
+    if key in resources { return nil, .Key_Has_Exists }
 
     dgltex : dgl.Texture
     if key in embbed_data {
@@ -63,7 +60,7 @@ res_load_texture :: proc(path: string, allocator:= context.allocator) -> (^Textu
     } else {
         dgltex = dgl.texture_load(fpath)
     }
-    if dgltex.texture_id == 0 { return nil, .Failed_To_Load_Texture } 
+    if dgltex.texture_id == 0 { return nil, .Invalid_Path } 
     texture := new(Texture)
     texture.size = dgltex.size
     texture.texture_id = dgltex.texture_id
@@ -71,9 +68,8 @@ res_load_texture :: proc(path: string, allocator:= context.allocator) -> (^Textu
     return texture, nil
 }
 
-res_unload_texture :: proc(path: string) -> ResourceError {
+res_unload_texture :: proc(key: string) -> ResourceError {
     using resource_manager
-    key := make_path_key(path)
     defer delete(key)
     if key in resources {
         texture :^Texture= cast(^Texture)resources[key]
@@ -82,13 +78,8 @@ res_unload_texture :: proc(path: string) -> ResourceError {
     return nil
 }
 
-res_get_texture :: proc(path: string) -> ^Texture {
-    key := make_path_key(path, context.temp_allocator)
-    if tex, ok := resource_manager.resources[key]; ok {
-        return cast(^Texture)tex
-    } else {
-        return nil
-    }
+res_get_texture :: proc(key: string) -> ^Texture {
+    return cast(^Texture)resource_manager.resources[key]
 }
 
 ModelAsset :: struct {
@@ -101,15 +92,15 @@ ModelAssetSceneTree :: struct {
     parent, next, lchild : ^ModelAssetSceneTree,
 }
 
-res_load_model :: proc(path: string, shader: u32, texture: u32, scale: f32) -> (^ModelAsset, ResourceError) {
-    fpath := make_path(path)
+res_load_model :: proc(key: string, shader: u32, texture: u32, scale: f32) -> (^ModelAsset, ResourceError) {
+    fpath := make_path(key)
     defer delete(fpath)
+
+    if key in resource_manager.resources { return nil, .Key_Has_Exists }
 
     raw_asset := assimp.import_file(fpath, cast(u32) assimp.PostProcessPreset_MaxQuality)
 
     if raw_asset == nil { return nil, .Invalid_Path }
-
-    key := make_path_key(path)
 
     asset := new(ModelAsset)
     asset.assimp_scene = raw_asset
@@ -133,10 +124,7 @@ res_load_model :: proc(path: string, shader: u32, texture: u32, scale: f32) -> (
     return asset, nil
 }
 
-res_unload_model :: proc(path: string) {
-    key := make_path_key(path)
-    defer delete(key)
-
+res_unload_model :: proc(key: string) {
     if !(key in resource_manager.resources) do return
 
     asset := cast(^ModelAsset)resource_manager.resources[key]
@@ -147,10 +135,10 @@ res_unload_model :: proc(path: string) {
     clear(&asset.meshes)
 
     assimp.release_import(asset.assimp_scene)
+    delete_key(&resource_manager.resources, key)
 }
 
-res_get_model :: proc(path: string) -> ^ModelAsset {
-    key := make_path_key(path, context.temp_allocator)
+res_get_model :: proc(key: string) -> ^ModelAsset {
     if model, ok := resource_manager.resources[key]; ok {
         return cast(^ModelAsset)model
     } else {
@@ -158,9 +146,33 @@ res_get_model :: proc(path: string) -> ^ModelAsset {
     }
 }
 
-res_add_embbed :: proc(path: string, data: []byte) -> ResourceError {
+res_load_font :: proc(key: string, px: f32) -> (^DynamicFont, ResourceError) {
     using resource_manager
-    key := make_path_key(path)
+    if key in resources { return nil, .Key_Has_Exists }
+
+    assert(key in resource_manager.embbed_data, "Font should be embbed for now.")
+
+    font := font_load_from_mem(raw_data(embbed_data[key]), px)
+
+    if font == nil {
+        return nil, .Invalid_Path
+    }
+    resource_manager.resources[key] = font
+
+    return font, nil
+}
+res_unload_font :: proc(key: string) {
+    font := cast(^DynamicFont)resource_manager.resources[key]
+    font_destroy(font)
+}
+
+res_get_font :: proc(key: string) -> ^DynamicFont {
+    font := cast(^DynamicFont)resource_manager.resources[key]
+    return font
+}
+
+res_add_embbed :: proc(key: string, data: []byte) -> ResourceError {
+    using resource_manager
     if !(key in embbed_data) {
         embbed_data[key] = data
         return nil
@@ -172,6 +184,30 @@ res_add_embbed :: proc(path: string, data: []byte) -> ResourceError {
 @(private="file")
 RESOURCE_FOLDER :: "res"
 
+
+res_list_embbed :: proc() {
+    log.debugf("List Embbed Resource: ")
+    for key, res in resource_manager.embbed_data {
+        log.debugf("> {}", key)
+    }
+}
+
+res_list_loaded :: proc() {
+    sb : strings.Builder
+    strings.builder_init(&sb)
+    defer strings.builder_destroy(&sb)
+
+    strings.write_string(&sb, "\nList Loaded Resource: \n")
+
+    for key, res in resource_manager.resources {
+        strings.write_string(&sb, "> ")
+        strings.write_string(&sb, key)
+        strings.write_rune(&sb, '\n')
+    }
+    log.debug(strings.to_string(sb))
+}
+
+
 @(private="file")
 make_path :: proc(path: string, allocator:= context.allocator) -> string {
     context.allocator = allocator
@@ -181,12 +217,6 @@ make_path :: proc(path: string, allocator:= context.allocator) -> string {
     to_slash_path, new_alloc := filepath.to_slash(the_path)
     if new_alloc do delete(the_path)
     return to_slash_path
-}
-
-@(private="file")
-make_path_key :: proc(path: string, allocator:= context.allocator) -> string {
-    context.allocator = allocator
-    return filepath.clean(path)
 }
 
 @(private="file")

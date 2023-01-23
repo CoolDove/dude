@@ -41,14 +41,17 @@ RenderObject :: struct {
 }
 
 RenderEnvironment :: struct {
+    camera_transform : ^Transform,
     camera : ^Camera,
-    light  : ^LightData,
+    light_transform : ^Transform,
+    light  : ^Light,
 }
 
 draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
     cam := env.camera
     mat_view_projection := dgl.camera_get_matrix_vp(
-        cam.position, cam.orientation,
+        env.camera_transform.position, 
+        env.camera_transform.orientation,
         cam.fov, cam.near, cam.far,
         draw_settings.screen_width/draw_settings.screen_height,
     )

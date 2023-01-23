@@ -11,7 +11,6 @@ import sdl "vendor:sdl2"
 import gl "vendor:OpenGL"
 
 when ODIN_DEBUG do import "pac:imgui"
-// import "pac:assimp"
 
 import "dgl"
 import "ecs"
@@ -23,16 +22,6 @@ Game :: struct {
     main_world : ^ecs.World,
 
     basic_shader : dgl.Shader,
-
-    vao        : u32,
-    
-    // Temp
-    font_unifont : ^DynamicFont,
-    font_inkfree : ^DynamicFont,
-    ttf_test_texture_id : u32,
-
-    test_value : f32,
-    tweened_color : Vec4,
 }
 
 GameSettings :: struct {
@@ -51,11 +40,7 @@ GameObject :: struct {
 draw_game :: proc() {
 	using dgl
     wnd := game.window
-
-    immediate_text(game.font_unifont, "有欲望而无行动者滋生瘟疫。", {100, 500}, {.9, .2, .8, .5})
-
     if game.settings.status_window_alpha > 0 do draw_status()
-
 }
 
 when ODIN_DEBUG {
@@ -76,20 +61,30 @@ draw_status :: proc() {
     color := Vec4{.1, 1, .1, 1}
     color.a *= game.settings.status_window_alpha
 
-    immediate_text(game.font_unifont, fmt.tprintf("FPS: {}", framerate), {10, 32+10}, color)
-    immediate_text(game.font_unifont, fmt.tprintf("Fullscreen: {}", game.window.fullscreen), 
+    font := res_get_font("font/unifont.ttf")
+    immediate_text(font, fmt.tprintf("FPS: {}", framerate), {10, 32+10}, color)
+    immediate_text(font, fmt.tprintf("Fullscreen: {}", game.window.fullscreen), 
         {10, 32+10+32+10}, color)
 }
 
 update_game :: proc() {
-
     {// Global input handling
         if get_key_down(.F1) {
             game.immediate_draw_wireframe = !game.immediate_draw_wireframe
         }
     }
 
-    ecs.world_update(game.main_world)
+    if game.main_world != nil {
+        ecs.world_update(game.main_world)
+    } else {
+        wnd_size := game.window.size
+        unifont := res_get_font("font/unifont.tff")
+        text := "有欲望而无行动者滋生瘟疫"
+        text_width := immediate_measure_text_width(unifont, text)
+        immediate_text(unifont, text,
+            {cast(f32)wnd_size.x * 0.5 - text_width * 0.5, cast(f32)wnd_size.y * 0.5},
+            {.9, .2, .8, .5})
+    }
 
     tween_update()
 }
@@ -99,47 +94,53 @@ init_game :: proc() {
 
     game.settings = new(GameSettings)
 
-    gl.GenVertexArrays(1, &game.vao)
-
 	vertex_shader_src :: string(#load("../res/shader/basic_3d_vertex.glsl"))
 	fragment_shader_src :: string(#load("../res/shader/basic_3d_fragment.glsl"))
 
     game.basic_shader = load_shader(vertex_shader_src, fragment_shader_src)
 
-    {// Dynamic font
-        game.font_unifont = font_load(raw_data(DATA_UNIFONT_TTF), 32)
-        game.font_inkfree = font_load(raw_data(DATA_INKFREE_TTF), 32)
-    }
-
     tween_init()
 
-    {// Res test
-        res_add_embbed("texture/box.png", DATA_IMG_BOX)
-        res_add_embbed("texture/walk_icon.png", DATA_IMG_ICON)
+    {// Load some built in assets.
+        res_add_embbed("texture/box.png",       #load("../res/texture/box.png"))
+        res_add_embbed("texture/walk_icon.png", #load("../res/texture/walk_icon.png"))
+        res_add_embbed("font/inkfree.ttf",      #load("../res/font/inkfree.ttf"))
+        res_add_embbed("font/unifont.tff",      #load("../res/font/unifont.ttf"))
+
         res_load_texture("texture/box.png")
         res_load_texture("texture/walk_icon.png")
+        res_load_font("font/inkfree.ttf", 32.0)
+        res_load_font("font/unifont.tff", 32.0)
+
         res_load_model("model/mushroom.fbx", game.basic_shader.native_id, draw_settings.default_texture_white, 0.01)
     }
 
-    {// Init the world
+    res_list_embbed()
+    res_list_loaded()
+
+    if false {// Init the world
         using game
         using ecs
         main_world = ecs.world_create()
         world := main_world
         ecs.add_system(main_world, render_system_update)
+        ecs.add_system(main_world, built_in_3dcamera_controller_update)
 
         {// Add the camera and light.
             log.debugf("Create Camera and Light")
             {// main camera
                 camera := add_entity(world)
-                cam := add_component(world, camera, Camera)
-                {using cam
-                    position = {0, 0, 3.5}
-                    fov  = 45
-                    near = .1
-                    far  = 300
-                    orientation = linalg.quaternion_from_forward_and_up(Vec3{0, 0, 1}, Vec3{0, 1, 0})
-                }
+                add_component(world, camera, Transform {
+                    position    = {0, 0, 3.5},
+                    orientation = linalg.quaternion_from_forward_and_up(Vec3{0, 0, 1}, Vec3{0, 1, 0}),
+                    scale       = {1, 1, 1},
+                })
+                add_component(world, camera, Camera{
+                    fov  = 45,
+                    near = .1,
+                    far  = 300,
+                })
+                add_component(world, camera, BuiltIn3DCameraController{---, 1, 1})
                 add_component(world, camera, DebugInfo{"MainCamera"})
             }
             {// main light
@@ -202,9 +203,8 @@ quit_game :: proc() {
     res_unload_texture("texture/box.png")
     res_unload_texture("texture/walk_icon.png")
     res_unload_model("model/mushroom.fbx")
-
-    font_destroy(game.font_unifont)
-    font_destroy(game.font_inkfree)
+    res_unload_font("font/unifont.ttf")
+    res_unload_font("font/inkfree.ttf")
 
     log.debug("QUIT GAME")
 

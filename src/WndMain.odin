@@ -65,7 +65,7 @@ when ODIN_DEBUG {
 @(private="file")
 after_instantiate :: proc(using wnd: ^Window) {
 	wdata := window_data(WndMainData, wnd)
-	log.debugf("window data: ", wdata)
+	log.debugf("window data: {}", wdata)
 
 	when ODIN_DEBUG do init_imgui(&imgui_state, window)
 

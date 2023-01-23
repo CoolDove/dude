@@ -186,6 +186,32 @@ immediate_texture :: proc(leftup, size: Vec2, color: Vec4, texture : u32) -> ^Im
     return quad
 }
 
+immediate_measure_text_width :: proc(font: ^DynamicFont, text: string) -> f32 {
+    for r in text {
+        if r == ' ' do continue
+        glyph := font_get_glyph_id(font, r)
+        if !font_is_glyph_loaded(font, glyph) {
+            if !font_load_glyph(font, glyph) {
+                log.errorf("Empty glyph `{}` in font.", r)
+            }
+        }
+    }
+
+    o : Vec2
+
+    // One draw element per rune currently.
+    for r, ind in text {
+        if r == '\n' || r == '\t' do continue // Just ignore.
+        glyph := font_get_glyph_info(font, r)
+        if glyph != nil {
+            o += {cast(f32)glyph.advance_h * font.scale, 0}
+        } else {// for space
+            o += {cast(f32)font_get_space_advance(font) * font.scale, 0}
+        }
+    }
+    return o.x
+}
+
 immediate_text :: proc(font: ^DynamicFont, text: string, origin: Vec2, color: Vec4) {
     for r in text {
         if r == ' ' do continue
