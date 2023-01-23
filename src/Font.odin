@@ -29,9 +29,9 @@ DynamicFont :: struct {
     atlas_id : u32,
     atlas_width, atlas_height : u32,
 
-    data_buffer : []byte, // If loaded from a file.
-
     font_info : ttf.fontinfo,
+
+    data_buffer : []byte, // If loaded from a file.
 }
 
 GlyphInfo :: struct {
@@ -52,7 +52,6 @@ font_destroy :: proc(font: ^DynamicFont) {
     delete(font.glyphs)
     free(font)
 }
-
 
 font_default_glyph :: proc(font: ^DynamicFont, r: rune) -> ^GlyphInfo {
     // TODO: impl this, default glyph
@@ -108,6 +107,7 @@ font_load_glyph :: proc(font: ^DynamicFont, glyph: i32) -> bool {
     g.xoff, g.yoff = x, y
 
     ttf.GetGlyphHMetrics(info, glyph, &g.advance_h, &g.left_side_bearing)
+    ttf.FreeBitmap(bitmap, nil)
 
     return true
 }
@@ -144,13 +144,13 @@ font_get_kern :: #force_inline proc(font: ^DynamicFont, prev, next: i32) -> i32 
     return ttf.GetGlyphKernAdvance(&font.font_info, prev, next)
 }
 
-font_get_space_advance :: proc(font: ^DynamicFont) -> i32 {
+font_get_space_advance :: #force_inline proc(font: ^DynamicFont) -> i32 {
     advance : i32
     ttf.GetCodepointHMetrics(&font.font_info, ' ', &advance, nil)
     return advance
 }
 
-font_load_from_path :: proc(path: string, px: f32) -> ^DynamicFont {
+font_load_from_path :: #force_inline proc(path: string, px: f32) -> ^DynamicFont {
     log.errorf("font_load_from_path is not ready for now.")
     return nil
 }
