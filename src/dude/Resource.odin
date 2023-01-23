@@ -69,11 +69,11 @@ res_load_texture :: proc(key: string, allocator:= context.allocator) -> (^Textur
 
 res_unload_texture :: proc(key: string) -> ResourceError {
     using resource_manager
-    defer delete(key)
     if key in resources {
         texture :^Texture= cast(^Texture)resources[key]
         gl.DeleteTextures(1, &texture.texture_id)
     }
+    delete_key(&resources, key)
     return nil
 }
 
@@ -163,6 +163,7 @@ res_load_font :: proc(key: string, px: f32) -> (^DynamicFont, ResourceError) {
 res_unload_font :: proc(key: string) {
     font := cast(^DynamicFont)resource_manager.resources[key]
     font_destroy(font)
+    delete_key(&resource_manager.resources, key)
 }
 
 res_get_font :: proc(key: string) -> ^DynamicFont {

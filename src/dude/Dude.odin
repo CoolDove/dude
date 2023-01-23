@@ -9,6 +9,19 @@ dude_main :: proc() {
 	}
 
 	app_init();
-	defer app_release();
 	app_run();
+	app_release();
+}
+
+install_scene :: proc(key: string, scene: Scene) {
+	registered_scenes[key] = scene
+}
+
+set_default_scene :: proc(key: string) -> bool {
+	if key in registered_scenes {
+		default_scene = &registered_scenes[key]
+		return true
+	} else {
+		return false
+	}
 }

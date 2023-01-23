@@ -1,4 +1,3 @@
-//+private
 package dude
 
 import "core:fmt"

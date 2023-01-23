@@ -19,7 +19,7 @@ built_in_3dcamera_controller_update :: proc(world: ^ecs.World) {
 
         forward := linalg.quaternion_mul_vector3(transform.orientation, FORWARD3)
         up      := linalg.quaternion_mul_vector3(transform.orientation, UP3)
-        right   := linalg.cross(forward, up)
+        right   := linalg.cross(up, forward)
 
         if get_key(.W) { transform.position += forward * controller.move_speed }
         if get_key(.S) { transform.position -= forward * controller.move_speed }

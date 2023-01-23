@@ -110,22 +110,17 @@ update :: proc(using wnd:^Window) {
 
 	immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
 
-	update_game()
-
 	when ODIN_DEBUG {
 		imsdl.new_frame()
 	    io := imgui.get_io()
-	}
-
-	draw_game()
-
-	when ODIN_DEBUG {
 		imgui.new_frame()
 		draw_game_imgui()
 		imgui.end_frame()
 		imgui.render()
 		draw_data := imgui.get_draw_data();
 	}
+	update_game()
+
 
 	immediate_end(game.immediate_draw_wireframe)
 
