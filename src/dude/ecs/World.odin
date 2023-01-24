@@ -20,6 +20,7 @@ World :: struct {
 }
 
 EntityInfo :: struct {
+    name : string,
     // nothing.
 }
 

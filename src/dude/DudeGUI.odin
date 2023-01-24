@@ -13,6 +13,7 @@ import "core:math/linalg"
 when ODIN_DEBUG {
 
 import "pac:imgui"
+import "ecs"
 
 dude_imgui_basic_settings :: proc() {
     guis := map[string]proc() {
@@ -20,6 +21,7 @@ dude_imgui_basic_settings :: proc() {
         "Tween"        = gui_tween,
         "Settings"     = gui_settings,
         "ResourceView" = gui_resource_viewer,
+        "ECS"          = gui_ecs,
     }
     defer delete(guis)
 
@@ -63,6 +65,25 @@ gui_resource_viewer :: proc() {
     for key, res in resource_manager.resources {
         imgui.text(key)
     }
+}
+gui_ecs :: proc() {
+    imgui.text("ECS")
+    if game.main_world == nil {
+        imgui.text("No world.")
+        return
+    }
+    entities := game.main_world.entities.dense
+    for ent in entities {
+        entity := cast(ecs.Entity)ent.id
+        entity_info := cast(ecs.EntityInfo)ent.data
+        imgui.bullet_text(fmt.tprintf("Ent: {}", entity_info.name))
+        components := ecs.get_components(game.main_world, cast(ecs.Entity)ent.id)
+        defer delete(components)
+        for c in components {
+            imgui.text(fmt.tprintf("-{}: {}", c.type, c.id))
+        }
+    }
+    
 }
 
 gizmos_xz_grid :: proc(half_size : int, unit : f32, color: Color) {

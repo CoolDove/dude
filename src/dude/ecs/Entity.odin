@@ -2,12 +2,12 @@
 
 Entity :: distinct u32
 
-add_entity :: proc(world: ^World) -> Entity {
+add_entity :: proc(world: ^World, info:= EntityInfo{}) -> Entity {
     entity_id := cast(u32)spsset_len(&world.entities)
     spsset_add(
         &world.entities,
         entity_id,
-        EntityInfo{},
+        info,
     )
     return cast(Entity)entity_id
 }

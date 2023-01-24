@@ -39,13 +39,14 @@ mushroom_scene_unloader :: proc(world: ^ecs.World) {
 @(private="file")
 add_mesh_renderers :: proc(world: ^ecs.World, asset : ^dude.ModelAsset) {
     for name, mesh in &asset.meshes {
-        ent := ecs.add_entity(world)
+        mesh_name := strings.to_string(mesh.name)
+        ent := ecs.add_entity(world, ecs.EntityInfo{name=mesh_name})
         
         mesh_renderer := ecs.add_component(world, ent, dude.MeshRenderer)
         mesh_renderer.mesh = &mesh
         mesh_renderer.transform_matrix = linalg.MATRIX4F32_IDENTITY
         ecs.add_component(world, ent, dude.DebugInfo{
-            fmt.aprintf("DBGNAME: {}", strings.to_string(mesh_renderer.mesh.name)),
+            fmt.aprintf("DBGNAME: {}", mesh_name),
         })
     }
 }
