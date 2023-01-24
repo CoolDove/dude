@@ -141,7 +141,7 @@ switch_shader :: proc(shader : u32) -> (viewport_size, main_texture : i32) {
 |                 |
 *-------------(w,h)
 */
-immediate_quad :: proc (leftup, size: Vec2, color: Vec4) -> ^ImmediateDrawElement {
+immediate_quad :: proc (leftup, size: Vec2, color: Color) -> ^ImmediateDrawElement {
     element := ImmediateDrawElement{
         ime_context.basic_shader,
         cast(u32)len(ime_context.vertices), 6,
@@ -180,7 +180,7 @@ immediate_quad :: proc (leftup, size: Vec2, color: Vec4) -> ^ImmediateDrawElemen
     return &ime_context.elements[len(ime_context.elements) - 1]
 }
 
-immediate_texture :: proc(leftup, size: Vec2, color: Vec4, texture : u32) -> ^ImmediateDrawElement {
+immediate_texture :: proc(leftup, size: Vec2, color: Color, texture : u32) -> ^ImmediateDrawElement {
     quad := immediate_quad(leftup, size, color)
     quad.texture = texture
     return quad
@@ -212,7 +212,7 @@ immediate_measure_text_width :: proc(font: ^DynamicFont, text: string) -> f32 {
     return o.x
 }
 
-immediate_text :: proc(font: ^DynamicFont, text: string, origin: Vec2, color: Vec4) {
+immediate_text :: proc(font: ^DynamicFont, text: string, origin: Vec2, color: Color) {
     for r in text {
         if r == ' ' do continue
         glyph := font_get_glyph_id(font, r)

@@ -6,7 +6,8 @@ import "dgl"
 Vec2 :: dgl.Vec2
 Vec3 :: dgl.Vec3
 Vec4 :: dgl.Vec4
-Color :: distinct Vec4
+
+Color :: Vec4
 
 Vec2i :: dgl.Vec2i
 Vec3i :: dgl.Vec3i

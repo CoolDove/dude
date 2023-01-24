@@ -22,6 +22,7 @@ SpriteRenderer :: struct {
     texture_id : u32,
     size, pos, pivot : Vec2,
     space : SpriteSpace,
+    color : Color,
 }
 
 SpriteSpace :: enum {

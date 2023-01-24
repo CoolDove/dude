@@ -43,12 +43,6 @@ GameObject :: struct {
     transform : Transform,
 }
 
-draw_game :: proc() {
-	using dgl
-    wnd := game.window
-
-}
-
 when ODIN_DEBUG {
 draw_game_imgui :: proc() {
     imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
@@ -57,6 +51,7 @@ draw_game_imgui :: proc() {
     for key, scene in registered_scenes {
         if imgui.button(key) {
             unload_scene()
+            log.debugf("Load scene: {}", key)
             load_scene(key)
         }
     }
@@ -85,33 +80,48 @@ draw_status :: proc() {
 }
 
 update_game :: proc() {
-    {// Global input handling
+    // ## FRAME PREPARE
+	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT)
+    wnd := game.window
+	immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
+
+    // ## GAME LOGIC
+    {// Engine input handling
         if get_key_down(.F1) {
             game.immediate_draw_wireframe = !game.immediate_draw_wireframe
         }
     }
 
     // Game world
-
     if game.main_world != nil {
         if game.current_scene.update != nil {
             game.current_scene.update(&game, game.main_world)
         }
         ecs.world_update(game.main_world)
-    } else {
+    } else {// Draw "No Scene Loaded"
         wnd_size := game.window.size
         unifont := res_get_font("font/unifont.tff")
-        text := "有欲望而无行动者滋生瘟疫"
+        text := "No Scene Loaded"
         text_width := immediate_measure_text_width(unifont, text)
         immediate_text(unifont, text,
             {cast(f32)wnd_size.x * 0.5 - text_width * 0.5, cast(f32)wnd_size.y * 0.5},
-            {.9, .2, .8, .5})
+            COLORS.GRAY)
     }
 
     tween_update()
 
     // Game builtin draw.
     if game.settings.status_window_alpha > 0 do draw_status()
+
+    // ## RENDERING
+    immediate_end(game.immediate_draw_wireframe)
+
+    // ## DEBUG IMGUI
+	when ODIN_DEBUG {
+        imgui_frame_begin()
+		draw_game_imgui()
+        imgui_frame_end()
+	}
 }
 
 init_game :: proc() {

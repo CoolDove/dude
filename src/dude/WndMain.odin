@@ -98,32 +98,30 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 }
 
 @(private="file")
-update :: proc(using wnd:^Window) {
+update :: proc(using wnd:^Window) {// Game runs in this.
 	wnd_data := window_data(WndMainData, wnd)
-
 	draw_settings.screen_width = cast(f32)wnd.size.x
 	draw_settings.screen_height = cast(f32)wnd.size.y
 
-	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT)
-
-	immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
-
-	when ODIN_DEBUG {
-		imsdl.new_frame()
-	    io := imgui.get_io()
-		imgui.new_frame()
-		draw_game_imgui()
-		imgui.end_frame()
-		imgui.render()
-		draw_data := imgui.get_draw_data();
-	}
 	update_game()
-
-	immediate_end(game.immediate_draw_wireframe)
-
-	when ODIN_DEBUG do imgl.imgui_render(draw_data, imgui_state.opengl_state)
 
 	sdl.GL_SwapWindow(wnd.window)
 
 	input_after_update_sdl2()
+}
+
+when ODIN_DEBUG {
+@(private)
+imgui_frame_begin :: proc() {
+	imsdl.new_frame()
+	imgui.new_frame()
+}
+
+@(private)
+imgui_frame_end :: proc() {
+	imgui.end_frame()
+	imgui.render()
+	draw_data := imgui.get_draw_data();
+	imgl.imgui_render(draw_data, imgui_state.opengl_state)
+}
 }

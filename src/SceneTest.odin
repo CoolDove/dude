@@ -50,6 +50,7 @@ test_scene_loader :: proc(world: ^ecs.World) {
         sprite.size = {64, 64}
         sprite.pos = {0, 0}
         sprite.pivot = {0.0, 0.0}
+        sprite.color = COLORS.WHITE
     }
 }
 

@@ -39,7 +39,7 @@ render_system_update :: proc(world: ^ecs.World) {
         for sprite in sprites {
             using sprite
             leftup := pos - size * pivot
-            immediate_texture(leftup, size, {1, 1, 1, 1}, texture_id)
+            immediate_texture(leftup, size, sprite.color, texture_id)
         }
     }
 }
