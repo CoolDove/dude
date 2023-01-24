@@ -14,11 +14,11 @@ ShaderType :: enum u32 {
 }
 
 Shader :: struct {
-    using obj : GLObject,
+    id : u32,
 }
 
 Component :: struct {
-    using obj : GLObject,
+    id : u32,
     type : ShaderType,
 }
 
@@ -27,9 +27,9 @@ shader_create_component :: proc (type : ShaderType, source : string) -> Componen
 
     shader.type = type
 
-    shader.native_id = gl.CreateShader(cast(u32)type)
+    shader.id = gl.CreateShader(cast(u32)type)
 
-    id := shader.native_id
+    id := shader.id
     
 	cstr := strings.clone_to_cstring(source, context.temp_allocator)
     gl.ShaderSource(id, 1, &cstr, nil)
@@ -49,9 +49,9 @@ shader_create_component :: proc (type : ShaderType, source : string) -> Componen
 }
 
 shader_destroy_component :: proc (using component : ^Component) -> bool {
-    if native_id != 0 {
-        gl.DeleteShader(native_id)
-        native_id = 0
+    if id != 0 {
+        gl.DeleteShader(id)
+        id = 0
         return true
     }
     return false
@@ -74,29 +74,29 @@ shader_destroy :: proc {
     shader_destroy_multiple,
 }
 shader_destroy_single :: proc(using shader: ^Shader) {
-    gl.DeleteProgram(native_id)
+    gl.DeleteProgram(id)
 }
 shader_destroy_multiple :: proc(shaders: ..^Shader) {
     for sh in shaders {
-        gl.DeleteProgram(sh.native_id)
+        gl.DeleteProgram(sh.id)
     }
 }
 
 shader_create_from_components :: proc(comps: ..^Component) -> Shader {
     shader : Shader
-    shader.native_id = gl.CreateProgram()
+    shader.id = gl.CreateProgram()
     for c in comps {
-        gl.AttachShader(shader.native_id, c.native_id)
+        gl.AttachShader(shader.id, c.id)
     }
-    gl.LinkProgram(shader.native_id)
+    gl.LinkProgram(shader.id)
 
     success : i32
 
-	gl.GetProgramiv(shader.native_id, gl.LINK_STATUS, &success)
+	gl.GetProgramiv(shader.id, gl.LINK_STATUS, &success)
 	if success == 0 {
 		info_length:i32
 		info_buf : [512]u8
-		gl.GetProgramInfoLog(shader.native_id, 512, &info_length, &info_buf[0]);
+		gl.GetProgramInfoLog(shader.id, 512, &info_length, &info_buf[0]);
 		log.debugf("DGL Error: Shader Linking Error: \n%s\n", info_buf)
         return Shader{}
 	}
@@ -105,10 +105,10 @@ shader_create_from_components :: proc(comps: ..^Component) -> Shader {
 }
 
 shader_bind :: proc(using shader: ^Shader) {
-    if native_id == 0 {
+    if id == 0 {
         log.error("DGL Error: Failed to bind shader, the shader is not correctly initialized!")
     } else {
-        gl.UseProgram(native_id)
+        gl.UseProgram(id)
     }
 }
 

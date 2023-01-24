@@ -32,7 +32,6 @@ image_load :: proc (path: string) -> Image {
         log.errorf("Texture: Failed to load image: {}", path)
         return Image{}
     }
-    // log.debugf("load image from: {}, img size: {}", path, img.size)
     return Image{{width, height}, cast(u32)channels, data}
 }
 
@@ -45,18 +44,12 @@ image_from_mem :: proc(data: []byte) -> Image {
         log.errorf("Texture: Failed to load image from memory: {}", data)
         return Image{}
     }
-    // log.debugf("load image from: {}, img size: {}", path, img.size)
     return Image{{width, height}, cast(u32)channels, data_}
 }
 
 image_free :: proc (img: ^Image) {
     image.image_free(img.data)
     img.data = nil
-}
-
-// data: 4bytes per pixel.
-image_flip_y :: proc(data: []byte, width, height: u32) {
-
 }
 
 texture_load :: proc {
@@ -142,13 +135,7 @@ texture_create_with_buffer :: proc(width, height : int, buffer : []u8, gen_mipma
     gl.TexParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
     gl.TexParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
-    // data := make([dynamic][4]u8, 0, width * height)
-    // for i := 0; i < width * height; i += 1 {
-    //     append(&data, color)
-    // }
-
     gl.TexImage2D(target, 0, 4, cast(i32)width, cast(i32)height, 0, gl.RGBA, gl.UNSIGNED_BYTE, raw_data(buffer))
     if gen_mipmap do gl.GenerateMipmap(target)
     return tex
-
 }

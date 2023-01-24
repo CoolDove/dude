@@ -104,8 +104,6 @@ update :: proc(using wnd:^Window) {
 	draw_settings.screen_width = cast(f32)wnd.size.x
 	draw_settings.screen_height = cast(f32)wnd.size.y
 
-	col := [4]f32{.2, .8, .7, 1}
-	gl.ClearColor(col.r, col.g, col.b, col.a)
 	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT)
 
 	immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
@@ -120,7 +118,6 @@ update :: proc(using wnd:^Window) {
 		draw_data := imgui.get_draw_data();
 	}
 	update_game()
-
 
 	immediate_end(game.immediate_draw_wireframe)
 

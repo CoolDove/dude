@@ -6,9 +6,7 @@ import "core:log"
 import "core:math/linalg"
 
 
-// set_vertex_format :: proc(format: string) {
-// }
-
+// A VertexArrayObject should be binded before these `set_vertex_format` things.
 set_vertex_format_PCU :: proc(shader: u32) {
     location_position := gl.GetAttribLocation(shader, "position")
     location_color    := gl.GetAttribLocation(shader, "color")
@@ -58,12 +56,6 @@ Vec4 :: linalg.Vector4f32
 Vec2i :: distinct [2]i32
 Vec3i :: distinct [3]i32
 Vec4i :: distinct [4]i32
-
-// Transform :: struct {
-//     position    : Vec3,
-//     orientation : linalg.Quaternionf32,
-//     scale       : Vec3,
-// }
 
 VertexTypes :: bit_set[VertexType]
 

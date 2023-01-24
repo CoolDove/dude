@@ -46,7 +46,7 @@ GameObject :: struct {
 draw_game :: proc() {
 	using dgl
     wnd := game.window
-    if game.settings.status_window_alpha > 0 do draw_status()
+
 }
 
 when ODIN_DEBUG {
@@ -91,6 +91,8 @@ update_game :: proc() {
         }
     }
 
+    // Game world
+
     if game.main_world != nil {
         if game.current_scene.update != nil {
             game.current_scene.update(&game, game.main_world)
@@ -107,6 +109,9 @@ update_game :: proc() {
     }
 
     tween_update()
+
+    // Game builtin draw.
+    if game.settings.status_window_alpha > 0 do draw_status()
 }
 
 init_game :: proc() {

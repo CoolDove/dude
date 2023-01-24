@@ -32,8 +32,8 @@ ime_context : ImmediateDrawContext
 immediate_init :: proc () {
     gl.GenVertexArrays(1, &ime_context.vao)
 
-    ime_context.basic_shader = dgl.shader_load_vertex_and_fragment(SHADER_SRC_BASIC_VERTEX, SHADER_SRC_BASIC_FRAGMENT).native_id
-    ime_context.font_shader  = dgl.shader_load_vertex_and_fragment(SHADER_SRC_FONT_VERTEX, SHADER_SRC_FONT_FRAGMENT).native_id
+    ime_context.basic_shader = dgl.shader_load_vertex_and_fragment(SHADER_SRC_BASIC_VERTEX, SHADER_SRC_BASIC_FRAGMENT).id
+    ime_context.font_shader  = dgl.shader_load_vertex_and_fragment(SHADER_SRC_FONT_VERTEX, SHADER_SRC_FONT_FRAGMENT).id
 }
 
 immediate_begin :: proc (viewport: Vec4i) {

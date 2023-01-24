@@ -49,7 +49,7 @@ RenderEnvironment :: struct {
 
 draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
     cam := env.camera
-    mat_view_projection := dgl.camera_get_matrix_vp(
+    mat_view_projection := dgl.matrix_camera_vp_perspective(
         env.camera_transform.position, 
         env.camera_transform.orientation,
         cam.fov, cam.near, cam.far,
