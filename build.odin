@@ -36,7 +36,7 @@ COLLECTION_STR :: "-collection:pac=./pac/"
 
 APP_RC :: "app.rc"
 
-RC_CONTENT :string: `APP_ICON ICON "res/test.ico"`
+RC_CONTENT :string: `APP_ICON ICON "res/dude.ico"`
 
 main :: proc() {
     logger := log.create_console_logger(.Debug, {.Level, .Terminal_Color})

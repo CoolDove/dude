@@ -9,9 +9,11 @@ import "dude/ecs"
 
 
 main :: proc() {
+    dude.install_game("Dude")
+
     dude.install_scene("Test", SceneTest)
     dude.install_scene("Mushroom", SceneMushroom)
-    // dude.set_default_scene("Test")
+    dude.set_default_scene("Mushroom")
 
     dude.dude_main()
 }

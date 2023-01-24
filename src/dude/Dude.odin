@@ -8,9 +8,31 @@ dude_main :: proc() {
 		context.logger = logger
 	}
 
+	if !game_installed {
+		log.errorf("Dude: Game is not installed, `dude.install_game` please.")
+		return
+	}
+
 	app_init();
 	app_run();
 	app_release();
+}
+
+@(private)
+GameConfig :: struct {
+	name : string,
+}
+
+@(private)
+game_config := GameConfig {
+	name = "DudeEngine",
+}
+@(private)
+game_installed :bool= false
+
+install_game :: proc(name: string) {
+	game_config.name = name
+	game_installed = true
 }
 
 install_scene :: proc(key: string, scene: Scene) {
