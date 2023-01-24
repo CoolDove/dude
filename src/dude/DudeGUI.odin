@@ -49,7 +49,6 @@ gui_scenes :: proc() {
     for key, scene in registered_scenes {
         if imgui.button(key) {
             unload_scene()
-            log.debugf("Load scene: {}", key)
             load_scene(key)
         }
     }

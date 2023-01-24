@@ -19,7 +19,7 @@ import "ecs"
 @private
 registered_scenes : map[string]Scene
 @private
-default_scene : ^Scene
+default_scene : string
 
 Game :: struct {
     using settings : ^GameSettings,
@@ -145,7 +145,9 @@ init_game :: proc() {
     // Load some built in assets.
     load_builtin_assets() 
 
-    if default_scene != nil do load_scene(default_scene)
+    if default_scene != "" {
+        load_scene(default_scene)
+    }
 }
 
 struct_offset_detail :: proc($T:typeid) -> uintptr {

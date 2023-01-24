@@ -17,11 +17,6 @@ install_scene :: proc(key: string, scene: Scene) {
 	registered_scenes[key] = scene
 }
 
-set_default_scene :: proc(key: string) -> bool {
-	if key in registered_scenes {
-		default_scene = &registered_scenes[key]
-		return true
-	} else {
-		return false
-	}
+set_default_scene :: proc(key: string) {
+	default_scene = key
 }

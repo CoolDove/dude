@@ -16,7 +16,6 @@ Scene :: struct {
 }
 
 load_scene :: proc {
-    load_scene_,
     load_scene_by_key,
 }
 
@@ -43,7 +42,12 @@ load_scene_by_key :: proc(key: string) -> (ok: bool) {
     using ecs
     scene := &registered_scenes[key]
     if scene == nil do return false
-    return load_scene_(scene)
+    if load_scene_(scene) {
+        log.debugf("Load scene: {}", key)
+        return true
+    } else {
+        return false
+    }
 }
 
 unload_scene :: proc() -> (ok:bool) {
