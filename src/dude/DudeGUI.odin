@@ -1,4 +1,5 @@
-﻿package dude
+﻿//+private
+package dude
 
 
 import "core:time"
@@ -101,4 +102,16 @@ draw_no_scene_logo :: proc(wnd: ^Window) {
     immediate_text(unifont, text,
         {cast(f32)wnd_size.x * 0.5 - text_width * 0.5, cast(f32)wnd_size.y * 0.5},
         COLORS.GRAY)
+}
+
+draw_status :: proc() {
+    frame_ms := time.duration_milliseconds(app.duration_frame)
+    framerate := cast(i32)(1000.0/frame_ms)
+    color := COLORS.GREEN
+    color.a *= game.status_window_alpha
+
+    font := res_get_font("font/unifont.tff")
+    text := fmt.aprintf("FPS: {}", framerate)
+    defer delete(text)
+    immediate_text(font, text, {10, 32+10}, color)
 }

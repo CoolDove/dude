@@ -44,20 +44,6 @@ GameObject :: struct {
     transform : Transform,
 }
 
-
-@(private="file")
-draw_status :: proc() {
-    frame_ms := time.duration_milliseconds(app.duration_frame)
-    framerate := cast(i32)(1000.0/frame_ms)
-    color := Vec4{.1, 1, .1, 1}
-    color.a *= game.settings.status_window_alpha
-
-    font := res_get_font("font/unifont.ttf")
-    immediate_text(font, fmt.tprintf("FPS: {}", framerate), {10, 32+10}, color)
-    immediate_text(font, fmt.tprintf("Fullscreen: {}", game.window.fullscreen), 
-        {10, 32+10+32+10}, color)
-}
-
 update_game :: proc() {
     // ## FRAME PREPARE
 	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT)
@@ -68,6 +54,9 @@ update_game :: proc() {
     {// Engine input handling
         if get_key_down(.F1) {
             game.immediate_draw_wireframe = !game.immediate_draw_wireframe
+        }
+        if get_key_down(.F2) {
+            game.status_window_alpha = 1 - game.status_window_alpha
         }
     }
 
@@ -92,7 +81,7 @@ update_game :: proc() {
             if camera != nil do gizmos_end()
         }
 
-    } else {// Draw "No Scene Loaded"
+    } else {// Draw "No Scene Loaded" and the cool dude logo.
         draw_no_scene_logo(game.window)
     }
 
@@ -110,20 +99,21 @@ update_game :: proc() {
 		dude_imgui_basic_settings()
         imgui_frame_end()
 	}
+
 }
 
 init_game :: proc() {
     using dgl
 
     game.settings = new(GameSettings)
-    game.basic_shader = load_shader(
+    // TODO: Move shader loading into res module.
+    game.basic_shader = dgl.shader_load_vertex_and_fragment(
         #load("resources/basic_3d_vertex.glsl"),
         #load("resources/basic_3d_fragment.glsl"))
 
-    tween_init()
-
-    // Load some built in assets.
     load_builtin_assets() 
+
+    tween_init()
 
     if default_scene != "" {
         load_scene(default_scene)
@@ -149,15 +139,6 @@ struct_offset_detail :: proc($T:typeid) -> uintptr {
     log.debugf(strings.to_string(sb))
 
     return offsets[0] if len(offsets) > 0 else 0
-}
-
-@(private="file")
-load_shader :: proc(vertex_source, frag_source : string)  -> dgl.Shader {
-	shader_comp_vertex := dgl.shader_create_component(.VERTEX_SHADER, vertex_source)
-	shader_comp_fragment := dgl.shader_create_component(.FRAGMENT_SHADER, frag_source)
-	shader := dgl.shader_create(&shader_comp_vertex, &shader_comp_fragment)
-	dgl.shader_destroy_components(&shader_comp_vertex, &shader_comp_fragment)
-	return shader
 }
 
 quit_game :: proc() {
@@ -191,6 +172,7 @@ load_builtin_assets :: proc() {
     }
     res_load_font("font/unifont.tff", 32.0)
 }
+
 unload_builtin_assets :: proc() {
     res_unload_texture("texture/dude.png")
     res_unload_texture("texture/white")
