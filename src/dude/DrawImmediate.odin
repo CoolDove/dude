@@ -29,14 +29,23 @@ ImmediateDrawContext :: struct {
 @(private="file")
 ime_context : ImmediateDrawContext
 
-immediate_init :: proc () {
-    gl.GenVertexArrays(1, &ime_context.vao)
+// immediate_init :: proc () {
+//     gl.GenVertexArrays(1, &ime_context.vao)
 
-    ime_context.basic_shader = dgl.shader_load_vertex_and_fragment(SHADER_SRC_BASIC_VERTEX, SHADER_SRC_BASIC_FRAGMENT).id
-    ime_context.font_shader  = dgl.shader_load_vertex_and_fragment(SHADER_SRC_FONT_VERTEX, SHADER_SRC_FONT_FRAGMENT).id
-}
+//     ime_context.basic_shader = dgl.shader_load_vertex_and_fragment(SHADER_SRC_BASIC_VERTEX, SHADER_SRC_BASIC_FRAGMENT).id
+//     ime_context.font_shader  = dgl.shader_load_vertex_and_fragment(SHADER_SRC_FONT_VERTEX, SHADER_SRC_FONT_FRAGMENT).id
+// }
 
 immediate_begin :: proc (viewport: Vec4i) {
+    if ime_context.vao == 0 {// init
+        using ime_context
+        gl.GenVertexArrays(1, &vao)
+        basic_shader = dgl.shader_load_vertex_and_fragment(
+            SHADER_SRC_BASIC_VERTEX, SHADER_SRC_BASIC_FRAGMENT).id
+        font_shader  = dgl.shader_load_vertex_and_fragment(
+            SHADER_SRC_FONT_VERTEX, SHADER_SRC_FONT_FRAGMENT).id
+    }
+
     clear(&ime_context.vertices)
     clear(&ime_context.elements)
     ime_context.viewport = viewport
@@ -73,6 +82,8 @@ immediate_end :: proc (wireframe:= false) {
     loc_viewport_size :i32= -1
     loc_main_texture  :i32= -1
 
+    default_tex_white := res_get_texture("texture/white")
+
     for e in elements {
         if e.shader != current_shader || format_set {
             current_shader = e.shader
@@ -86,7 +97,7 @@ immediate_end :: proc (wireframe:= false) {
 
         gl.ActiveTexture(gl.TEXTURE0)
         if e.texture != 0 { gl.BindTexture(gl.TEXTURE_2D, e.texture) }
-        else { gl.BindTexture(gl.TEXTURE_2D, draw_settings.default_texture_white) }
+        else { gl.BindTexture(gl.TEXTURE_2D, default_tex_white.id) }
         gl.Uniform1i(loc_main_texture, 0)
 
         gl.DrawArrays(gl.TRIANGLES, cast(i32)e.start, cast(i32)e.count)
@@ -106,7 +117,7 @@ immediate_end :: proc (wireframe:= false) {
 
         for e in elements {
             gl.ActiveTexture(gl.TEXTURE0)
-            gl.BindTexture(gl.TEXTURE_2D, draw_settings.default_texture_white) 
+            gl.BindTexture(gl.TEXTURE_2D, default_tex_white.id) 
             gl.Uniform1i(loc_main_texture, 0)
             gl.DrawArrays(gl.TRIANGLES, cast(i32)e.start, cast(i32)e.count)
         }
@@ -363,7 +374,7 @@ void main()
     _uv.y = 1 - _uv.y;
     _color = color;
 }
-	`
+`
 @(private="file")
 SHADER_SRC_FONT_FRAGMENT :=`
 #version 440 core
@@ -379,4 +390,4 @@ void main() {
     FragColor = _color;
     FragColor.a *= c;
 }
-	`
+`

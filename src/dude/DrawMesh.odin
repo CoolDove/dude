@@ -12,17 +12,13 @@ import gl "vendor:OpenGL"
 
 import "dgl"
 
-DrawSettings :: struct {
-    screen_width, screen_height : f32,
-    default_texture_white, default_texture_black : u32,
-}
+// @(private="file")
+// DrawSettings :: struct {
+//     default_texture_white, default_texture_black : u32,
+// }
 
-draw_settings : DrawSettings
-
-init :: proc() {
-    draw_settings.default_texture_white = dgl.texture_create(4, 4, [4]u8{0xff, 0xff, 0xff, 0xff})
-    draw_settings.default_texture_black = dgl.texture_create(4, 4, [4]u8{0x00, 0x00, 0x00, 0xff})
-}
+// @(private="file")
+// mesh_draw_settings : DrawSettings
 
 set_opengl_state_for_draw_geometry :: proc() {
     gl.Enable(gl.DEPTH_TEST)
@@ -48,12 +44,18 @@ RenderEnvironment :: struct {
 }
 
 draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
+    // if draw_settings.default_texture_white == 0 {
+    //     draw_settings.default_texture_white = dgl.texture_create(4, 4, [4]u8{0xff, 0xff, 0xff, 0xff})
+    //     draw_settings.default_texture_black = dgl.texture_create(4, 4, [4]u8{0x00, 0x00, 0x00, 0xff})
+    // }
+
     cam := env.camera
     mat_view_projection := dgl.matrix_camera_vp_perspective(
         env.camera_transform.position, 
         env.camera_transform.orientation,
         cam.fov, cam.near, cam.far,
-        draw_settings.screen_width/draw_settings.screen_height,
+        
+        cast(f32)game.window.size.x/cast(f32)game.window.size.y,
     )
 
     for obj in objects {
@@ -65,6 +67,7 @@ draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
         if mesh.pcnu == nil do mesh_create_pcnu(mesh)
         gl.BindBuffer(gl.ARRAY_BUFFER, mesh.pcnu.vbo)
         mat_model := transform_matrix
+        default_tex_white := res_get_texture("texture/white")
         for submesh in &mesh.submeshes {
             if submesh.ebo == 0 {
                 log.errorf("Mesh {} is not uploaded.", strings.to_string(obj.mesh.name))
@@ -92,7 +95,7 @@ draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
             // Set texture.
             gl.ActiveTexture(gl.TEXTURE0)
             if submesh.texture != 0 { gl.BindTexture(gl.TEXTURE_2D, submesh.texture) }
-            else { gl.BindTexture(gl.TEXTURE_2D, draw_settings.default_texture_white) }
+            else { gl.BindTexture(gl.TEXTURE_2D, default_tex_white.id) }
             gl.Uniform1i(uni_loc_main_texture, 0)
 
             gl.DrawElements(gl.TRIANGLES, cast(i32)len(submesh.triangles) * 3, gl.UNSIGNED_INT, nil)

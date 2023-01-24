@@ -46,7 +46,7 @@ test_scene_loader :: proc(world: ^ecs.World) {
     {// Add test SpriteRenderer.
         dove := ecs.add_entity(world)
         sprite := ecs.add_component(world, dove, SpriteRenderer)
-        sprite.texture_id = res_get_texture("texture/box.png").texture_id
+        sprite.texture_id = res_get_texture("texture/box.png").id
         sprite.size = {64, 64}
         sprite.pos = {0, 0}
         sprite.pivot = {0.0, 0.0}

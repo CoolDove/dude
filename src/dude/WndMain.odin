@@ -26,10 +26,6 @@ when ODIN_DEBUG {
 
 import dgl "dgl"
 
-WndMainData :: struct {
-	data : u32,
-}
-
 create_main_window :: proc (allocator:=context.allocator, loc := #caller_location) -> Window {
 	wnd := window_get_basic_template("Demo")
 	wnd.derive_vtable = &main_wnd_vtable
@@ -64,13 +60,7 @@ when ODIN_DEBUG {
 
 @(private="file")
 after_instantiate :: proc(using wnd: ^Window) {
-	wdata := window_data(WndMainData, wnd)
-	log.debugf("window data: {}", wdata)
-
 	when ODIN_DEBUG do init_imgui(&imgui_state, window)
-
-	init()
-	immediate_init()
 
 	log.debugf("window {} instantiated.", name)
 
@@ -80,16 +70,12 @@ after_instantiate :: proc(using wnd: ^Window) {
 
 @(private="file")
 before_destroy :: proc(wnd: ^Window) {
-	wdata := window_data(WndMainData, wnd)
 	quit_game()
 	log.debug("Main Window Closed")
 }
 
 @(private="file")
 handler :: proc(using wnd:^Window, event:sdl.Event) {
-	wnd_data := window_data(WndMainData, wnd)
-	using wnd_data
-
 	when ODIN_DEBUG do imsdl.process_event(event, &imgui_state.sdl_state)
 
 	input_handle_sdl2(event)
@@ -99,14 +85,10 @@ handler :: proc(using wnd:^Window, event:sdl.Event) {
 
 @(private="file")
 update :: proc(using wnd:^Window) {// Game runs in this.
-	wnd_data := window_data(WndMainData, wnd)
-	draw_settings.screen_width = cast(f32)wnd.size.x
-	draw_settings.screen_height = cast(f32)wnd.size.y
 
 	update_game()
 
 	sdl.GL_SwapWindow(wnd.window)
-
 	input_after_update_sdl2()
 }
 

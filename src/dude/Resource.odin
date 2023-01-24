@@ -35,12 +35,16 @@ ResourceManager :: struct {
     embbed_data : map[string][]byte,
 }
 
+when ODIN_DEBUG {
+resource_manager : ResourceManager
+} else {
 @(private="file")
 resource_manager : ResourceManager
+}
 
 Texture :: struct {
     size : Vec2i,
-    texture_id : u32, // OpenGL texture id
+    id : u32, // OpenGL texture id
 }
 
 // path relative to the ./res/
@@ -59,19 +63,28 @@ res_load_texture :: proc(key: string, allocator:= context.allocator) -> (^Textur
     } else {
         dgltex = dgl.texture_load(fpath)
     }
-    if dgltex.texture_id == 0 { return nil, .Invalid_Path } 
+    if dgltex.id == 0 { return nil, .Invalid_Path } 
     texture := new(Texture)
     texture.size = dgltex.size
-    texture.texture_id = dgltex.texture_id
+    texture.id = dgltex.id
     resources[key] = texture
     return texture, nil
+}
+
+res_add_texture :: proc(key: string, texture: ^Texture) -> ResourceError {
+    using resource_manager
+    if key in resources { return .Key_Has_Exists }
+
+    resources[key] = texture
+    return nil
 }
 
 res_unload_texture :: proc(key: string) -> ResourceError {
     using resource_manager
     if key in resources {
         texture :^Texture= cast(^Texture)resources[key]
-        gl.DeleteTextures(1, &texture.texture_id)
+        gl.DeleteTextures(1, &texture.id)
+        free(texture)
     }
     delete_key(&resources, key)
     return nil

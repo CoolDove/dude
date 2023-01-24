@@ -17,7 +17,7 @@ Image :: struct {
 
 Texture :: struct {
     size : Vec2i,
-    texture_id : u32, 
+    id : u32, 
 }
 
 Color_RGBA :: distinct [4]byte
