@@ -21,6 +21,7 @@ dude_imgui_basic_settings :: proc() {
         "Settings"     = gui_settings,
         "ResourceView" = gui_resource_viewer,
     }
+    defer delete(guis)
 
     @static guikey := "Scene"
 
