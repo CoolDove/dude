@@ -27,8 +27,6 @@ test_scene_loader :: proc(world: ^ecs.World) {
         sprite.pivot = {0.0, 0.0}
         sprite.space = .World
         sprite.color = COLORS.WHITE
-
-        ecs.add_component(world, dove, BuiltIn3DCameraController{---, 1, 1})
     }
 }
 

@@ -125,11 +125,22 @@ update_game :: proc() {
 
     // Game world
     if game.main_world != nil {
+        world := game.main_world
         if game.current_scene.update != nil {
-            game.current_scene.update(&game, game.main_world)
+            game.current_scene.update(&game, world)
         }
-        ecs.world_update(game.main_world)
-        render_world(game.main_world)
+
+        camera := get_main_camera(world)
+        if camera != nil do gizmos_begin(camera)
+
+        ecs.world_update(world)
+        render_world(world)
+
+        gizmos_set_color(COLORS.GRAY)
+        gizmos_line({-5, 0, 0}, {5, 0, 0}, {5, 5, 0}, {-5, 5, 0})
+
+        if camera != nil do gizmos_end()
+
     } else {// Draw "No Scene Loaded"
         draw_no_scene_logo(game.window)
     }
