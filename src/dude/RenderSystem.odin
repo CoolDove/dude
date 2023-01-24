@@ -14,6 +14,7 @@ import "ecs"
 @(private="file")
 render_game_vao : u32
 
+// Currently pickup the first camera as the main camera.
 render_world :: proc(world: ^ecs.World) {
     camera : ^Camera = get_main_camera(world)
     light : ^Light = get_main_light(world)
@@ -60,19 +61,6 @@ render_world :: proc(world: ^ecs.World) {
     }
 }
 
-@(private="file")
-get_main_light :: proc(world: ^ecs.World) -> ^Light {
-    lights := ecs.get_components(world, Light)
-    if lights != nil && len(lights) > 0 do return &lights[0]
-    return nil
-}
-
-@(private="file")
-get_main_camera :: proc(world: ^ecs.World) -> ^Camera {
-    cameras := ecs.get_components(world, Camera)
-    if cameras != nil && len(cameras) > 0 do return &cameras[0]
-    return nil
-}
 
 // Temporary
 @(private="file")
