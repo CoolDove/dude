@@ -20,7 +20,7 @@ SpriteRenderer :: struct {
     // Need a transform to work.
     using comp : ecs.Component,
     texture_id : u32,
-    size, pos, pivot : Vec2,
+    size, pivot : Vec2,
     space : SpriteSpace,
     color : Color,
 }

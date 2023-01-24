@@ -30,6 +30,8 @@ add_component_by_type :: proc(world: ^World, entity: Entity, $T: typeid) -> ^T
 {
     return add_component(world, entity, T{})
 }
+
+
 add_component_by_data :: proc(world: ^World, entity: Entity, component: $T) -> ^T 
     where intrinsics.type_is_struct(T)
 {
@@ -53,6 +55,39 @@ add_component_by_data :: proc(world: ^World, entity: Entity, component: $T) -> ^
         base_ptr.entity = entity
     }
     return comp
+}
+
+add_components :: proc {
+    add_components_by_data1,
+    add_components_by_data2,
+    add_components_by_data3,
+    add_components_by_data4,
+    add_components_by_data5,
+}
+add_components_by_data1 :: proc(world: ^World, entity: Entity, c1: $T1) {
+    add_component_by_data(world, entity, c1)
+}
+add_components_by_data2 :: proc(world: ^World, entity: Entity, c1: $T1, c2: $T2) {
+    add_component_by_data(world, entity, c1)
+    add_component_by_data(world, entity, c2)
+}
+add_components_by_data3 :: proc(world: ^World, entity: Entity, c1: $T1, c2: $T2, c3: $T3) {
+    add_component_by_data(world, entity, c1)
+    add_component_by_data(world, entity, c2)
+    add_component_by_data(world, entity, c3)
+}
+add_components_by_data4 :: proc(world: ^World, entity: Entity, c1: $T1, c2: $T2, c3: $T3, c4: $T4) {
+    add_component_by_data(world, entity, c1)
+    add_component_by_data(world, entity, c2)
+    add_component_by_data(world, entity, c3)
+    add_component_by_data(world, entity, c4)
+}
+add_components_by_data5 :: proc(world: ^World, entity: Entity, c1: $T1, c2: $T2, c3: $T3, c4: $T4, c5: $T5) {
+    add_component_by_data(world, entity, c1)
+    add_component_by_data(world, entity, c2)
+    add_component_by_data(world, entity, c3)
+    add_component_by_data(world, entity, c4)
+    add_component_by_data(world, entity, c5)
 }
 
 ComponentType :: enum {

@@ -25,33 +25,10 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
         return
     }
 
-    add_mesh_renderers(world, mushroom)// mesh renderers
+    prefab_camera(world, "MainCamera", true)
+    prefab_light(world, "MainLight")
 
-    {// main camera
-        camera := add_entity(world)
-        add_component(world, camera, Transform {
-            position    = {0, 0, 3.5},
-            orientation = linalg.quaternion_from_forward_and_up(Vec3{0, 0, 1}, Vec3{0, 1, 0}),
-            scale       = {1, 1, 1},
-        })
-        add_component(world, camera, Camera{
-            fov  = 45,
-            near = .1,
-            far  = 300,
-        })
-        add_component(world, camera, BuiltIn3DCameraController{---, 1, 1})
-        add_component(world, camera, DebugInfo{"MainCamera"})
-    }
-    {// main light
-        light := add_entity(world)
-        l : Light
-        {using l
-            color = {1, .8, .8, 1}
-            direction = linalg.normalize(Vec3{-0.9, .3, 0}) 
-        }
-        add_component(world, light, l)
-        add_component(world, light, DebugInfo{"MainLight"})
-    }
+    add_mesh_renderers(world, mushroom)// mesh renderers
 
 }
 

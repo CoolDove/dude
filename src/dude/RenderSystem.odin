@@ -3,6 +3,8 @@
 import "core:log"
 import "core:strings"
 import "core:slice"
+import "core:slice/heap"
+import "core:math/linalg"
 
 import gl "vendor:OpenGL"
 
@@ -12,12 +14,11 @@ import "ecs"
 @(private="file")
 render_game_vao : u32
 
-render_system_update :: proc(world: ^ecs.World) {
+render_world :: proc(world: ^ecs.World) {
     camera : ^Camera = get_main_camera(world)
     light : ^Light = get_main_light(world)
 
     if camera == nil || light == nil do return;
-    // assert(camera != nil && light != nil, "Main camera and main light must exist.")
 
     camera_transform := ecs.get_component(world, camera.entity, Transform)
 
@@ -36,9 +37,24 @@ render_system_update :: proc(world: ^ecs.World) {
     {// Sprite renderer (current immediately)
         // Currently draw sprite in screen space.
         sprites := ecs.get_components(world, SpriteRenderer)
-        for sprite in sprites {
+        transforms := make([dynamic]Transform, 0, len(sprites))
+        defer delete(transforms)
+        for sp in sprites {
+            transform := ecs.get_component(world, sp.entity, Transform)
+            append(&transforms, 
+                transform^ if transform != nil else 
+                Transform{orientation=linalg.quaternion_from_euler_angles(cast(f32)0,0,0, .XYZ)})
+        }
+        sorted_indices := slice.sort_by_with_indices(transforms[:],
+            proc(i,j:Transform)->bool{return i.position.z<j.position.z},
+        )
+
+        // TODO: handle rotation
+        for i in sorted_indices {
+            sprite := sprites[i]
+            transform := transforms[i]
             using sprite
-            leftup := pos - size * pivot
+            leftup := Vec2{transform.position.x, transform.position.y} - size * pivot
             immediate_texture(leftup, size, sprite.color, texture_id)
         }
     }
