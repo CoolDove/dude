@@ -44,58 +44,6 @@ GameObject :: struct {
     transform : Transform,
 }
 
-when ODIN_DEBUG {
-draw_game_imgui :: proc() {
-    guis := map[string]proc() {
-        "Scene"        = gui_scenes,
-        "Tween"        = gui_tween,
-        "Settings"     = gui_settings,
-        "ResourceView" = gui_resource_viewer,
-    }
-
-    @static guikey := "Scene"
-
-    for key in guis {
-        if imgui.selectable(key, guikey == key, auto_cast 0, {50, 0}) do guikey = key
-        imgui.same_line()
-    }
-    imgui.text("...")
-    imgui.separator()
-    if guikey in guis {
-        guis[guikey]()
-    }
-
-}
-
-gui_tween :: proc() {
-    for t, ind in &tweens {
-        text := fmt.tprintf("{}: {}", ind, "working" if !t.done else "done.")
-        imgui.selectable(text, !t.done)
-    }
-}
-gui_settings :: proc() {
-    imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
-}
-gui_scenes :: proc() {
-    imgui.text("Scenes")
-    for key, scene in registered_scenes {
-        if imgui.button(key) {
-            unload_scene()
-            log.debugf("Load scene: {}", key)
-            load_scene(key)
-        }
-    }
-    if imgui.button("Unload") {
-        unload_scene()
-    }
-}
-gui_resource_viewer :: proc() {
-    imgui.text("Resource:")
-    for key, res in resource_manager.resources {
-        imgui.text(key)
-    }
-}
-}
 
 @(private="file")
 draw_status :: proc() {
@@ -130,16 +78,19 @@ update_game :: proc() {
             game.current_scene.update(&game, world)
         }
 
-        camera := get_main_camera(world)
-        if camera != nil do gizmos_begin(camera)
+        when ODIN_DEBUG {
+            camera := get_main_camera(world)
+            if camera != nil do gizmos_begin(camera)
+        }
 
         ecs.world_update(world)
         render_world(world)
 
-        gizmos_set_color(COLORS.GRAY)
-        gizmos_line({-5, 0, 0}, {5, 0, 0}, {5, 5, 0}, {-5, 5, 0})
+        when ODIN_DEBUG { gizmos_xz_grid(10, 1, COLORS.GRAY) }
 
-        if camera != nil do gizmos_end()
+        when ODIN_DEBUG {
+            if camera != nil do gizmos_end()
+        }
 
     } else {// Draw "No Scene Loaded"
         draw_no_scene_logo(game.window)
@@ -156,7 +107,7 @@ update_game :: proc() {
     // ## DEBUG IMGUI
 	when ODIN_DEBUG {
         imgui_frame_begin()
-		draw_game_imgui()
+		dude_imgui_basic_settings()
         imgui_frame_end()
 	}
 }

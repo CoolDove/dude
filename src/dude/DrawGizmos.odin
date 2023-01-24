@@ -21,6 +21,7 @@ GizmosDrawContext :: struct {
     mtx   : linalg.Matrix4x4f32,
     color : Color,
     camera : ^Camera,
+    drawing : bool,
 
     // Data
     lines : [dynamic]LineSeg,
@@ -41,10 +42,11 @@ gizmos_begin :: proc(cam: ^Camera) {
     color = COLORS.WHITE
     camera = cam
     clear(&lines)
+    drawing = true
 }
 gizmos_end :: proc() {
     using gizmos_context
-    if camera == nil do return
+    if !drawing || camera == nil do return
     gl.BindVertexArray(vao)
 
     vbuffer : u32
@@ -74,14 +76,18 @@ gizmos_end :: proc() {
     gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
     gl.DrawArrays(gl.LINES, 0, cast(i32)len(lines) * 2)
     gl.PolygonMode(gl.FRONT_AND_BACK, polygon_mode_stash)
+
+    drawing = false
 }
 
 gizmos_set_color :: proc(color: Color) {
+    if !gizmos_context.drawing do return
     gizmos_context.color = color
 }
 
 gizmos_line :: proc(positions : ..Vec3) {
     using gizmos_context
+    if !drawing do return
     for i in 0..<len(positions)-1 {
         a := VertexPCU {
             positions[i],
