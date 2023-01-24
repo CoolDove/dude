@@ -3,6 +3,7 @@
 import "core:time"
 import "core:log"
 import "core:fmt"
+import "core:reflect"
 import "core:strings"
 import "core:math"
 import "core:math/linalg"
@@ -183,7 +184,27 @@ init_game :: proc() {
     load_builtin_assets() 
 
     if default_scene != nil do load_scene(default_scene)
+}
 
+struct_offset_detail :: proc($T:typeid) -> uintptr {
+    names   := reflect.struct_field_names(T)
+    offsets := reflect.struct_field_offsets(T)
+
+    sb : strings.Builder
+    strings.builder_init(&sb)
+    defer strings.builder_destroy(&sb)
+    strings.write_string(&sb, fmt.tprintf("{}: <", typeid_of(T)))
+
+    for i in 0..<len(names) {
+        name := names[i]
+        offset := offsets[i]
+        strings.write_string(&sb, fmt.tprintf("{}: {}", name, offset))
+        if i != len(names) - 1 do strings.write_string(&sb, ", ")
+    }
+    strings.write_string(&sb, fmt.tprintf("> total size: {}", size_of(T)))
+    log.debugf(strings.to_string(sb))
+
+    return offsets[0] if len(offsets) > 0 else 0
 }
 
 @(private="file")

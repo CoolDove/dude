@@ -60,6 +60,9 @@ draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
 
     for obj in objects {
         using obj;
+
+        if obj.mesh == nil do continue
+
         if mesh.submeshes == nil || len(&mesh.submeshes) == 0 {
             log.errorf("Mesh {} has no submesh.", strings.to_string(obj.mesh.name))
             continue

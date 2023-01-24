@@ -8,6 +8,7 @@ import "core:runtime"
 import "core:reflect"
 import "core:slice"
 import "core:intrinsics"
+import "core:mem"
 
 ComponentPool :: struct {
     // Should be cast/transmuted to [dynamic]T before using.
@@ -18,7 +19,8 @@ ComponentPool :: struct {
 ComponentMap :: map[typeid]ComponentPool
 
 Component :: struct {
-    entity  : Entity,
+    world  : ^World,
+    entity : Entity,
 }
 
 add_component :: proc {
@@ -30,7 +32,6 @@ add_component_by_type :: proc(world: ^World, entity: Entity, $T: typeid) -> ^T
 {
     return add_component(world, entity, T{})
 }
-
 
 add_component_by_data :: proc(world: ^World, entity: Entity, component: $T) -> ^T 
     where intrinsics.type_is_struct(T)
@@ -50,9 +51,11 @@ add_component_by_data :: proc(world: ^World, entity: Entity, component: $T) -> ^
     pool.entities[entity] = component_id
     comp := &components[component_id]
     if component_type == .ComponentBased {
-        // Set up basic Component things.
-        base_ptr := transmute(^Component)comp
-        base_ptr.entity = entity
+        base := Component{
+            world=world, 
+            entity=entity,
+        }
+        mem.copy(comp, &base, size_of(base))
     }
     return comp
 }
@@ -132,11 +135,6 @@ get_components :: proc {
 }
 
 get_components_of_type :: proc(world: ^World, $T: typeid) -> []T {
-    // sb: strings.Builder
-    // strings.builder_init(&sb)
-    // defer strings.builder_destroy(&sb)
-    // list_components(world, &sb)
-    // log.debugf("Get Component from: {}", strings.to_string(sb))
     if comps, ok := world.components[T]; ok {
         return (transmute([dynamic]T)comps.components)[:]
     } else {

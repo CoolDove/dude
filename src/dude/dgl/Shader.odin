@@ -17,13 +17,13 @@ Shader :: struct {
     id : u32,
 }
 
-Component :: struct {
+ShaderComponent :: struct {
     id : u32,
     type : ShaderType,
 }
 
-shader_create_component :: proc (type : ShaderType, source : string) -> Component {
-    shader: Component
+shader_create_component :: proc (type : ShaderType, source : string) -> ShaderComponent {
+    shader: ShaderComponent
 
     shader.type = type
 
@@ -42,13 +42,13 @@ shader_create_component :: proc (type : ShaderType, source : string) -> Componen
 		shader_log_length:i32
 		info_buf : [512]u8
 		gl.GetShaderInfoLog(id, 512, &shader_log_length, &info_buf[0])
-		log.errorf("DGL: Shader Component Compile Error: \n%s\n", info_buf);
-        return Component{}
+		log.errorf("DGL: Shader ShaderComponent Compile Error: \n%s\n", info_buf);
+        return ShaderComponent{}
 	}
     return shader
 }
 
-shader_destroy_component :: proc (using component : ^Component) -> bool {
+shader_destroy_component :: proc (using component : ^ShaderComponent) -> bool {
     if id != 0 {
         gl.DeleteShader(id)
         id = 0
@@ -56,7 +56,7 @@ shader_destroy_component :: proc (using component : ^Component) -> bool {
     }
     return false
 }
-shader_destroy_components :: proc (comps: ..^Component) -> int {
+shader_destroy_components :: proc (comps: ..^ShaderComponent) -> int {
     count := 0
     for c in comps {
         if shader_destroy_component(c) do count += 1
@@ -82,7 +82,7 @@ shader_destroy_multiple :: proc(shaders: ..^Shader) {
     }
 }
 
-shader_create_from_components :: proc(comps: ..^Component) -> Shader {
+shader_create_from_components :: proc(comps: ..^ShaderComponent) -> Shader {
     shader : Shader
     shader.id = gl.CreateProgram()
     for c in comps {

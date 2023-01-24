@@ -29,7 +29,6 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
     prefab_light(world, "MainLight")
 
     add_mesh_renderers(world, mushroom)// mesh renderers
-
 }
 
 @(private="file")

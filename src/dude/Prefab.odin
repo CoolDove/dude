@@ -30,6 +30,6 @@ prefab_light :: proc(world: ^ecs.World, name: string, color: Color = COLORS.GREE
     light := add_entity(world)
     add_components(world, light, 
         DebugInfo{name},
-        Light{linalg.normalize(Vec3{-0.9, .3, 0}), color},
+        Light{{}, linalg.normalize(Vec3{-0.9, .3, 0}), color},
     )
 }
