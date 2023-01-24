@@ -128,11 +128,10 @@ update_game :: proc() {
             game.current_scene.update(&game, game.main_world)
         }
         ecs.world_update(game.main_world)
+        render_world(game.main_world)
     } else {// Draw "No Scene Loaded"
         draw_no_scene_logo(game.window)
     }
-
-    if game.main_world != nil do render_world(game.main_world)
 
     tween_update()
 
