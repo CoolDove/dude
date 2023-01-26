@@ -11,7 +11,7 @@ import "ecs"
 
 Scene :: struct {
     loader : proc(world: ^ecs.World),
-    update : proc(game: ^Game, world: ^ecs.World),
+    update : proc(world: ^ecs.World),
     unloader : proc(world: ^ecs.World),
 }
 

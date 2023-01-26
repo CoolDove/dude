@@ -60,12 +60,7 @@ gizmos_end :: proc() {
 
     cam_transform := ecs.get_component(camera.world, camera.entity, Transform)
     assert(cam_transform != nil, "Camera should have a `Transform` component.")
-    mat_view_projection := dgl.matrix_camera_vp_perspective(
-        cam_transform.position, 
-        cam_transform.orientation,
-        camera.fov, camera.near, camera.far,
-        cast(f32)game.window.size.x/cast(f32)game.window.size.y,
-    )
+    mat_view_projection := calc_camera_vp(camera)
 
     uni_loc_matrix_view_projection := gl.GetUniformLocation(gizmos_shader, "matrix_view_projection")
     gl.UniformMatrix4fv(uni_loc_matrix_view_projection, 

@@ -11,14 +11,7 @@ import "core:math/linalg"
 import gl "vendor:OpenGL"
 
 import "dgl"
-
-// @(private="file")
-// DrawSettings :: struct {
-//     default_texture_white, default_texture_black : u32,
-// }
-
-// @(private="file")
-// mesh_draw_settings : DrawSettings
+import "ecs"
 
 set_opengl_state_for_draw_geometry :: proc() {
     gl.Enable(gl.DEPTH_TEST)
@@ -37,26 +30,14 @@ RenderObject :: struct {
 }
 
 RenderEnvironment :: struct {
-    camera_transform : ^Transform,
     camera : ^Camera,
-    light_transform : ^Transform,
     light  : ^Light,
 }
 
 draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
-    // if draw_settings.default_texture_white == 0 {
-    //     draw_settings.default_texture_white = dgl.texture_create(4, 4, [4]u8{0xff, 0xff, 0xff, 0xff})
-    //     draw_settings.default_texture_black = dgl.texture_create(4, 4, [4]u8{0x00, 0x00, 0x00, 0xff})
-    // }
-
     cam := env.camera
-    mat_view_projection := dgl.matrix_camera_vp_perspective(
-        env.camera_transform.position, 
-        env.camera_transform.orientation,
-        cam.fov, cam.near, cam.far,
-        
-        cast(f32)game.window.size.x/cast(f32)game.window.size.y,
-    )
+
+    mat_view_projection := calc_camera_vp(env.camera)
 
     for obj in objects {
         using obj;

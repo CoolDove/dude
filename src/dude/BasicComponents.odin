@@ -9,9 +9,15 @@ DebugInfo :: struct {
 
 Camera :: struct #packed {
     using component : ecs.Component,
-    fov : f32,
+    type : CameraProjectType,
+    size : f32, // for ortho camera
+    fov : f32,  // for persp camera
     near, far : f32,
     tag : string,
+}
+
+CameraProjectType :: enum {
+    Persp, Ortho,
 }
 
 // World space allow, and the z is used to mark the depth.

@@ -76,11 +76,11 @@ gui_ecs :: proc() {
     for ent in entities {
         entity := cast(ecs.Entity)ent.id
         entity_info := cast(ecs.EntityInfo)ent.data
-        imgui.bullet_text(fmt.tprintf("Ent: {}", entity_info.name))
+        imgui.bullet_text(fmt.tprintf("> {}", entity_info.name))
         components := ecs.get_components(game.main_world, cast(ecs.Entity)ent.id)
         defer delete(components)
         for c in components {
-            imgui.text(fmt.tprintf("-{}: {}", c.type, c.id))
+            imgui.text(fmt.tprintf("    -{}: {}", c.type, c.id))
         }
     }
     

@@ -9,4 +9,6 @@ Run `./update_builder.bat`, then a builder program will be generated to build th
 - [ ] Game time & game time scaling. Use game time in tweening.
 - [ ] Multi line text rendering.
 - [ ] Text renderer.
+- [x] Ortho camera.
+- [ ] World space sprite renderer.
 - [ ] Clickable button.

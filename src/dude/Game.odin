@@ -64,7 +64,7 @@ update_game :: proc() {
     if game.main_world != nil {
         world := game.main_world
         if game.current_scene.update != nil {
-            game.current_scene.update(&game, world)
+            game.current_scene.update(world)
         }
 
         when ODIN_DEBUG {

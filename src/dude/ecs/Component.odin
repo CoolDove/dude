@@ -142,13 +142,6 @@ get_components_of_type :: proc(world: ^World, $T: typeid) -> []T {
     }
 }
 
-@(private="file")
-list_components :: proc(world: ^World, sb: ^strings.Builder) {
-    for key, value in world.components {
-        strings.write_string(sb, fmt.tprintf("{}[{}] ", key, len(transmute([dynamic]any)value.components)))
-    }
-}
-
 get_components_of_entity :: proc(world: ^World, entity: Entity, allocator:= context.allocator) -> [dynamic]ComponentInfo {
     components := make([dynamic]ComponentInfo, allocator)
     for key, pool in world.components {
@@ -159,11 +152,27 @@ get_components_of_entity :: proc(world: ^World, entity: Entity, allocator:= cont
     return components
 }
 
-get_component :: proc(world: ^World, entity: Entity, $T: typeid) -> ^T {
+@(private="file")
+list_components :: proc(world: ^World, sb: ^strings.Builder) {
+    for key, value in world.components {
+        strings.write_string(sb, fmt.tprintf("{}[{}] ", key, len(transmute([dynamic]any)value.components)))
+    }
+}
+
+get_component :: proc {
+    get_component_by_entity,
+    get_component_by_component,
+}
+
+get_component_by_entity :: proc(world: ^World, entity: Entity, $T: typeid) -> ^T {
     pool, ok := &world.components[T]
     if !ok do return nil
     comp_id := pool.entities[entity]
     return &(transmute([dynamic]T)pool.components)[comp_id]
+}
+
+get_component_by_component :: proc(component: ^Component, $T: typeid) -> ^T {
+    return get_component_by_entity(component.world, component.entity, T)
 }
 
 ComponentInfo :: struct {

@@ -31,12 +31,13 @@ render_world :: proc(world: ^ecs.World) {
         meshes := cast([]MeshRenderer)ecs.get_components(world, MeshRenderer)
         render_objs := slice.mapper(meshes, mesh_renderer_to_render_object)
         defer delete(render_objs)
-        render_env := RenderEnvironment{camera_transform, camera, nil, light}
+        render_env := RenderEnvironment{camera, light}
         draw_objects(render_objs, &render_env)
     }
 
     {// Sprite renderer (current immediately)
         // Currently draw sprite in screen space.
+        // TODO: Setup OpenGL render states.
         sprites := ecs.get_components(world, SpriteRenderer)
         transforms := make([dynamic]Transform, 0, len(sprites))
         defer delete(transforms)

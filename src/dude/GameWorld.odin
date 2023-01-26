@@ -12,7 +12,6 @@ get_main_light :: proc(world: ^ecs.World) -> ^Light {
     return nil
 }
 
-
 get_main_camera :: proc(world: ^ecs.World) -> ^Camera {
     cameras := ecs.get_components(world, Camera)
     if cameras != nil && len(cameras) > 0 do return &cameras[0]

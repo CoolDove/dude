@@ -2,13 +2,15 @@
 
 import "core:fmt"
 import "core:log"
+import "core:math"
 import "core:strings"
+import "core:time"
 import "core:math/linalg"
 
 import "dude"
 import "dude/ecs"
 
-SceneMushroom := dude.Scene { mushroom_scene_loader, nil, mushroom_scene_unloader }
+SceneMushroom := dude.Scene { mushroom_scene_loader, mushroom_update, mushroom_scene_unloader }
 
 @(private="file")
 mushroom_scene_loader :: proc(world: ^ecs.World) {
@@ -29,6 +31,27 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
     prefab_light(world, "MainLight")
 
     add_mesh_renderers(world, mushroom)// mesh renderers
+}
+@(private="file")
+mushroom_update :: proc(world: ^ecs.World, ) {
+    using dude
+    camera := get_main_camera(world)
+    if get_key_down(.C) {
+        if camera != nil {
+            if camera.type == .Ortho { 
+                camera.type = .Persp 
+            } else { 
+                camera.type = .Ortho 
+                camera.size = 1
+            }
+            log.debugf("Camera type toggled to: {}", camera.type)
+        }
+    }
+    time_delta := time.duration_seconds(app.duration_frame)
+    if camera.type == .Ortho {
+        if get_key(.J) do camera.size = math.max(camera.size - cast(f32)time_delta * 2, 0)
+        else if get_key(.K) do camera.size = math.min(camera.size + cast(f32)time_delta * 2, 99)
+    }
 }
 
 @(private="file")
