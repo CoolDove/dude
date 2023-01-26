@@ -27,8 +27,6 @@ Game :: struct {
 
     current_scene : ^Scene,
     main_world : ^ecs.World,
-
-    // basic_shader : dgl.Shader,
 }
 
 GameSettings :: struct {
@@ -117,12 +115,7 @@ check_scene_switch :: proc() -> bool {
 
 init_game :: proc() {
     using dgl
-
     game.settings = new(GameSettings)
-    // TODO: Move shader loading into res module.
-    // game.basic_shader = dgl.shader_load_vertex_and_fragment(
-    //     #load("resources/basic_3d_vertex.glsl"),
-    //     #load("resources/basic_3d_fragment.glsl"))
 
     load_builtin_assets() 
 
@@ -156,13 +149,9 @@ struct_offset_detail :: proc($T:typeid) -> uintptr {
 
 quit_game :: proc() {
     unload_scene()
-    
     tween_destroy()
-
     unload_builtin_assets()
-
     log.debug("QUIT GAME")
-
     free(game.settings)
 }
 

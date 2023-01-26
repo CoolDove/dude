@@ -18,28 +18,30 @@ when DUDE_IMGUI {
 import "pac:imgui"
 
 
-dude_imgui_basic_settings :: proc() {
-    guis := map[string]proc() {
-        "Scene"        = gui_scenes,
-        "Tween"        = gui_tween,
-        "Settings"     = gui_settings,
-        "ResourceView" = gui_resource_viewer,
-        "ECS"          = gui_ecs,
-    }
-    defer delete(guis)
+@(private="file")
+dude_debug_guis := map[string]proc() {
+    "Scene"        = gui_scenes,
+    "Tween"        = gui_tween,
+    "Settings"     = gui_settings,
+    "ResourceView" = gui_resource_viewer,
+    "ECS"          = gui_ecs,
+}
 
+dude_imgui_basic_settings :: proc() {
     @static guikey := "Scene"
 
-    for key in guis {
-        if imgui.selectable(key, guikey == key, auto_cast 0, {50, 0}) do guikey = key
-        imgui.same_line()
+    using imgui
+    begin_tab_bar("DebugView", Tab_Bar_Flags.Reorderable | Tab_Bar_Flags.TabListPopupButton)
+    for key in dude_debug_guis {
+        if begin_tab_item(key, nil, .UnsavedDocument if guikey == key else .None) {
+            imgui.text(key)
+            guikey = key
+            imgui.separator()
+            dude_debug_guis[guikey]()
+            end_tab_item()
+        }
     }
-    imgui.text("...")
-    imgui.separator()
-    if guikey in guis {
-        guis[guikey]()
-    }
-
+    imgui.end_tab_bar()
 }
 
 gui_tween :: proc() {
@@ -57,7 +59,6 @@ gui_settings :: proc() {
     imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
 }
 gui_scenes :: proc() {
-    imgui.text("Scenes")
     for key, scene in registered_scenes {
         if imgui.button(key) {
             unload_scene()
@@ -69,7 +70,6 @@ gui_scenes :: proc() {
     }
 }
 gui_resource_viewer :: proc() {
-    imgui.text("Resource:")
     count := len(resource_manager.resources) 
     keys := make([dynamic]string, count, count)
     defer delete(keys)
@@ -83,7 +83,6 @@ gui_resource_viewer :: proc() {
 }
 
 gui_ecs :: proc() {
-    imgui.text("ECS")
     if game.main_world == nil {
         imgui.text("No world.")
         return
