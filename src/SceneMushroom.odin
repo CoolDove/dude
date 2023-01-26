@@ -19,7 +19,7 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
     using dude
     using ecs
     mushroom, err := res_load_model("model/mushroom.fbx", 
-        dude.game.basic_shader.id,
+        dude.res_get_shader("shader/builtin_mesh_opaque.shader").id,
         dude.res_get_texture("texture/white.tex").id, 
         0.01)
     mushroom = res_get_model("model/mushroom.fbx")

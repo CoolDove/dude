@@ -28,7 +28,7 @@ Game :: struct {
     current_scene : ^Scene,
     main_world : ^ecs.World,
 
-    basic_shader : dgl.Shader,
+    // basic_shader : dgl.Shader,
 }
 
 GameSettings :: struct {
@@ -120,9 +120,9 @@ init_game :: proc() {
 
     game.settings = new(GameSettings)
     // TODO: Move shader loading into res module.
-    game.basic_shader = dgl.shader_load_vertex_and_fragment(
-        #load("resources/basic_3d_vertex.glsl"),
-        #load("resources/basic_3d_fragment.glsl"))
+    // game.basic_shader = dgl.shader_load_vertex_and_fragment(
+    //     #load("resources/basic_3d_vertex.glsl"),
+    //     #load("resources/basic_3d_fragment.glsl"))
 
     load_builtin_assets() 
 
@@ -166,6 +166,7 @@ quit_game :: proc() {
     free(game.settings)
 }
 
+@(private="file")
 load_builtin_assets :: proc() {
     res_add_embbed("texture/dude.png", #load("resources/dude.png"))
     res_add_embbed("font/unifont.tff", #load("resources/unifont.ttf"))
@@ -173,6 +174,10 @@ load_builtin_assets :: proc() {
         #load("resources/builtin_immediate_basic.shader"))
     res_add_embbed("shader/builtin_immediate_font.shader", 
         #load("resources/builtin_immediate_font.shader"))
+    res_add_embbed("shader/builtin_mesh_opaque.shader", 
+        #load("resources/builtin_mesh_opaque.shader"))
+    res_add_embbed("shader/builtin_gizmos_basic.shader", 
+        #load("resources/builtin_gizmos_basic.shader"))
 
     res_load_texture("texture/dude.png")
     {
@@ -192,8 +197,11 @@ load_builtin_assets :: proc() {
     res_load_shader("shader/builtin_sprite.shader")
     res_load_shader("shader/builtin_immediate_basic.shader")
     res_load_shader("shader/builtin_immediate_font.shader")
+    res_load_shader("shader/builtin_mesh_opaque.shader")
+    res_load_shader("shader/builtin_gizmos_basic.shader")
 }
 
+@(private="file")
 unload_builtin_assets :: proc() {
     res_unload_texture("texture/dude.png")
     res_unload_texture("texture/white.tex")
@@ -203,4 +211,6 @@ unload_builtin_assets :: proc() {
     res_unload_shader("shader/builtin_sprite.shader")
     res_unload_shader("shader/builtin_immediate_basic.shader")
     res_unload_shader("shader/builtin_immediate_font.shader")
+    res_unload_shader("shader/builtin_mesh_opaque.shader")
+    res_unload_shader("shader/builtin_gizmos_basic.shader")
 }
