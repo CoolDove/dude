@@ -11,8 +11,6 @@ import "core:slice"
 import gl "vendor:OpenGL"
 import "vendor:stb/image"
 
-import "pac:assimp"
-
 import "dgl"
 
 // A global resource manager. 
@@ -37,13 +35,7 @@ ResourceManager :: struct {
     embbed_data : map[string][]byte,
 }
 
-when ODIN_DEBUG {
 resource_manager : ResourceManager
-} else {
-@(private="file")
-resource_manager : ResourceManager
-}
-
  
 // ## Resource
 Texture :: struct {
@@ -100,6 +92,8 @@ res_get_texture :: proc(key: string) -> ^Texture {
 
 
 // ## Model
+when DUDE_3D_GAME {
+import "pac:assimp"
 
 ModelAsset :: struct {
     meshes : map[string]TriangleMesh,// Here stores the actual mesh data
@@ -163,6 +157,8 @@ res_get_model :: proc(key: string) -> ^ModelAsset {
     } else {
         return nil
     }
+}
+
 }
 
 // ## Font
@@ -284,53 +280,4 @@ make_path :: proc(path: string, allocator:= context.allocator) -> string {
     to_slash_path, new_alloc := filepath.to_slash(the_path)
     if new_alloc do delete(the_path)
     return to_slash_path
-}
-
-@(private="file")
-aimesh_to_triangle_mesh :: proc(aimesh: ^assimp.Mesh, triangle_mesh: ^TriangleMesh, shader, texture: u32, scale:f32= 1) {
-    strings.builder_reset(&triangle_mesh.name)
-    strings.write_bytes(&triangle_mesh.name, aimesh.mName.data[:aimesh.mName.length])
-
-    reserve(&triangle_mesh.vertices,    cast(int) aimesh.mNumVertices)
-    reserve(&triangle_mesh.uvs,         cast(int) aimesh.mNumVertices)
-    reserve(&triangle_mesh.colors,      cast(int) aimesh.mNumVertices)
-    reserve(&triangle_mesh.normals,     cast(int) aimesh.mNumVertices)
-    reserve(&triangle_mesh.tangents,    cast(int) aimesh.mNumVertices)
-    reserve(&triangle_mesh.bitangents,  cast(int) aimesh.mNumVertices)
-
-    color_channel := aimesh.mColors[0]
-    uv_channel := aimesh.mTextureCoords[0]
-
-    for i in 0..<aimesh.mNumVertices {
-        vertex      := aimesh.mVertices[i] * scale
-        color       := color_channel[i] if color_channel != nil else assimp.Color4D{1, 1, 1, 1}
-        uv          := uv_channel[i] if uv_channel != nil else Vec3{0, 0, 0}
-        normal      := aimesh.mNormals[i] if aimesh.mNormals != nil else Vec3{0, 1, 0}
-        tangent     := aimesh.mTangents[i] if aimesh.mTangents != nil else Vec3{0, 1, 0}
-        bitangent   := aimesh.mBitangents[i] if aimesh.mBitangents != nil else Vec3{0, 1, 0}
-
-        append(&triangle_mesh.vertices, vertex)
-        append(&triangle_mesh.colors, color)
-        append(&triangle_mesh.uvs, Vec2{uv.x, uv.y})
-
-        append(&triangle_mesh.normals,      normal)
-        append(&triangle_mesh.tangents,     tangent)
-        append(&triangle_mesh.bitangents,   bitangent)
-
-    }
-
-    submesh : SubMesh
-
-    reserve(&submesh.triangles, cast(int) aimesh.mNumFaces)
-
-    for i in 0..<aimesh.mNumFaces {
-        face := &aimesh.mFaces[i]
-        assert(face.mNumIndices == 3)
-        indices := face.mIndices[0:3]
-        append(&submesh.triangles, TriangleIndices{indices[0], indices[1], indices[2]})
-        submesh.shader  = shader
-        submesh.texture = texture
-    }
-
-    append(&triangle_mesh.submeshes, submesh)
 }

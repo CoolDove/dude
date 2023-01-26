@@ -5,8 +5,6 @@ import "core:encoding/json"
 import "core:math/linalg"
 import "core:strings"
 
-import "pac:assimp"
-
 import "ecs"
 
 Scene :: struct {

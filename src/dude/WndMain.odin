@@ -11,7 +11,7 @@ import "core:math/rand"
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
 
-when ODIN_DEBUG {
+when DUDE_IMGUI {
 	import imgl "pac:imgui/impl/opengl"
 	import imsdl "pac:imgui/impl/sdl"
 	import "pac:imgui"
@@ -42,7 +42,7 @@ main_wnd_vtable := Window_DeriveVTable {
 }
 
 
-when ODIN_DEBUG {
+when DUDE_IMGUI {
 	@(private="file")
 	init_imgui :: proc(imgui_state:^ImguiState, wnd: ^sdl.Window) {
 		imgui.create_context()
@@ -60,7 +60,7 @@ when ODIN_DEBUG {
 
 @(private="file")
 after_instantiate :: proc(using wnd: ^Window) {
-	when ODIN_DEBUG do init_imgui(&imgui_state, window)
+	when DUDE_IMGUI do init_imgui(&imgui_state, window)
 
 	log.debugf("window {} instantiated.", name)
 
@@ -76,7 +76,7 @@ before_destroy :: proc(wnd: ^Window) {
 
 @(private="file")
 handler :: proc(using wnd:^Window, event:sdl.Event) {
-	when ODIN_DEBUG do imsdl.process_event(event, &imgui_state.sdl_state)
+	when DUDE_IMGUI do imsdl.process_event(event, &imgui_state.sdl_state)
 
 	input_handle_sdl2(event)
 
@@ -92,7 +92,7 @@ update :: proc(using wnd:^Window) {// Game runs in this.
 	input_after_update_sdl2()
 }
 
-when ODIN_DEBUG {
+when DUDE_IMGUI {
 @(private)
 imgui_frame_begin :: proc() {
 	imsdl.new_frame()

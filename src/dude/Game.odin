@@ -11,7 +11,7 @@ import "core:math/linalg"
 import sdl "vendor:sdl2"
 import gl "vendor:OpenGL"
 
-when ODIN_DEBUG do import "pac:imgui"
+when DUDE_IMGUI do import "pac:imgui"
 
 import "dgl"
 import "ecs"
@@ -69,7 +69,7 @@ update_game :: proc() {
             game.current_scene.update(world)
         }
 
-        when ODIN_DEBUG {
+        when DUDE_GIZMOS {
             camera := get_main_camera(world)
             if camera != nil do gizmos_begin(camera)
         }
@@ -77,9 +77,9 @@ update_game :: proc() {
         ecs.world_update(world)
         render_world(world)
 
-        when ODIN_DEBUG { gizmos_xz_grid(10, 1, COLORS.GRAY) }
+        when DUDE_GIZMOS { gizmos_xz_grid(10, 1, COLORS.GRAY) }
 
-        when ODIN_DEBUG {
+        when DUDE_GIZMOS {
             if camera != nil do gizmos_end()
         }
 
@@ -96,7 +96,7 @@ update_game :: proc() {
     immediate_end(game.immediate_draw_wireframe)
 
     // ## DEBUG IMGUI
-	when ODIN_DEBUG {
+	when DUDE_IMGUI {
         imgui_frame_begin()
 		dude_imgui_basic_settings()
         imgui_frame_end()

@@ -12,7 +12,7 @@ import "core:math/linalg"
 
 import "ecs"
 
-when ODIN_DEBUG {
+when DUDE_IMGUI {
 
 import "pac:imgui"
 
@@ -42,11 +42,16 @@ dude_imgui_basic_settings :: proc() {
 }
 
 gui_tween :: proc() {
-    for t, ind in &tweens {
-        text := fmt.tprintf("{}: {}", ind, "working" if !t.done else "done.")
-        imgui.selectable(text, !t.done)
+    when ODIN_DEBUG {
+        for t, ind in &tweens {
+            text := fmt.tprintf("{}: {}", ind, "working" if !t.done else "done.")
+            imgui.selectable(text, !t.done)
+        }
+    } else {
+        imgui.text("Tween debug is invalid in release build.")
     }
 }
+
 gui_settings :: proc() {
     imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
 }
@@ -97,6 +102,21 @@ gui_ecs :: proc() {
     }
 }
 
+// ## imgui extensions
+
+imgui_transform :: proc(transform : ^Transform) {
+    imgui.input_float3("position", &transform.position)
+    // orientation
+    imgui.input_float3("scale", &transform.scale)
+}
+
+
+
+}
+
+
+when DUDE_GIZMOS {
+
 gizmos_xz_grid :: proc(half_size : int, unit : f32, color: Color) {
     gizmos_set_color(color)
 
@@ -116,17 +136,8 @@ gizmos_xz_grid :: proc(half_size : int, unit : f32, color: Color) {
 
 }
 
-// ## imgui extensions
-
-imgui_transform :: proc(transform : ^Transform) {
-    imgui.input_float3("position", &transform.position)
-    // orientation
-    imgui.input_float3("scale", &transform.scale)
 }
 
-
-
-}
 
 draw_no_scene_logo :: proc(wnd: ^Window) {
     wnd_size := wnd.size

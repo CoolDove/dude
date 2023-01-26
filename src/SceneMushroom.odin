@@ -10,6 +10,8 @@ import "core:math/linalg"
 import "dude"
 import "dude/ecs"
 
+when dude.DUDE_3D_GAME {
+
 SceneMushroom := dude.Scene { mushroom_scene_loader, mushroom_update, mushroom_scene_unloader }
 
 @(private="file")
@@ -78,4 +80,6 @@ add_mesh_renderers :: proc(world: ^ecs.World, asset : ^dude.ModelAsset) {
             fmt.aprintf("DBGNAME: {}", mesh_name),
         })
     }
+}
+
 }
