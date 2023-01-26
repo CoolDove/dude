@@ -38,6 +38,14 @@ dshader_load_from_source :: proc(source: string) -> u32 {
     }
 
     id := glsl_load_vertex_and_fragment(to_string(vertex_sb), to_string(fragment_sb))
+
+    when DUDE_EDITOR {
+        if id == 0 {
+            log.warnf("VertexSource: {}", to_string(vertex_sb))
+            log.warnf("FragmentSource: {}", to_string(fragment_sb))
+        }
+    }
+
     return id
 }
 

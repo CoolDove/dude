@@ -167,6 +167,8 @@ load_builtin_assets :: proc() {
         #load("resources/builtin_mesh_opaque.shader"))
     res_add_embbed("shader/builtin_gizmos_basic.shader", 
         #load("resources/builtin_gizmos_basic.shader"))
+    res_add_embbed("shader/builtin_sprite.shader", 
+        #load("resources/builtin_sprite.shader"))
 
     res_load_texture("texture/dude.png")
     {

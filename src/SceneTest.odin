@@ -8,6 +8,7 @@ import "dude/ecs"
 
 SceneTest := dude.Scene { test_scene_loader, test_scene_update, test_scene_unloader }
 
+
 @(private="file")
 test_scene_loader :: proc(world: ^ecs.World) {
     using dude
@@ -39,14 +40,24 @@ test_scene_loader :: proc(world: ^ecs.World) {
         ecs.add_components(world, dove, 
             transform, sprite)
     }
+
+    {
+        start_triggered = false
+        alpha = 0.0
+
+    }
 }
+
+@(private="file")
+start_triggered := false
+@(private="file")
+alpha :f32= 0.0
+
 
 @(private="file")
 test_scene_update :: proc(world: ^ecs.World) {
     using dude
     inkfree := res_get_font("font/inkfree.ttf")
-    @static start_triggered := false
-    @static alpha :f32= 0.0
 
     text :=  "Press `Enter` to start"
     text_width := immediate_measure_text_width(inkfree, text)

@@ -59,6 +59,10 @@ render_world :: proc(world: ^ecs.World) {
             if !enable do continue
             leftup := Vec2{transform.position.x, transform.position.y} - size * pivot
             immediate_texture(leftup, size, sprite.color, texture_id)
+
+            // TODO: Sprite Rendering.
+            // render_sprite(&sprite, env)
+
             // {// Render the sprite.
             //     for v in &default_sprite_quad.vertices {
             //         v.color = sprite.color// update the color
@@ -85,22 +89,10 @@ default_sprite_quad : ^RenderMesh(VertexPCNU)
 @(private="file")
 init_default_sprite_quad :: proc() -> ^RenderMesh(VertexPCNU) {
     rmesh := new(RenderMesh(VertexPCNU))
-    a := VertexPCNU{
-        position = {-1, -1, 0},
-        uv = {0, 0},
-    }
-    b := VertexPCNU{
-        position = {1, 1, 0},
-        uv = {1, 1},
-    }
-    c := VertexPCNU{
-        position = {-1, -1, 0},
-        uv = {0, 0},
-    }
-    d := VertexPCNU{
-        position = {1, -1, 0},
-        uv = {1, 0},
-    }
+    a := VertexPCNU{ position = {-1, -1, 0}, uv = {0, 0}, }
+    b := VertexPCNU{ position = {1, 1, 0}, uv = {1, 1}, }
+    c := VertexPCNU{ position = {-1, -1, 0}, uv = {0, 0}, }
+    d := VertexPCNU{ position = {1, -1, 0}, uv = {1, 0}, }
     append(&rmesh.vertices, a, b, c, d)
     indices := [6]u32{0, 2, 1, 1, 2, 3}
     render_mesh_upload(rmesh, indices[:])
@@ -109,7 +101,11 @@ init_default_sprite_quad :: proc() -> ^RenderMesh(VertexPCNU) {
 
 @(private="file")
 calc_sprite_matrix :: proc(sprite: ^SpriteRenderer) -> linalg.Matrix4x4f32 {
-    return {}
+    return linalg.MATRIX4F32_IDENTITY
+}
+
+render_sprite :: proc(sprite: ^SpriteRenderer, env: ^RenderEnvironment) {
+
 }
 
 

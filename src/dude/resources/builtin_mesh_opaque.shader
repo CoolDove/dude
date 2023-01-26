@@ -22,7 +22,7 @@ void main()
     gl_Position = matrix_view_projection * wpos;
 	_uv = uv;
     _color = color;
-    _normal = normal;// not correct
+    _normal = normal;
 }
 
 ##FRAGMENT
@@ -42,7 +42,6 @@ uniform vec4 light_color;// xyz: color, z: nor using
 void main() {
     vec4 c = texture(main_texture, _uv);
 
-    // FragColor = c * _color + vec4(_normal.x, _normal.y, _normal.z, 0) * 0.01;
     vec4 normal_vec4 = vec4(_normal.x, _normal.y, _normal.z, 0);
     normal_vec4 = _mat_local_to_world_direction * normal_vec4;
 
@@ -52,6 +51,4 @@ void main() {
 
     FragColor = c * _color * n_dot_l * light_color;
     FragColor.a = 1.0;
-
-    // FragColor = vec4(n_dot_l, n_dot_l, n_dot_l, 1);
 }
