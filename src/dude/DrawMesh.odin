@@ -51,7 +51,7 @@ draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
         if mesh.pcnu == nil do mesh_create_pcnu(mesh)
         gl.BindBuffer(gl.ARRAY_BUFFER, mesh.pcnu.vbo)
         mat_model := transform_matrix
-        default_tex_white := res_get_texture("texture/white")
+        default_tex_white := res_get_texture("texture/white.tex")
         for submesh in &mesh.submeshes {
             if submesh.ebo == 0 {
                 log.errorf("Mesh {} is not uploaded.", strings.to_string(obj.mesh.name))

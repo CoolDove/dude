@@ -169,26 +169,38 @@ quit_game :: proc() {
 load_builtin_assets :: proc() {
     res_add_embbed("texture/dude.png", #load("resources/dude.png"))
     res_add_embbed("font/unifont.tff", #load("resources/unifont.ttf"))
+    res_add_embbed("shader/builtin_immediate_basic.shader", 
+        #load("resources/builtin_immediate_basic.shader"))
+    res_add_embbed("shader/builtin_immediate_font.shader", 
+        #load("resources/builtin_immediate_font.shader"))
 
     res_load_texture("texture/dude.png")
     {
         white := new(Texture)
         white.id = dgl.texture_create(4, 4, [4]u8{0xff, 0xff, 0xff, 0xff})
         white.size = {4, 4}
-        res_add_texture("texture/white", white)
+        res_add_texture("texture/white.tex", white)
     }
     {
         black := new(Texture)
         black.id = dgl.texture_create(4, 4, [4]u8{0x00, 0x00, 0x00, 0xff})
         black.size = {4, 4}
-        res_add_texture("texture/black", black)
+        res_add_texture("texture/black.tex", black)
     }
     res_load_font("font/unifont.tff", 32.0)
+
+    res_load_shader("shader/builtin_sprite.shader")
+    res_load_shader("shader/builtin_immediate_basic.shader")
+    res_load_shader("shader/builtin_immediate_font.shader")
 }
 
 unload_builtin_assets :: proc() {
     res_unload_texture("texture/dude.png")
-    res_unload_texture("texture/white")
-    res_unload_texture("texture/black")
+    res_unload_texture("texture/white.tex")
+    res_unload_texture("texture/black.tex")
     res_unload_font("font/unifont.ttf")
+
+    res_unload_shader("shader/builtin_sprite.shader")
+    res_unload_shader("shader/builtin_immediate_basic.shader")
+    res_unload_shader("shader/builtin_immediate_font.shader")
 }

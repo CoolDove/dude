@@ -1,6 +1,7 @@
 ﻿package dude
 
 import "core:log"
+import "core:io"
 import "core:os"
 import "core:c/libc"
 import "core:path/filepath"
@@ -28,6 +29,7 @@ ResourceError :: enum {
     Only_Embbed_Load,
     Embbed_Key_Has_Exists,
     Key_Has_Exists,
+    Shader_Error,
 }
 
 ResourceManager :: struct {
@@ -42,6 +44,8 @@ resource_manager : ResourceManager
 resource_manager : ResourceManager
 }
 
+ 
+// ## Resource
 Texture :: struct {
     size : Vec2i,
     id : u32, // OpenGL texture id
@@ -93,6 +97,9 @@ res_unload_texture :: proc(key: string) -> ResourceError {
 res_get_texture :: proc(key: string) -> ^Texture {
     return cast(^Texture)resource_manager.resources[key]
 }
+
+
+// ## Model
 
 ModelAsset :: struct {
     meshes : map[string]TriangleMesh,// Here stores the actual mesh data
@@ -158,6 +165,8 @@ res_get_model :: proc(key: string) -> ^ModelAsset {
     }
 }
 
+// ## Font
+
 res_load_font :: proc(key: string, px: f32) -> (^DynamicFont, ResourceError) {
     using resource_manager
     if key in resources { return nil, .Key_Has_Exists }
@@ -182,6 +191,51 @@ res_unload_font :: proc(key: string) {
 res_get_font :: proc(key: string) -> ^DynamicFont {
     font := cast(^DynamicFont)resource_manager.resources[key]
     return font
+}
+
+
+// ## Shader
+DShader :: struct {
+    id : u32,
+}
+res_load_shader :: proc(key : string) -> (^DShader, ResourceError) { 
+    fpath := make_path(key)
+    defer delete(fpath)
+
+    if key in resource_manager.resources {
+        return nil, .Key_Has_Exists
+    }
+
+    id : u32
+
+    if source, ok := resource_manager.embbed_data[key]; ok {
+        id = dshader_load_from_source(cast(string)source)
+    } else if source, ok := os.read_entire_file_from_filename(fpath); ok {
+        if !ok { return nil, .Invalid_Path }
+        id = dshader_load_from_source(cast(string)source)
+        delete(source)
+    }
+
+    if id == 0 { return nil, .Shader_Error }
+
+    shader := new(DShader)
+    shader.id = id
+    resource_manager.resources[key] = shader
+
+    return shader, nil
+}
+
+res_unload_shader :: proc(key: string) {
+    shader := res_get_shader(key)
+    if shader != nil {
+        gl.DeleteProgram(shader.id)
+        free(shader)
+    }
+}
+
+res_get_shader :: proc(key: string) -> ^DShader {
+    shader := cast(^DShader)resource_manager.resources[key]
+    return shader
 }
 
 res_add_embbed :: proc(key: string, data: []byte) -> ResourceError {

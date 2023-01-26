@@ -23,7 +23,6 @@ ImmediateDrawContext :: struct {
     // OpenGL
     vao : u32,
     basic_shader, font_shader : u32,
-
 }
 
 @(private="file")
@@ -33,10 +32,8 @@ immediate_begin :: proc (viewport: Vec4i) {
     if ime_context.vao == 0 {// init
         using ime_context
         gl.GenVertexArrays(1, &vao)
-        basic_shader = dgl.shader_load_vertex_and_fragment(
-            SHADER_SRC_BASIC_VERTEX, SHADER_SRC_BASIC_FRAGMENT).id
-        font_shader  = dgl.shader_load_vertex_and_fragment(
-            SHADER_SRC_FONT_VERTEX, SHADER_SRC_FONT_FRAGMENT).id
+        basic_shader = res_get_shader("shader/builtin_immediate_basic.shader").id
+        font_shader  = res_get_shader("shader/builtin_immediate_font.shader").id
     }
 
     clear(&ime_context.vertices)
@@ -75,7 +72,7 @@ immediate_end :: proc (wireframe:= false) {
     loc_viewport_size :i32= -1
     loc_main_texture  :i32= -1
 
-    default_tex_white := res_get_texture("texture/white")
+    default_tex_white := res_get_texture("texture/white.tex")
 
     for e in elements {
         if e.shader != current_shader || format_set {
@@ -298,89 +295,3 @@ make_quad :: proc(color: Vec4) -> [4]VertexPCU {
 
     return { a, b, c, d } 
 }
-
-
-// Built-in shaders
-
-@(private="file")
-SHADER_SRC_BASIC_VERTEX :: `
-#version 440 core
-
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec4 color;
-layout (location = 2) in vec2 uv;
-
-layout(location = 0) out vec2 _uv;
-layout(location = 1) out vec4 _color;
-
-uniform vec2 viewport_size;
-
-void main()
-{
-    vec2 p = vec2(position.x, position.y);
-    p /= viewport_size;
-    p = p * 2 - 1;
-
-    gl_Position = vec4(p.x, p.y * -1, 0, 1.0);
-	_uv = uv;
-    _uv.y = 1 - _uv.y;
-    _color = color;
-}
-	`
-@(private="file")
-SHADER_SRC_BASIC_FRAGMENT :=`
-#version 440 core
-out vec4 FragColor;
-
-layout(location = 0) in vec2 _uv;
-layout(location = 1) in vec4 _color;
-
-uniform sampler2D main_texture;
-
-void main() { 
-    vec4 c = texture(main_texture, _uv);
-    FragColor = c * _color;
-}
-	`
-
-@(private="file")
-SHADER_SRC_FONT_VERTEX :: `
-#version 440 core
-
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec4 color;
-layout (location = 2) in vec2 uv;
-
-layout(location = 0) out vec2 _uv;
-layout(location = 1) out vec4 _color;
-
-uniform vec2 viewport_size;
-
-void main()
-{
-    vec2 p = vec2(position.x, position.y);
-    p /= viewport_size;
-    p = p * 2 - 1;
-
-    gl_Position = vec4(p.x, p.y * -1, 0, 1.0);
-	_uv = uv;
-    _uv.y = 1 - _uv.y;
-    _color = color;
-}
-`
-@(private="file")
-SHADER_SRC_FONT_FRAGMENT :=`
-#version 440 core
-out vec4 FragColor;
-
-layout(location = 0) in vec2 _uv;
-layout(location = 1) in vec4 _color;
-
-uniform sampler2D main_texture;
-
-void main() { 
-    float c = texture(main_texture, _uv).r;
-    FragColor = _color;
-    FragColor.a *= c;
-}
-`
