@@ -46,6 +46,8 @@ GameObject :: struct {
 
 update_game :: proc() {
     // ## FRAME PREPARE
+    check_scene_switch()
+
 	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT)
     wnd := game.window
 	immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
@@ -100,6 +102,17 @@ update_game :: proc() {
         imgui_frame_end()
 	}
 
+}
+
+@private
+check_scene_switch :: proc() -> bool {
+    result := false
+    if to_switch_scene != nil {
+        unload_scene()
+        load_scene_by_ptr(to_switch_scene)
+        to_switch_scene = nil
+    }
+    return true
 }
 
 init_game :: proc() {

@@ -8,7 +8,7 @@ import "core:math/linalg"
 
 import gl "vendor:OpenGL"
 
-// import "dgl"
+import "dgl"
 import "ecs"
 
 @(private="file")
@@ -56,10 +56,60 @@ render_world :: proc(world: ^ecs.World) {
             sprite := sprites[i]
             transform := transforms[i]
             using sprite
+            if !enable do continue
             leftup := Vec2{transform.position.x, transform.position.y} - size * pivot
             immediate_texture(leftup, size, sprite.color, texture_id)
+            // {// Render the sprite.
+            //     for v in &default_sprite_quad.vertices {
+            //         v.color = sprite.color// update the color
+            //     }
+            //     render_mesh_upload(default_sprite_quad)
+            //     default_sprite_quad.vbo
+            // }
         }
     }
+}
+
+@(private="file")
+default_sprite_quad : ^RenderMesh(VertexPCNU)
+/*
+  a------b
+  |      |
+  |      |
+  c------d
+  a: (-1, 1) (0, 1)
+  b: (1, 1) (1, 1)
+  c: (-1, -1) (0, 0)
+  d: (1, -1) (1, 0)
+*/
+@(private="file")
+init_default_sprite_quad :: proc() -> ^RenderMesh(VertexPCNU) {
+    rmesh := new(RenderMesh(VertexPCNU))
+    a := VertexPCNU{
+        position = {-1, -1, 0},
+        uv = {0, 0},
+    }
+    b := VertexPCNU{
+        position = {1, 1, 0},
+        uv = {1, 1},
+    }
+    c := VertexPCNU{
+        position = {-1, -1, 0},
+        uv = {0, 0},
+    }
+    d := VertexPCNU{
+        position = {1, -1, 0},
+        uv = {1, 0},
+    }
+    append(&rmesh.vertices, a, b, c, d)
+    indices := [6]u32{0, 2, 1, 1, 2, 3}
+    render_mesh_upload(rmesh, indices[:])
+    return rmesh
+}
+
+@(private="file")
+calc_sprite_matrix :: proc(sprite: ^SpriteRenderer) -> linalg.Matrix4x4f32 {
+    return {}
 }
 
 
@@ -68,6 +118,9 @@ render_world :: proc(world: ^ecs.World) {
 mesh_renderer_to_render_object :: proc(mesh: MeshRenderer) -> RenderObject {
     robj : RenderObject
     robj.mesh = mesh.mesh
-    robj.transform_matrix = mesh.transform_matrix
+    transform := ecs.get_component(mesh.component, Transform)
+    if transform != nil {
+        robj.transform_matrix = dgl.matrix_srt(transform.scale, transform.orientation, transform.position)
+    }
     return robj
 }

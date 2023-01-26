@@ -22,6 +22,4 @@ COLORS :: _COLORS {
     Color {1, 1, 1, 1},
     Color {.5, .5, .5, 1},
     Color {0, 0, 0, 1},
-
-
 }

@@ -13,7 +13,7 @@ main :: proc() {
 
     dude.install_scene("Test", SceneTest)
     dude.install_scene("Mushroom", SceneMushroom)
-    dude.set_default_scene("Mushroom")
+    dude.set_default_scene("Test")
 
     dude.dude_main()
 }

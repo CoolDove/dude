@@ -26,9 +26,12 @@ TriangleMesh :: struct {
     pcnu        : ^RenderMesh(VertexPCNU),
 }
 
-RenderMesh :: struct($VertexType: typeid) {
+RenderMesh :: struct($VertexType: typeid) 
+    where VertexType == VertexPCNU || VertexType == VertexPCU // ....
+{
     vertices : [dynamic]VertexType, // VertexPCNU, VertexPCU...
     vbo   : u32,
+    ebo   : u32,// You can ignore this if used in a triangle mesh.
 }
 
 TriangleIndices :: [3]u32
@@ -155,6 +158,24 @@ mesh_upload_indices :: proc(mesh: ^TriangleMesh) {
         gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, submesh.ebo)
         gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, count * size_of(TriangleIndices), raw_data(submesh.triangles), gl.STREAM_DRAW)
     }
+}
+
+render_mesh_upload :: proc(rmesh: ^$T/RenderMesh($V), elem_buffer : []u32= nil) {
+    if rmesh.vbo != 0 do gl.DeleteBuffers(1, &rmesh.vbo)
+    gl.GenBuffers(1, &rmesh.vbo)
+    gl.BindBuffer(gl.ARRAY_BUFFER, rmesh.vbo)
+    data_size := len(rmesh.vertices) * size_of(V)
+    gl.BufferData(gl.ARRAY_BUFFER, data_size, raw_data(rmesh.vertices), gl.STREAM_DRAW)
+    if elem_buffer != nil {// Upload ebo data.
+        if rmesh.ebo != 0 do gl.DeleteBuffers(1, &rmesh.ebo)
+        gl.GenBuffers(1, &rmesh.ebo)
+        gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, rmesh.ebo)
+        gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(elem_buffer) * size_of(u32), raw_data(elem_buffer), gl.STREAM_DRAW)
+    }
+}
+
+render_mesh_free_cpu_buffer :: proc(rmesh: ^$T/RenderMesh) {
+    delete(rmesh.vertices)
 }
 
 mesh_make_cube :: proc(using mesh: ^TriangleMesh, shader: u32) {

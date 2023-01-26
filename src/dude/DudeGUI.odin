@@ -10,10 +10,12 @@ import "core:strings"
 import "core:math"
 import "core:math/linalg"
 
+import "ecs"
+
 when ODIN_DEBUG {
 
 import "pac:imgui"
-import "ecs"
+
 
 dude_imgui_basic_settings :: proc() {
     guis := map[string]proc() {
@@ -74,16 +76,25 @@ gui_ecs :: proc() {
     }
     entities := game.main_world.entities.dense
     for ent in entities {
+        using imgui
         entity := cast(ecs.Entity)ent.id
         entity_info := cast(ecs.EntityInfo)ent.data
         imgui.bullet_text(fmt.tprintf("> {}", entity_info.name))
-        components := ecs.get_components(game.main_world, cast(ecs.Entity)ent.id)
+        components := ecs.get_components(game.main_world, entity)
         defer delete(components)
-        for c in components {
-            imgui.text(fmt.tprintf("    -{}: {}", c.type, c.id))
+        wnd_flags := Window_Flags.AlwaysAutoResize
+        if imgui.begin_child(str_id = entity_info.name, size={0, 300}, flags = wnd_flags) {
+            for c in components {
+                if c.type == typeid_of(Transform) {
+                    transform := ecs.get_component(game.main_world, entity, Transform)
+                    imgui_transform(transform)
+                } else {
+                    imgui.text(fmt.tprintf("    -{}: {}", c.type, c.id))
+                }
+            }
         }
+        imgui.end_child()
     }
-    
 }
 
 gizmos_xz_grid :: proc(half_size : int, unit : f32, color: Color) {
@@ -105,6 +116,16 @@ gizmos_xz_grid :: proc(half_size : int, unit : f32, color: Color) {
 
 }
 
+// ## imgui extensions
+
+imgui_transform :: proc(transform : ^Transform) {
+    imgui.input_float3("position", &transform.position)
+    // orientation
+    imgui.input_float3("scale", &transform.scale)
+}
+
+
+
 }
 
 draw_no_scene_logo :: proc(wnd: ^Window) {
@@ -114,15 +135,15 @@ draw_no_scene_logo :: proc(wnd: ^Window) {
     text_width := immediate_measure_text_width(unifont, text)
     screen_center := Vec2{cast(f32)wnd_size.x, cast(f32)wnd_size.y} * 0.5
     {
-        logo_size := Vec2{64, 64}
-        immediate_texture(
-            screen_center - logo_size * 0.5 - {0, 64}, logo_size, 
-            COLORS.WHITE,
-            res_get_texture("texture/dude.png").id,
-        )
+        // logo_size := Vec2{64, 64}
+        // immediate_texture(
+        //     screen_center - logo_size * 0.5 - {0, 64}, logo_size, 
+        //     COLORS.WHITE,
+        //     res_get_texture("texture/dude.png").id,
+        // )
     }
     immediate_text(unifont, text,
-        {cast(f32)wnd_size.x * 0.5 - text_width * 0.5, cast(f32)wnd_size.y * 0.5},
+        {screen_center.x - text_width * 0.5, screen_center.y},
         COLORS.GRAY)
 }
 

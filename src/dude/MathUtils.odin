@@ -9,7 +9,7 @@ import "ecs"
 
 calc_camera_vp :: proc(camera: ^Camera) -> linalg.Matrix4x4f32 {
     using ecs
-    transform := get_component(&camera.component, Transform)
+    transform := get_component(camera.component, Transform)
     wnd_width, wnd_height := cast(f32)game.window.size.x, cast(f32)game.window.size.y
     mtx : linalg.Matrix4x4f32 = ---
     switch camera.type {

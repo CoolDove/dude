@@ -136,7 +136,7 @@ tween_vtable := Tween_VTable {
     _set_on_complete,
     _set_easing,
 }
-_set_on_complete :: proc(tween: ^Tween, callback: proc(use_data: rawptr), user_data: rawptr) -> ^Tween {
+_set_on_complete :: proc(tween: ^Tween, callback: proc(use_data: rawptr), user_data: rawptr=nil) -> ^Tween {
     tween.on_complete = callback
     tween.user_data = user_data
     return tween

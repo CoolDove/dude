@@ -15,12 +15,26 @@ Scene :: struct {
     unloader : proc(world: ^ecs.World),
 }
 
+
+// Unload current scene and load a new scene.
+@private
+to_switch_scene : ^Scene
+
+switch_scene :: proc(to_key : string) -> bool {
+    assert(to_switch_scene == nil, "Dude: You cannot switch scene twice in one frame.")
+    if to, ok := &registered_scenes[to_key]; ok {
+        to_switch_scene = to
+        return true
+    }
+    return false
+}
+
 load_scene :: proc {
     load_scene_by_key,
 }
 
 @private
-load_scene_ :: proc(scene: ^Scene) -> (ok: bool) {
+load_scene_by_ptr :: proc(scene: ^Scene) -> (ok: bool) {
     using game
     using ecs
 
@@ -42,7 +56,7 @@ load_scene_by_key :: proc(key: string) -> (ok: bool) {
     using ecs
     scene := &registered_scenes[key]
     if scene == nil do return false
-    if load_scene_(scene) {
+    if load_scene_by_ptr(scene) {
         log.debugf("Load scene: {}", key)
         return true
     } else {

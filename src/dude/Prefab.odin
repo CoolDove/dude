@@ -3,12 +3,11 @@
 import "core:math/linalg"
 import "core:strings"
 
-
 import "ecs"
 
 prefab_camera :: proc(world: ^ecs.World, name: string, built_in_controller: bool = true) {
     using ecs
-    camera := add_entity(world)
+    camera := add_entity(world, {name})
     add_components(world, camera, 
         DebugInfo{name},
         Transform {
@@ -27,7 +26,7 @@ prefab_camera :: proc(world: ^ecs.World, name: string, built_in_controller: bool
 
 prefab_light :: proc(world: ^ecs.World, name: string, color: Color = COLORS.GREEN) {
     using ecs
-    light := add_entity(world)
+    light := add_entity(world, {name="MainLight"})
     add_components(world, light, 
         DebugInfo{name},
         Light{{}, linalg.normalize(Vec3{-0.9, .3, 0}), color},

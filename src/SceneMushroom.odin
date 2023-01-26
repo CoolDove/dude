@@ -61,10 +61,16 @@ mushroom_scene_unloader :: proc(world: ^ecs.World) {
 
 @(private="file")
 add_mesh_renderers :: proc(world: ^ecs.World, asset : ^dude.ModelAsset) {
+    default_transform := dude.Transform {
+        position = {0, 0, 0},
+        orientation = linalg.QUATERNIONF32_IDENTITY,
+        scale = {1, 1, 1},
+    }
     for name, mesh in &asset.meshes {
         mesh_name := strings.to_string(mesh.name)
         ent := ecs.add_entity(world, ecs.EntityInfo{name=mesh_name})
-        
+
+        ecs.add_component(world, ent, default_transform)
         mesh_renderer := ecs.add_component(world, ent, dude.MeshRenderer)
         mesh_renderer.mesh = &mesh
         mesh_renderer.transform_matrix = linalg.MATRIX4F32_IDENTITY

@@ -171,7 +171,7 @@ get_component_by_entity :: proc(world: ^World, entity: Entity, $T: typeid) -> ^T
     return &(transmute([dynamic]T)pool.components)[comp_id]
 }
 
-get_component_by_component :: proc(component: ^Component, $T: typeid) -> ^T {
+get_component_by_component :: proc(component: Component, $T: typeid) -> ^T {
     return get_component_by_entity(component.world, component.entity, T)
 }
 
