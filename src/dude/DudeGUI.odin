@@ -7,6 +7,7 @@ import "core:log"
 import "core:fmt"
 import "core:reflect"
 import "core:strings"
+import "core:slice"
 import "core:math"
 import "core:math/linalg"
 
@@ -69,10 +70,18 @@ gui_scenes :: proc() {
 }
 gui_resource_viewer :: proc() {
     imgui.text("Resource:")
+    count := len(resource_manager.resources) 
+    keys := make([dynamic]string, count, count)
+    defer delete(keys)
+    c := 0
     for key, res in resource_manager.resources {
-        imgui.text(key)
+        keys[c] = key
+        c += 1
     }
+    slice.sort(keys[:])
+    for k in keys { imgui.text(k) }
 }
+
 gui_ecs :: proc() {
     imgui.text("ECS")
     if game.main_world == nil {
@@ -88,7 +97,7 @@ gui_ecs :: proc() {
         components := ecs.get_components(game.main_world, entity)
         defer delete(components)
         wnd_flags := Window_Flags.AlwaysAutoResize
-        if imgui.begin_child(str_id = entity_info.name, size={0, 300}, flags = wnd_flags) {
+        if imgui.begin_child(str_id = entity_info.name, size={0, 60}, flags = wnd_flags) {
             for c in components {
                 if c.type == typeid_of(Transform) {
                     transform := ecs.get_component(game.main_world, entity, Transform)
@@ -109,8 +118,6 @@ imgui_transform :: proc(transform : ^Transform) {
     // orientation
     imgui.input_float3("scale", &transform.scale)
 }
-
-
 
 }
 
