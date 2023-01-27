@@ -92,30 +92,37 @@ gui_ecs :: proc() {
         using imgui
         entity := cast(ecs.Entity)ent.id
         entity_info := cast(ecs.EntityInfo)ent.data
-        imgui.bullet_text(fmt.tprintf("> {}", entity_info.name))
         components := ecs.get_components(game.main_world, entity)
         defer delete(components)
         wnd_flags := Window_Flags.AlwaysAutoResize
-        if imgui.begin_child(str_id = entity_info.name, size={0, 60}, flags = wnd_flags) {
+        if collapsing_header(entity_info.name) {
+            begin_child(entity_info.name)
             for c in components {
+                bullet_text(fmt.tprintf("-{}: {}", c.type, c.id))
                 if c.type == typeid_of(Transform) {
                     transform := ecs.get_component(game.main_world, entity, Transform)
                     imgui_transform(transform)
-                } else {
-                    imgui.text(fmt.tprintf("    -{}: {}", c.type, c.id))
-                }
+                } 
             }
+            end_child()
         }
-        imgui.end_child()
+        separator()
     }
 }
 
 // ## imgui extensions
 
-imgui_transform :: proc(transform : ^Transform) {
-    imgui.input_float3("position", &transform.position)
+imgui_transform :: proc(using transform : ^Transform) {
+    imgui.drag_float3("position", &position)
+    euler : Vec3
+    euler.x, euler.y, euler.z = linalg.euler_angles_from_quaternion(orientation, .XYZ)
+    euler *= linalg.DEG_PER_RAD
+    if imgui.drag_float3("rotation", &euler) {
+        euler *= linalg.RAD_PER_DEG
+        orientation = linalg.quaternion_from_euler_angles(euler.x, euler.y, euler.z, .XYZ)
+    }
     // orientation
-    imgui.input_float3("scale", &transform.scale)
+    imgui.drag_float3("scale", &scale)
 }
 
 }
