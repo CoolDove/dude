@@ -75,7 +75,7 @@ gui_resource_viewer :: proc() {
     defer delete(keys)
     c := 0
     for key, res in resource_manager.resources {
-        keys[c] = key
+        keys[c] = res_name_lookup[key]
         c += 1
     }
     slice.sort(keys[:])

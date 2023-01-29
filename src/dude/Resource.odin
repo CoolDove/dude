@@ -6,6 +6,7 @@ import "core:os"
 import "core:c/libc"
 import "core:path/filepath"
 import "core:strings"
+import "core:hash"
 import "core:slice"
 
 import gl "vendor:OpenGL"
@@ -31,8 +32,8 @@ ResourceError :: enum {
 }
 
 ResourceManager :: struct {
-    resources : map[string]rawptr,
-    embbed_data : map[string][]byte,
+    resources : map[ResKey]rawptr,
+    embbed_data : map[ResKey][]byte,
 }
 
 resource_manager : ResourceManager
@@ -44,12 +45,14 @@ Texture :: struct {
 }
 
 // path relative to the ./res/
-res_load_texture :: proc(key: string, allocator:= context.allocator) -> (^Texture, ResourceError) {
+res_load_texture :: proc(keystr: string, allocator:= context.allocator) -> (^Texture, ResourceError) {
     context.allocator = allocator
 
     using resource_manager
-    fpath := make_path(key)
+    fpath := make_path(keystr)
     defer delete(fpath)
+
+    key := res_key(keystr)
 
     if key in resources { return nil, .Key_Has_Exists }
 
@@ -67,16 +70,17 @@ res_load_texture :: proc(key: string, allocator:= context.allocator) -> (^Textur
     return texture, nil
 }
 
-res_add_texture :: proc(key: string, texture: ^Texture) -> ResourceError {
+res_add_texture :: proc(keystr: string, texture: ^Texture) -> ResourceError {
     using resource_manager
+    key := res_key(keystr)
     if key in resources { return .Key_Has_Exists }
-
     resources[key] = texture
     return nil
 }
 
-res_unload_texture :: proc(key: string) -> ResourceError {
+res_unload_texture :: proc(keystr: string) -> ResourceError {
     using resource_manager
+    key := res_key(keystr)
     if key in resources {
         texture :^Texture= cast(^Texture)resources[key]
         gl.DeleteTextures(1, &texture.id)
@@ -86,8 +90,8 @@ res_unload_texture :: proc(key: string) -> ResourceError {
     return nil
 }
 
-res_get_texture :: proc(key: string) -> ^Texture {
-    return cast(^Texture)resource_manager.resources[key]
+res_get_texture :: proc(keystr: string) -> ^Texture {
+    return cast(^Texture)resource_manager.resources[res_key(keystr)]
 }
 
 
@@ -105,10 +109,11 @@ ModelAssetSceneTree :: struct {
     parent, next, lchild : ^ModelAssetSceneTree,
 }
 
-res_load_model :: proc(key: string, shader: u32, texture: u32, scale: f32) -> (^ModelAsset, ResourceError) {
-    fpath := make_path(key)
+res_load_model :: proc(keystr: string, shader: u32, texture: u32, scale: f32) -> (^ModelAsset, ResourceError) {
+    fpath := make_path(keystr)
     defer delete(fpath)
 
+    key := res_key(keystr)
     if key in resource_manager.resources { return nil, .Key_Has_Exists }
 
     raw_asset := assimp.import_file(fpath, cast(u32) assimp.PostProcessPreset_MaxQuality)
@@ -137,7 +142,8 @@ res_load_model :: proc(key: string, shader: u32, texture: u32, scale: f32) -> (^
     return asset, nil
 }
 
-res_unload_model :: proc(key: string) {
+res_unload_model :: proc(keystr: string) {
+    key := res_key(keystr)
     if !(key in resource_manager.resources) do return
 
     asset := cast(^ModelAsset)resource_manager.resources[key]
@@ -151,7 +157,8 @@ res_unload_model :: proc(key: string) {
     delete_key(&resource_manager.resources, key)
 }
 
-res_get_model :: proc(key: string) -> ^ModelAsset {
+res_get_model :: proc(keystr: string) -> ^ModelAsset {
+    key := res_key(keystr)
     if model, ok := resource_manager.resources[key]; ok {
         return cast(^ModelAsset)model
     } else {
@@ -163,8 +170,9 @@ res_get_model :: proc(key: string) -> ^ModelAsset {
 
 // ## Font
 
-res_load_font :: proc(key: string, px: f32) -> (^DynamicFont, ResourceError) {
+res_load_font :: proc(keystr: string, px: f32) -> (^DynamicFont, ResourceError) {
     using resource_manager
+    key := res_key(keystr)
     if key in resources { return nil, .Key_Has_Exists }
 
     assert(key in resource_manager.embbed_data, "Font should be embbed for now.")
@@ -178,13 +186,15 @@ res_load_font :: proc(key: string, px: f32) -> (^DynamicFont, ResourceError) {
 
     return font, nil
 }
-res_unload_font :: proc(key: string) {
+res_unload_font :: proc(keystr: string) {
+    key := res_key(keystr)
     font := cast(^DynamicFont)resource_manager.resources[key]
     font_destroy(font)
     delete_key(&resource_manager.resources, key)
 }
 
-res_get_font :: proc(key: string) -> ^DynamicFont {
+res_get_font :: proc(keystr: string) -> ^DynamicFont {
+    key := res_key(keystr)
     font := cast(^DynamicFont)resource_manager.resources[key]
     return font
 }
@@ -194,10 +204,11 @@ res_get_font :: proc(key: string) -> ^DynamicFont {
 DShader :: struct {
     id : u32,
 }
-res_load_shader :: proc(key : string) -> (^DShader, ResourceError) { 
-    fpath := make_path(key)
+res_load_shader :: proc(keystr : string) -> (^DShader, ResourceError) { 
+    fpath := make_path(keystr)
     defer delete(fpath)
 
+    key := res_key(keystr)
     if key in resource_manager.resources {
         return nil, .Key_Has_Exists
     }
@@ -229,13 +240,14 @@ res_unload_shader :: proc(key: string) {
     }
 }
 
-res_get_shader :: proc(key: string) -> ^DShader {
-    shader := cast(^DShader)resource_manager.resources[key]
+res_get_shader :: proc(keystr: string) -> ^DShader {
+    shader := cast(^DShader)resource_manager.resources[res_key(keystr)]
     return shader
 }
 
-res_add_embbed :: proc(key: string, data: []byte) -> ResourceError {
+res_add_embbed :: proc(keystr: string, data: []byte) -> ResourceError {
     using resource_manager
+    key := res_key(keystr)
     if !(key in embbed_data) {
         embbed_data[key] = data
         return nil
@@ -255,19 +267,21 @@ res_list_embbed :: proc() {
     }
 }
 
-res_list_loaded :: proc() {
-    sb : strings.Builder
-    strings.builder_init(&sb)
-    defer strings.builder_destroy(&sb)
+when DUDE_EDITOR {
+    res_list_loaded :: proc() {
+        sb : strings.Builder
+        strings.builder_init(&sb)
+        defer strings.builder_destroy(&sb)
 
-    strings.write_string(&sb, "\nList Loaded Resource: \n")
+        strings.write_string(&sb, "\nList Loaded Resource: \n")
 
-    for key, res in resource_manager.resources {
-        strings.write_string(&sb, "> ")
-        strings.write_string(&sb, key)
-        strings.write_rune(&sb, '\n')
+        for key, res in resource_manager.resources {
+            strings.write_string(&sb, "> ")
+            strings.write_string(&sb, res_name_lookup[key])
+            strings.write_rune(&sb, '\n')
+        }
+        log.debug(strings.to_string(sb))
     }
-    log.debug(strings.to_string(sb))
 }
 
 
@@ -280,4 +294,21 @@ make_path :: proc(path: string, allocator:= context.allocator) -> string {
     to_slash_path, new_alloc := filepath.to_slash(the_path)
     if new_alloc do delete(the_path)
     return to_slash_path
+}
+
+
+ResKey :: distinct u64
+
+when DUDE_EDITOR {
+    @ private
+    res_name_lookup : map[ResKey]string
+    res_key :: proc(keystr:string) -> ResKey {
+        key := cast(ResKey)hash.crc64_xz(raw_data(keystr)[:len(keystr)]) 
+        if !(key in res_name_lookup) do res_name_lookup[key] = strings.clone(keystr)
+        return key
+    }
+} else {
+    res_key :: proc(name:string) -> ResKey {
+        return cast(ResKey)hash.crc64_xz(raw_data(name)[:len(name)])
+    }
 }
