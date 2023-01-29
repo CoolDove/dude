@@ -29,8 +29,10 @@ dude_debug_guis := map[string]proc() {
 
 dude_imgui_basic_settings :: proc() {
     @static guikey := "Scene"
-
     using imgui
+
+    imgui.begin("GeneralEditor")
+
     begin_tab_bar("DebugView", Tab_Bar_Flags.Reorderable | Tab_Bar_Flags.TabListPopupButton)
     for key in dude_debug_guis {
         if begin_tab_item(key, nil, .UnsavedDocument if guikey == key else .None) {
@@ -42,6 +44,8 @@ dude_imgui_basic_settings :: proc() {
         }
     }
     imgui.end_tab_bar()
+
+    imgui.end()
 }
 
 gui_tween :: proc() {

@@ -12,7 +12,7 @@ import "dude/ecs"
 
 when dude.DUDE_3D_GAME {
 
-SceneMushroom := dude.Scene { mushroom_scene_loader, mushroom_update, mushroom_scene_unloader }
+scene_mushroom := dude.Scene { mushroom_scene_loader, mushroom_update, mushroom_scene_unloader }
 
 @(private="file")
 mushroom_scene_loader :: proc(world: ^ecs.World) {

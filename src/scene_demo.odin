@@ -6,8 +6,7 @@ import "core:math/linalg"
 import "dude"
 import "dude/ecs"
 
-SceneTest := dude.Scene { test_scene_loader, test_scene_update, test_scene_unloader }
-
+scene_demo := dude.Scene { test_scene_loader, test_scene_update, test_scene_unloader }
 
 @(private="file")
 test_scene_loader :: proc(world: ^ecs.World) {
