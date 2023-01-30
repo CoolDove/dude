@@ -20,6 +20,7 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
     using ecs
 
     mush : ^ModelAsset
+    texture : ^Texture
     {
         context.allocator = allocators.level
         mushroom, err := res_load_model("model/mushroom.fbx", 
@@ -32,6 +33,26 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
             return
         }
         mush = mushroom
+
+        texture, _ = res_load_texture("texture/box.png")
+        {// Add test SpriteRenderer.
+            sp := ecs.add_entity(world)
+            sprite := SpriteRenderer {
+                texture_id = res_get_texture("texture/box.png").id,
+                enable = true,
+                size = {3, 3},
+                pivot = {0.0, 0.5},
+                space = .World,
+                color = COLORS.WHITE,
+            }
+            transform := Transform {
+                position = {0, 0, 0},
+                orientation = linalg.QUATERNIONF32_IDENTITY,
+                scale = {1, 1, 1},
+            }
+            ecs.add_components(world, sp,
+                transform, sprite)
+        }
     }
     prefab_camera(world, "MainCamera", true)
     prefab_light(world, "MainLight")

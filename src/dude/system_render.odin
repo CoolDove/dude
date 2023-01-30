@@ -52,57 +52,47 @@ render_world :: proc(world: ^ecs.World) {
         )
 
         // TODO: handle rotation
-        for i in sorted_indices {
-            sprite := sprites[i]
-            transform := transforms[i]
-            using sprite
-            if !enable do continue
-            leftup := Vec2{transform.position.x, transform.position.y} - size * pivot
-            immediate_texture(leftup, size, sprite.color, texture_id)
-
-            // TODO: Sprite Rendering.
-            // render_sprite(&sprite, env)
-
-            // {// Render the sprite.
-            //     for v in &default_sprite_quad.vertices {
-            //         v.color = sprite.color// update the color
-            //     }
-            //     render_mesh_upload(default_sprite_quad)
-            //     default_sprite_quad.vbo
-            // }
+        sprite_shader := res_get_shader("shader/builtin_sprite.shader").id
+        {// Setup sprite rendering
+            sprite_quad := get_sprite_quad()
+            gl.BindBuffer(gl.ARRAY_BUFFER, sprite_quad.vbo)
+            gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, sprite_quad.ebo)
+            gl.UseProgram(sprite_shader)
+            dgl.set_vertex_format_PCNU(sprite_shader)
+            gl.Disable(gl.CULL_FACE)
         }
+        uni_loc_matrix_view_projection := gl.GetUniformLocation(sprite_shader, "matrix_view_projection")
+        uni_loc_matrix_model           := gl.GetUniformLocation(sprite_shader, "matrix_model")
+        uni_loc_main_texture           := gl.GetUniformLocation(sprite_shader, "main_texture")
+
+        mtx_view_projection := calc_camera_vp(camera)
+        gl.UniformMatrix4fv(uni_loc_matrix_view_projection,
+            1, false, linalg.matrix_to_ptr(&mtx_view_projection))
+
+        default_white := res_get_texture("texture/white.tex")
+        for i in sorted_indices {
+            sprite := &sprites[i]
+            transform := transforms[i]
+
+            if !sprite.enable do continue
+            if sprite.space == .World {
+                mtx := calc_sprite_matrix(sprite)
+                gl.UniformMatrix4fv(uni_loc_matrix_model, 
+                    1, false, linalg.matrix_to_ptr(&mtx))
+
+                gl.ActiveTexture(gl.TEXTURE0)
+                if sprite.texture_id != 0 { gl.BindTexture(gl.TEXTURE_2D, sprite.texture_id) }
+                else { gl.BindTexture(gl.TEXTURE_2D, default_white.id) }
+                gl.Uniform1i(uni_loc_main_texture, 0)
+                gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
+            } else {
+                log.warnf("RenderSystem: Ignore Screen space sprite for now.")
+            }
+        }
+        gl.Enable(gl.CULL_FACE)
     }
 }
 
-@(private="file")
-default_sprite_quad : ^RenderMesh(VertexPCNU)
-/*
-  a------b
-  |      |
-  |      |
-  c------d
-  a: (-1, 1) (0, 1)
-  b: (1, 1) (1, 1)
-  c: (-1, -1) (0, 0)
-  d: (1, -1) (1, 0)
-*/
-@(private="file")
-init_default_sprite_quad :: proc() -> ^RenderMesh(VertexPCNU) {
-    rmesh := new(RenderMesh(VertexPCNU))
-    a := VertexPCNU{ position = {-1, -1, 0}, uv = {0, 0}, }
-    b := VertexPCNU{ position = {1, 1, 0}, uv = {1, 1}, }
-    c := VertexPCNU{ position = {-1, -1, 0}, uv = {0, 0}, }
-    d := VertexPCNU{ position = {1, -1, 0}, uv = {1, 0}, }
-    append(&rmesh.vertices, a, b, c, d)
-    indices := [6]u32{0, 2, 1, 1, 2, 3}
-    render_mesh_upload(rmesh, indices[:])
-    return rmesh
-}
-
-@(private="file")
-calc_sprite_matrix :: proc(sprite: ^SpriteRenderer) -> linalg.Matrix4x4f32 {
-    return linalg.MATRIX4F32_IDENTITY
-}
 
 render_sprite :: proc(sprite: ^SpriteRenderer, env: ^RenderEnvironment) {
 

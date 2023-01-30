@@ -22,24 +22,6 @@ CameraProjectType :: enum {
     Persp, Ortho,
 }
 
-
-// ## Sprite Renderer
-// World space allow, and the z is used to mark the depth.
-SpriteRenderer :: struct #packed {
-    using component : ecs.Component,
-    enable : bool,
-    texture_id : u32,
-    size, pivot : Vec2,
-    space : SpriteSpace,
-    color : Color,
-    // impl
-    vbo, ebo : u32,
-}
-
-SpriteSpace :: enum {
-    World, Screen,
-}
-
 // ## Mesh Renderer
 MeshRenderer :: struct #packed {
     using component : ecs.Component,
