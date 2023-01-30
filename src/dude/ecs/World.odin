@@ -24,11 +24,11 @@ EntityInfo :: struct {
     // nothing.
 }
 
-EntityComponentInfo :: struct {
-    id   : u32,
-    type : typeid,
-    is_valid : bool,
-}
+// EntityComponentInfo :: struct {
+//     id   : u32,
+//     type : typeid,
+//     is_valid : bool,
+// }
 
 // API
 world_create :: proc(allocator:= context.allocator) -> ^World{

@@ -6,6 +6,7 @@ import "core:fmt"
 import "core:reflect"
 import "core:strings"
 import "core:math"
+import "core:mem"
 import "core:math/linalg"
 
 import sdl "vendor:sdl2"
@@ -115,16 +116,16 @@ check_scene_switch :: proc() -> bool {
 
 init_game :: proc() {
     using dgl
+    allocators_init()
 
     game.settings = new(GameSettings)
 
     load_builtin_assets() 
-
     tween_init()
-
     if default_scene != "" {
         load_scene(default_scene)
     }
+
 }
 
 struct_offset_detail :: proc($T:typeid) -> uintptr {
@@ -154,7 +155,15 @@ quit_game :: proc() {
     unload_builtin_assets()
     log.debug("QUIT GAME")
     free(game.settings)
+
+    allocators_release()
 }
+
+BuiltinResource :: struct {
+    default_font : ^DynamicFont,
+}
+
+builtin_res : BuiltinResource
 
 @(private="file")
 load_builtin_assets :: proc() {
@@ -184,7 +193,7 @@ load_builtin_assets :: proc() {
         black.size = {4, 4}
         res_add_texture("texture/black.tex", black)
     }
-    res_load_font("font/unifont.ttf", 32.0)
+    builtin_res.default_font, _ = res_load_font("font/unifont.ttf", 32.0)
 
     res_load_shader("shader/builtin_sprite.shader")
     res_load_shader("shader/builtin_immediate_basic.shader")

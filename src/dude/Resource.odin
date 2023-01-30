@@ -45,9 +45,7 @@ Texture :: struct {
 }
 
 // path relative to the ./res/
-res_load_texture :: proc(keystr: string, allocator:= context.allocator) -> (^Texture, ResourceError) {
-    context.allocator = allocator
-
+res_load_texture :: proc(keystr: string) -> (^Texture, ResourceError) {
     using resource_manager
     fpath := make_path(keystr)
     defer delete(fpath)
@@ -302,7 +300,7 @@ when DUDE_EDITOR {
     res_name_lookup : map[ResKey]string
     res_key :: proc(keystr:string) -> ResKey {
         key := cast(ResKey)hash.crc64_xz(raw_data(keystr)[:len(keystr)]) 
-        if !(key in res_name_lookup) do res_name_lookup[key] = strings.clone(keystr)
+        if !(key in res_name_lookup) do res_name_lookup[key] = strings.clone(keystr, allocators.debug)
         return key
     }
 } else {

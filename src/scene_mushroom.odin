@@ -18,21 +18,25 @@ scene_mushroom := dude.Scene { mushroom_scene_loader, mushroom_update, mushroom_
 mushroom_scene_loader :: proc(world: ^ecs.World) {
     using dude
     using ecs
-    mushroom, err := res_load_model("model/mushroom.fbx", 
-        dude.res_get_shader("shader/builtin_mesh_opaque.shader").id,
-        dude.res_get_texture("texture/white.tex").id, 
-        0.01)
-    mushroom = res_get_model("model/mushroom.fbx")
-    
-    if err != nil {
-        log.errorf("MushroomScene: Error loading mushroom.fbx: {}", err)
-        return
-    }
 
+    mush : ^ModelAsset
+    {
+        context.allocator = allocators.level
+        mushroom, err := res_load_model("model/mushroom.fbx", 
+            dude.res_get_shader("shader/builtin_mesh_opaque.shader").id,
+            dude.res_get_texture("texture/white.tex").id, 
+            0.01)
+        mushroom = res_get_model("model/mushroom.fbx")
+        if err != nil {
+            log.errorf("MushroomScene: Error loading mushroom.fbx: {}", err)
+            return
+        }
+        mush = mushroom
+    }
     prefab_camera(world, "MainCamera", true)
     prefab_light(world, "MainLight")
 
-    add_mesh_renderers(world, mushroom)// mesh renderers
+    add_mesh_renderers(world, mush)// mesh renderers
 }
 @(private="file")
 mushroom_update :: proc(world: ^ecs.World, ) {
@@ -58,6 +62,7 @@ mushroom_update :: proc(world: ^ecs.World, ) {
 
 @(private="file")
 mushroom_scene_unloader :: proc(world: ^ecs.World) {
+    context.allocator = dude.allocators.level
     dude.res_unload_model("model/mushroom.fbx")
 }
 

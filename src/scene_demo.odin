@@ -12,15 +12,17 @@ scene_demo := dude.Scene { test_scene_loader, test_scene_update, test_scene_unlo
 test_scene_loader :: proc(world: ^ecs.World) {
     using dude
     using ecs
+    
     {// Res load
+        context.allocator = allocators.level
         res_add_embbed("font/inkfree.ttf", #load("../res/font/inkfree.ttf"))
-        res_load_texture("texture/box.png")
         res_load_font("font/inkfree.ttf", 32)
+        res_load_texture("texture/box.png")
     }
 
     prefab_camera(world, "MainCamera", false)
     prefab_light(world, "MainLight")
-    
+
     {// Add test SpriteRenderer.
         dove := ecs.add_entity(world)
         sprite := SpriteRenderer {
@@ -39,11 +41,9 @@ test_scene_loader :: proc(world: ^ecs.World) {
         ecs.add_components(world, dove, 
             transform, sprite)
     }
-
     {
         start_triggered = false
         alpha = 0.0
-
     }
 }
 
@@ -82,6 +82,7 @@ test_scene_update :: proc(world: ^ecs.World) {
     } else {
         immediate_quad(0, {cast(f32)wnd_size.x, cast(f32)wnd_size.y}, color)
     }
+
 }
 
 @(private="file")
@@ -89,9 +90,11 @@ start_game :: proc(nothing:rawptr=nil) {
     dude.switch_scene("Mushroom")
 }
 
-
 @(private="file")
 test_scene_unloader :: proc(world: ^ecs.World) {
+    context.allocator = dude.allocators.level
     dude.res_unload_texture("texture/box.png")
     dude.res_unload_font("font/inkfree.ttf")
+
+    free_all()
 }
