@@ -115,6 +115,7 @@ check_scene_switch :: proc() -> bool {
 
 init_game :: proc() {
     using dgl
+
     game.settings = new(GameSettings)
 
     load_builtin_assets() 
@@ -158,7 +159,7 @@ quit_game :: proc() {
 @(private="file")
 load_builtin_assets :: proc() {
     res_add_embbed("texture/dude.png", #load("resources/dude.png"))
-    res_add_embbed("font/unifont.tff", #load("resources/unifont.ttf"))
+    res_add_embbed("font/unifont.ttf", #load("resources/unifont.ttf"))
     res_add_embbed("shader/builtin_immediate_basic.shader", 
         #load("resources/builtin_immediate_basic.shader"))
     res_add_embbed("shader/builtin_immediate_font.shader", 
@@ -183,7 +184,7 @@ load_builtin_assets :: proc() {
         black.size = {4, 4}
         res_add_texture("texture/black.tex", black)
     }
-    res_load_font("font/unifont.tff", 32.0)
+    res_load_font("font/unifont.ttf", 32.0)
 
     res_load_shader("shader/builtin_sprite.shader")
     res_load_shader("shader/builtin_immediate_basic.shader")

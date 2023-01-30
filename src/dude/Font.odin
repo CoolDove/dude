@@ -49,6 +49,10 @@ font_load :: proc {
 }
 font_destroy :: proc(font: ^DynamicFont) {
     if font.data_buffer != nil do delete(font.data_buffer)
+
+    for glyph in &font.glyphs {
+        if glyph.texture_id != 0 do gl.DeleteTextures(1, &glyph.texture_id)
+    }
     delete(font.glyphs)
     free(font)
 }
@@ -169,6 +173,7 @@ font_load_from_mem :: proc(data: [^]byte, px: f32) -> ^DynamicFont {
     dfont.scale = scale
     dfont.font_info = font_info
     dfont.glyphs = make([dynamic]GlyphInfo, glyphs_count, glyphs_count)
+    dfont.data_buffer = nil
 
     return dfont
 }

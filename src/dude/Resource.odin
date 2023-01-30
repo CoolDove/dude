@@ -78,7 +78,7 @@ res_add_texture :: proc(keystr: string, texture: ^Texture) -> ResourceError {
     return nil
 }
 
-res_unload_texture :: proc(keystr: string) -> ResourceError {
+res_unload_texture :: proc(keystr: string) {
     using resource_manager
     key := res_key(keystr)
     if key in resources {
@@ -87,7 +87,7 @@ res_unload_texture :: proc(keystr: string) -> ResourceError {
         free(texture)
     }
     delete_key(&resources, key)
-    return nil
+
 }
 
 res_get_texture :: proc(keystr: string) -> ^Texture {
@@ -199,7 +199,6 @@ res_get_font :: proc(keystr: string) -> ^DynamicFont {
     return font
 }
 
-
 // ## Shader
 DShader :: struct {
     id : u32,
@@ -232,8 +231,8 @@ res_load_shader :: proc(keystr : string) -> (^DShader, ResourceError) {
     return shader, nil
 }
 
-res_unload_shader :: proc(key: string) {
-    shader := res_get_shader(key)
+res_unload_shader :: proc(keystr: string) {
+    shader := res_get_shader(keystr)
     if shader != nil {
         gl.DeleteProgram(shader.id)
         free(shader)
@@ -258,7 +257,6 @@ res_add_embbed :: proc(keystr: string, data: []byte) -> ResourceError {
 
 @(private="file")
 RESOURCE_FOLDER :: "res"
-
 
 res_list_embbed :: proc() {
     log.debugf("List Embbed Resource: ")
