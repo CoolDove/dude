@@ -36,8 +36,7 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
 
         texture, _ = res_load_texture("texture/box.png")
         {// Add test SpriteRenderer.
-            sp := ecs.add_entity(world)
-            texture := res_get_texture("texture/box.png")
+            sp := ecs.add_entity(world, {name="WorldSpace"})
             scale :f32= 0.06
             sprite := SpriteRenderer {
                 texture_id = texture.id,
@@ -45,6 +44,25 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
                 size = {cast(f32)texture.size.x * scale, cast(f32)texture.size.y * scale},
                 pivot = {0.0, 0.0},
                 space = .World,
+                color = COLORS.WHITE,
+            }
+            transform := Transform {
+                position = {0, 0, 0},
+                orientation = linalg.QUATERNIONF32_IDENTITY,
+                scale = {1, 1, 1},
+            }
+            ecs.add_components(world, sp,
+                transform, sprite)
+        }
+        {// Add test SpriteRenderer 2.
+            sp := ecs.add_entity(world, {name="ScreenSpace"})
+            scale :f32= 0.06
+            sprite := SpriteRenderer {
+                texture_id = texture.id,
+                enable = true,
+                size = {cast(f32)texture.size.x * scale, cast(f32)texture.size.y * scale},
+                pivot = {0.0, 0.0},
+                space = .Screen,
                 color = COLORS.WHITE,
             }
             transform := Transform {

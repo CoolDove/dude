@@ -101,6 +101,8 @@ update_game :: proc() {
         imgui_frame_end()
 	}
 
+
+    free_all(allocators.frame)
 }
 
 @private

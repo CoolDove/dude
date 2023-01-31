@@ -21,11 +21,13 @@ SpriteSpace :: enum {
     World, Screen,
 }
 
+// - For world space: replace the `model matrix`.
+// - For screen space: replace the `model matrix` and `vp matrix`.
 calc_sprite_matrix :: proc(sprite: ^SpriteRenderer) -> linalg.Matrix4x4f32 {
     transform := ecs.get_component(sprite.component, Transform)
+    using linalg
     switch sprite.space {
     case .World:
-        using linalg
         offset := sprite.pivot
         offset -= 0.5
         offset *= -2
@@ -35,6 +37,7 @@ calc_sprite_matrix :: proc(sprite: ^SpriteRenderer) -> linalg.Matrix4x4f32 {
         mtx_world := dgl.matrix_srt(transform.scale, transform.orientation, transform.position)
         return matrix_mul(mtx_world, mtx_local)
     case .Screen: // TODO
+
     }
     return linalg.MATRIX4F32_IDENTITY
 }
