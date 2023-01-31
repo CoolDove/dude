@@ -29,7 +29,7 @@ test_scene_loader :: proc(world: ^ecs.World) {
             texture_id = res_get_texture("texture/box.png").id,
             enable = true,
             size = {64, 64},
-            pivot = {0.0, 0.0},
+            pivot = {0.5, 0.5},
             space = .Screen,
             color = COLORS.WHITE,
         }

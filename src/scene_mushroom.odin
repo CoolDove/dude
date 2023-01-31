@@ -37,11 +37,13 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
         texture, _ = res_load_texture("texture/box.png")
         {// Add test SpriteRenderer.
             sp := ecs.add_entity(world)
+            texture := res_get_texture("texture/box.png")
+            scale :f32= 0.06
             sprite := SpriteRenderer {
-                texture_id = res_get_texture("texture/box.png").id,
+                texture_id = texture.id,
                 enable = true,
-                size = {3, 3},
-                pivot = {0.0, 0.5},
+                size = {cast(f32)texture.size.x * scale, cast(f32)texture.size.y * scale},
+                pivot = {0.0, 0.0},
                 space = .World,
                 color = COLORS.WHITE,
             }

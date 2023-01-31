@@ -28,10 +28,10 @@ calc_sprite_matrix :: proc(sprite: ^SpriteRenderer) -> linalg.Matrix4x4f32 {
         using linalg
         offset := sprite.pivot
         offset -= 0.5
-        offset *= sprite.size
+        offset *= -2
         mtx_local := matrix_mul(
-            matrix4_translate(Vector3f32{offset.x, offset.y, 0}),
-            matrix4_scale(Vector3f32{sprite.size.x, sprite.size.y, 1}))
+            matrix4_scale(Vector3f32{sprite.size.x, sprite.size.y, 1}),
+            matrix4_translate(Vector3f32{offset.x, offset.y, 0}))
         mtx_world := dgl.matrix_srt(transform.scale, transform.orientation, transform.position)
         return matrix_mul(mtx_world, mtx_local)
     case .Screen: // TODO
