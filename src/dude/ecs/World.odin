@@ -16,19 +16,11 @@ World :: struct {
     entities   : SparseSet(EntityInfo),
     components : ComponentMap,
     systems : [dynamic]proc(world: ^World),
-    // systems_update : [dynamic]SystemUpdateProc,
 }
 
 EntityInfo :: struct {
     name : string,
-    // nothing.
 }
-
-// EntityComponentInfo :: struct {
-//     id   : u32,
-//     type : typeid,
-//     is_valid : bool,
-// }
 
 // API
 world_create :: proc(allocator:= context.allocator) -> ^World{
@@ -36,7 +28,7 @@ world_create :: proc(allocator:= context.allocator) -> ^World{
     world := new(World)
     
     world.entities = spsset_make(EntityInfo, 4096 * 4)
-    world.components = make(ComponentMap)
+    world.components = make(ComponentMap, 32, allocator)
     world.systems = make([dynamic]proc(world: ^World))
 
     return world

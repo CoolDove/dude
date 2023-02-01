@@ -7,6 +7,8 @@ import "core:reflect"
 import "core:strings"
 import "core:math"
 import "core:mem"
+import "core:runtime"
+import "core:slice"
 import "core:math/linalg"
 
 import sdl "vendor:sdl2"
@@ -101,7 +103,6 @@ update_game :: proc() {
         imgui_frame_end()
 	}
 
-
     free_all(allocators.frame)
 }
 
@@ -127,7 +128,6 @@ init_game :: proc() {
     if default_scene != "" {
         load_scene(default_scene)
     }
-
 }
 
 struct_offset_detail :: proc($T:typeid) -> uintptr {

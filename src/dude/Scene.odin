@@ -4,6 +4,7 @@ import "core:log"
 import "core:encoding/json"
 import "core:math/linalg"
 import "core:strings"
+import "core:runtime"
 
 import "ecs"
 
@@ -36,7 +37,8 @@ load_scene_by_ptr :: proc(scene: ^Scene) -> (ok: bool) {
     using game
     using ecs
 
-    world := world_create()
+    context.allocator = runtime.default_allocator()
+    world := world_create(runtime.default_allocator())
     add_system(world, built_in_3dcamera_controller_update)
 
     loader := scene.loader

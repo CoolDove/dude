@@ -92,7 +92,6 @@ res_get_texture :: proc(keystr: string) -> ^Texture {
     return cast(^Texture)resource_manager.resources[res_key(keystr)]
 }
 
-
 // ## Model
 when DUDE_3D_GAME {
 import "pac:assimp"
@@ -291,7 +290,6 @@ make_path :: proc(path: string, allocator:= context.allocator) -> string {
     if new_alloc do delete(the_path)
     return to_slash_path
 }
-
 
 ResKey :: distinct u64
 

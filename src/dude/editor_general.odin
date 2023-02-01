@@ -65,8 +65,7 @@ gui_settings :: proc() {
 gui_scenes :: proc() {
     for key, scene in registered_scenes {
         if imgui.button(key) {
-            unload_scene()
-            load_scene(key)
+            switch_scene(key)
         }
     }
     if imgui.button("Unload") {
@@ -97,17 +96,25 @@ gui_ecs :: proc() {
         using imgui
         entity := cast(ecs.Entity)ent.id
         entity_info := cast(ecs.EntityInfo)ent.data
-        components := ecs.get_components(game.main_world, entity)
+        components := ecs.get_components(game.main_world, entity, allocators.frame)
         defer delete(components)
         wnd_flags := Window_Flags.AlwaysAutoResize
-        if collapsing_header(entity_info.name) {
+        header_name : string = ---
+        {context.allocator = allocators.frame
+            header_name = fmt.aprintf("{}({})", entity_info.name, entity)
+        }
+        if collapsing_header(header_name) {
             begin_child(entity_info.name)
+            text_unformatted(fmt.tprintf("Componnets: {}", len(components)))
             for c in components {
                 bullet_text(fmt.tprintf("-{}: {}", c.type, c.id))
                 if c.type == typeid_of(Transform) {
                     transform := ecs.get_component(game.main_world, entity, Transform)
                     imgui_transform(transform)
-                } 
+                } else if c.type == typeid_of(SpriteRenderer) {
+                    sprite := ecs.get_component(game.main_world, entity, SpriteRenderer)
+                    text_unformatted(fmt.tprintf("Space: {}", sprite.space))
+                }
             }
             end_child()
         }

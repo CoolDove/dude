@@ -3,6 +3,7 @@
 import "core:log"
 import "core:strings"
 import "core:slice"
+import "core:fmt"
 import "core:slice/heap"
 import "core:math/linalg"
 
@@ -68,6 +69,15 @@ render_sprites :: #force_inline proc(world: ^ecs.World, camera_matrix : ^linalg.
         1, false, linalg.matrix_to_ptr(camera_matrix))
     default_white := res_get_texture("texture/white.tex")
 
+    when DUDE_EDITOR {
+        immediate_text(builtin_res.default_font, 
+            fmt.tprintf("world: {}", len(world_sprites)), 
+            {0, 32}, COLORS.RED)
+        immediate_text(builtin_res.default_font, 
+            fmt.tprintf("screen: {}", len(screen_sprites)), 
+            {0, 100}, COLORS.RED)
+    }
+
     for sp in &world_sprites {// Render world space.
         if !sp.enable do continue
         assert(sp.space == .World, "SpriteRender: Incorrect sprite splitting.")
@@ -84,6 +94,7 @@ render_sprites :: #force_inline proc(world: ^ecs.World, camera_matrix : ^linalg.
         // TODO
         // log.debugf("Rendering a screen space sprite.")
     }
+
     
     gl.Enable(gl.CULL_FACE)
 
@@ -98,7 +109,7 @@ sprite_split :: #force_inline proc(sprites: []SpriteRenderer) -> (world, screen:
     for sp, ind in sprites {
         if sp.space == .World {
             render_sprites[lptr] = sp
-            if ind < length - 1 do lptr += 1
+            lptr += 1
         } else {
             render_sprites[rptr] = sp
             if ind < length - 1 do rptr -= 1

@@ -14,7 +14,6 @@ test_scene_loader :: proc(world: ^ecs.World) {
     using ecs
     
     {// Res load
-        context.allocator = allocators.level
         res_add_embbed("font/inkfree.ttf", #load("../res/font/inkfree.ttf"))
         res_load_font("font/inkfree.ttf", 32)
         res_load_texture("texture/box.png")
@@ -92,9 +91,6 @@ start_game :: proc(nothing:rawptr=nil) {
 
 @(private="file")
 test_scene_unloader :: proc(world: ^ecs.World) {
-    context.allocator = dude.allocators.level
     dude.res_unload_texture("texture/box.png")
     dude.res_unload_font("font/inkfree.ttf")
-
-    free_all()
 }

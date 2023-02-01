@@ -13,7 +13,7 @@ import "core:mem"
 ComponentPool :: struct {
     // Should be cast/transmuted to [dynamic]T before using.
     components : runtime.Raw_Dynamic_Array,
-    entities : map[Entity]u32, // Map entity id to the index of its component.
+    entities   : map[Entity]u32, // Map entity id to the index of its component.
 }
 
 ComponentMap :: map[typeid]ComponentPool
@@ -36,23 +36,23 @@ add_component_by_type :: proc(world: ^World, entity: Entity, $T: typeid) -> ^T
 add_component_by_data :: proc(world: ^World, entity: Entity, component: $T) -> ^T 
     where intrinsics.type_is_struct(T)
 {
+    context.allocator = runtime.default_allocator()
     component_type := component_type_check(T)
     if component_type == ComponentType.Invalid do return nil
-
     if !(T in world.components) {// If the component type hasn't been registered.
-        world.components[T] = ComponentPool{
-            transmute(runtime.Raw_Dynamic_Array)make([dynamic]any),
-            make(map[Entity]u32)}
+        map_insert(&world.components, T, ComponentPool{
+            transmute(runtime.Raw_Dynamic_Array)make([dynamic]T, 0, 64),
+            make(map[Entity]u32, 64)})
     }
     pool := &world.components[T]
     components := cast(^[dynamic]T)&pool.components
     append(components, component)// Append new component.
     component_id := cast(u32)(len(components) - 1)
-    pool.entities[entity] = component_id
+    map_insert(&pool.entities, entity, component_id)
     comp := &components[component_id]
     if component_type == .ComponentBased {
         base := Component{
-            world=world, 
+            world =world, 
             entity=entity,
         }
         mem.copy(comp, &base, size_of(base))
@@ -99,7 +99,7 @@ ComponentType :: enum {
     SimpleComponent,// Just any struct.
 }
 
-component_type_check :: proc($T: typeid) -> ComponentType {
+component_type_check :: proc(T: typeid) -> ComponentType {
     info := type_info_of(T)
     if reflect.is_struct(info) {
         field_types := reflect.struct_field_types(T)
@@ -113,20 +113,58 @@ component_type_check :: proc($T: typeid) -> ComponentType {
     }
 }
 
-remove_component :: proc(world: ^World, entity: Entity, $T: typeid) {
+remove_component :: proc(world: ^World, entity: Entity, T: typeid) {
     // Remove the component instance in the component pool.
     assert(T in world.components, "ECS Error: Entity data dismatches the component pool.")
     pool := &world.components[T]
-    components := transmute(^[dynamic]T)&pool.components
-    if comp_id, ok := pool.entities[entity]; ok {
-        last := len(components) - 1
-        slice.swap(components[:], cast(int)comp_id, cast(int)last)
-        for key, id in pool.entities {
-            if cast(int)id == last do pool.entities[key] = comp_id
+    size := size_of(T)
+
+    components := &pool.components
+    if components.len == 0 do return
+
+    bytes := slice.bytes_from_ptr(components.data, components.len * size)
+
+    moved_entity : Entity
+    for entity, comp_id in pool.entities {
+        if comp_id == cast(u32)components.len - 1 {
+            moved_entity = entity
+            break
         }
-        pop(components)
-        delete_key(&pool.entities, entity)
     }
+
+    if comp_id, ok := pool.entities[entity]; ok {
+        last := components.len - 1
+        swap_elem(components, cast(int)comp_id, last, T)
+        components.len -= 1
+        pool.entities[moved_entity] = comp_id
+        delete_key(&pool.entities, entity)
+    } else {
+        log.errorf("ECS: Can't remove component {} because entity {} doesnt have.", T, entity)
+    }
+}
+
+@(private="file")
+swap_elem :: proc {
+    swap_elem_slice,
+    swap_elem_dynamic,
+}
+@(private="file")
+swap_elem_slice :: #force_inline proc(raw_array : ^runtime.Raw_Slice, from, to: int, T: typeid) {
+    size := type_info_of(T).size
+    bytes := slice.bytes_from_ptr(raw_array.data, raw_array.len * size)
+    slice.swap_with_slice(
+        bytes[from * size : (from + 1) * size], 
+        bytes[to * size : (to + 1) * size],
+    )
+}
+@(private="file")
+swap_elem_dynamic :: #force_inline proc(raw_array : ^runtime.Raw_Dynamic_Array, from, to: int, T: typeid) {
+    size := type_info_of(T).size
+    bytes := slice.bytes_from_ptr(raw_array.data, raw_array.len * size)
+    slice.swap_with_slice(
+        bytes[from * size : (from + 1) * size], 
+        bytes[to * size : (to + 1) * size],
+    )
 }
 
 get_components :: proc {
@@ -136,7 +174,8 @@ get_components :: proc {
 
 get_components_of_type :: proc(world: ^World, $T: typeid) -> []T {
     if comps, ok := world.components[T]; ok {
-        return (transmute([dynamic]T)comps.components)[:]
+        tcomps := (transmute([dynamic]T)comps.components)[:]
+        return tcomps
     } else {
         return nil
     }
@@ -165,6 +204,8 @@ get_component :: proc {
 }
 
 get_component_by_entity :: proc(world: ^World, entity: Entity, $T: typeid) -> ^T {
+    assert(world != nil, "World cannot be nil")
+    if len(world.components) == 0 do return nil
     pool, ok := &world.components[T]
     if !ok do return nil
     comp_id := pool.entities[entity]
@@ -179,60 +220,3 @@ ComponentInfo :: struct {
     type: typeid,
     id : u32,
 }
-
-// ## Test Components
-// Some built-in components to test the ecs system.
-// Transform :: struct {
-//     position    : linalg.Vector3f32,
-//     orientation : linalg.Quaternionf32,
-//     scale       : linalg.Vector3f32,
-// }
-
-// SpriteRenderer :: struct {
-//     using component : Component,// THIS IS WHAT A GAME COMPONENT NEEDS! SHOULD BE PLACED AT FIRST.
-//     texture_id : u32,
-//     size, pos, pivot : linalg.Vector2f32,
-// }
-
-// TextRenderer :: struct {
-//     text : ^strings.Builder,
-//     dirty_flag : bool,
-//     pos : linalg.Vector2f32,
-// }
-
-// ## Dead code
-
-// Stack :: struct {
-//     top : ^StackNode,
-//     count : u32,
-//     allocator : runtime.Allocator,
-// }
-// StackNode :: struct {
-//     data : u32, 
-//     prev : ^StackNode,
-// }
-
-// stack_create :: proc(allocator:= context.allocator) -> Stack {
-//     return Stack{nil, 0, allocator}
-// }
-// stack_push :: proc(stack: ^Stack, data: u32) {
-//     context.allocator = stack.allocator
-//     node := new (StackNode)
-//     node.data = data 
-//     node.prev = stack.top
-//     stack.top = node
-//     stack.count += 1
-// }
-// stack_pop :: proc(stack: ^Stack) -> (data: u32, ok: bool) #optional_ok {
-//     if stack.count == 0 do return 0, false
-//     node := stack.top
-//     data = node.data
-//     stack.top = node.prev
-//     free(node)
-//     stack.count -= 1
-//     return data, true
-// }
-// stack_peek :: proc(stack: ^Stack) -> (data: u32, ok: bool) #optional_ok {
-//     if stack.count == 0 do return 0, false
-//     return stack.top.data, true
-// }

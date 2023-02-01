@@ -5,6 +5,8 @@ import "core:log"
 import "core:math"
 import "core:strings"
 import "core:time"
+import "core:slice"
+import "core:runtime"
 import "core:math/linalg"
 
 import "dude"
@@ -22,12 +24,10 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
     mush : ^ModelAsset
     texture : ^Texture
     {
-        context.allocator = allocators.level
         mushroom, err := res_load_model("model/mushroom.fbx", 
             dude.res_get_shader("shader/builtin_mesh_opaque.shader").id,
             dude.res_get_texture("texture/white.tex").id, 
             0.01)
-        mushroom = res_get_model("model/mushroom.fbx")
         if err != nil {
             log.errorf("MushroomScene: Error loading mushroom.fbx: {}", err)
             return
@@ -35,50 +35,43 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
         mush = mushroom
 
         texture, _ = res_load_texture("texture/box.png")
-        {// Add test SpriteRenderer.
-            sp := ecs.add_entity(world, {name="WorldSpace"})
-            scale :f32= 0.06
-            sprite := SpriteRenderer {
-                texture_id = texture.id,
-                enable = true,
-                size = {cast(f32)texture.size.x * scale, cast(f32)texture.size.y * scale},
-                pivot = {0.0, 0.0},
-                space = .World,
-                color = COLORS.WHITE,
-            }
-            transform := Transform {
-                position = {0, 0, 0},
-                orientation = linalg.QUATERNIONF32_IDENTITY,
-                scale = {1, 1, 1},
-            }
-            ecs.add_components(world, sp,
-                transform, sprite)
-        }
-        {// Add test SpriteRenderer 2.
-            sp := ecs.add_entity(world, {name="ScreenSpace"})
-            scale :f32= 0.06
-            sprite := SpriteRenderer {
-                texture_id = texture.id,
-                enable = true,
-                size = {cast(f32)texture.size.x * scale, cast(f32)texture.size.y * scale},
-                pivot = {0.0, 0.0},
-                space = .Screen,
-                color = COLORS.WHITE,
-            }
-            transform := Transform {
-                position = {0, 0, 0},
-                orientation = linalg.QUATERNIONF32_IDENTITY,
-                scale = {1, 1, 1},
-            }
-            ecs.add_components(world, sp,
-                transform, sprite)
-        }
     }
+
+    create_world_space_sprite(world, texture, "WorldA", {1, 0, 0})
+    create_world_space_sprite(world, texture, "WorldB", {1.2, 0, 0})
+    create_world_space_sprite(world, texture, "WorldC", {0, .1, 0})
+    create_world_space_sprite(world, texture, "WorldD", {0, 1, 1})
+    create_world_space_sprite(world, texture, "WorldE", {.5, 0, .5})
+    create_world_space_sprite(world, texture, "WorldF", {0, .1, 0})
+    
+    // {// Add test SpriteRenderer 2.
+    //     sp := ecs.add_entity(world, {name="ScreenSpace"})
+    //     scale :f32= 0.06
+    //     sprite := SpriteRenderer {
+    //         texture_id = texture.id,
+    //         enable = true,
+    //         size = {cast(f32)texture.size.x * scale, cast(f32)texture.size.y * scale},
+    //         pivot = {0.0, 0.0},
+    //         space = .Screen,
+    //         color = COLORS.WHITE,
+    //     }
+    //     transform := Transform {
+    //         position = {0, 0, 0},
+    //         orientation = linalg.QUATERNIONF32_IDENTITY,
+    //         scale = {1, 1, 1},
+    //     }
+    //     ecs.add_components(world, sp,
+    //         transform, sprite)
+    // }
+
+    // add_mesh_renderers(world, mush)// mesh renderers
+
     prefab_camera(world, "MainCamera", true)
     prefab_light(world, "MainLight")
 
-    add_mesh_renderers(world, mush)// mesh renderers
+    log.debugf("Scnene build up")
 }
+
 @(private="file")
 mushroom_update :: proc(world: ^ecs.World, ) {
     using dude
@@ -94,6 +87,9 @@ mushroom_update :: proc(world: ^ecs.World, ) {
             log.debugf("Camera type toggled to: {}", camera.type)
         }
     }
+
+    if get_key_down(.B) { remove_sprites(world) }
+
     time_delta := time.duration_seconds(app.duration_frame)
     if camera.type == .Ortho {
         if get_key(.J) do camera.size = math.max(camera.size - cast(f32)time_delta * 2, 0)
@@ -103,8 +99,8 @@ mushroom_update :: proc(world: ^ecs.World, ) {
 
 @(private="file")
 mushroom_scene_unloader :: proc(world: ^ecs.World) {
-    context.allocator = dude.allocators.level
     dude.res_unload_model("model/mushroom.fbx")
+    dude.res_unload_texture("texture/box.png")
 }
 
 @(private="file")
@@ -117,6 +113,7 @@ add_mesh_renderers :: proc(world: ^ecs.World, asset : ^dude.ModelAsset) {
     for name, mesh in &asset.meshes {
         mesh_name := strings.to_string(mesh.name)
         ent := ecs.add_entity(world, ecs.EntityInfo{name=mesh_name})
+        log.debugf("Mesh entity: {}.{}", ent, mesh_name)
 
         ecs.add_component(world, ent, default_transform)
         mesh_renderer := ecs.add_component(world, ent, dude.MeshRenderer)
@@ -127,5 +124,60 @@ add_mesh_renderers :: proc(world: ^ecs.World, asset : ^dude.ModelAsset) {
         })
     }
 }
+
+
+@(private="file")
+remove_sprites :: proc(world: ^ecs.World) {
+    using dude
+    sprites := ecs.get_components(world, dude.SpriteRenderer)
+    sprite : ^SpriteRenderer
+    for sp, i in &sprites {
+        if sp.space == .World {
+            sprite = &sp
+            break
+        }
+    }
+    if sprite != nil {
+        entity := sprite.entity
+        ecs.remove_component(world, entity, dude.SpriteRenderer)
+        log.debugf("Remove sprite of entity: {}", ecs.entity_info(world, entity).name)
+    } else {
+        log.warnf("No sprite to remove")
+    }
+}
+
+@(private="file")
+log_sprites :: proc(world: ^ecs.World) {
+    using dude
+    sprites := ecs.get_components(world, SpriteRenderer)
+    sprite : ^SpriteRenderer
+    log.debugf("log sprites")
+    for sp, i in &sprites {
+        log.debugf("{}", &sp)
+    }
+
+}
+
+create_world_space_sprite :: proc(world: ^ecs.World, texture: ^dude.Texture, name: string, pos: dude.Vec3) {
+    using dude
+    sp := ecs.add_entity(world, {name=name})
+    scale :f32= 0.02
+    sprite := SpriteRenderer {
+        texture_id = texture.id,
+        enable = true,
+        size = {cast(f32)texture.size.x * scale, cast(f32)texture.size.y * scale},
+        pivot = {0.0, 0.0},
+        space = .World,
+        color = COLORS.WHITE,
+    }
+    transform := Transform {
+        position = pos,
+        orientation = linalg.QUATERNIONF32_IDENTITY,
+        scale = {1, 1, 1},
+    }
+    ecs.add_components(world, sp,
+        transform, sprite)
+}
+
 
 }

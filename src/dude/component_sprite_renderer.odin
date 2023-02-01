@@ -8,7 +8,7 @@ import "dgl"
 // ## Sprite Renderer
 // World space allow, and the z is used to mark the depth.
 // pivot: (0.5, 0.5) means the pivot is at the center of the sprite, (1, 1) the right-down corner.
-SpriteRenderer :: struct #packed {
+SpriteRenderer :: struct {
     using component : ecs.Component,
     enable : bool,
     texture_id : u32,
