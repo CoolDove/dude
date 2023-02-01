@@ -1,5 +1,7 @@
 ﻿package ecs
 
+import "core:log"
+
 Entity :: distinct u32
 
 add_entity :: proc(world: ^World, info:= EntityInfo{}) -> Entity {
@@ -15,9 +17,21 @@ add_entity :: proc(world: ^World, info:= EntityInfo{}) -> Entity {
 entity_info :: #force_inline proc(world: ^World, entity: Entity) -> ^EntityInfo {
     return spsset_find(&world.entities, cast(u32)entity)
 }
+has_entity :: #force_inline proc(world: ^World, entity: Entity) -> bool {
+    return spsset_contain(&world.entities, cast(u32) entity)
+}
 
-remove_entity :: proc(world: ^World) {
-    // TODO
+remove_entity :: proc(world: ^World, entity: Entity) -> bool {
+    assert(world != nil )
+    if !has_entity(world, entity) {
+        log.errorf("ECS: Can't remove entity {} because it doesn't exist.", entity);
+        return false
+    }
+    for type, comp in world.components {
+        remove_component(world, entity, type, true)
+    }
+    spsset_remove(&world.entities, cast(u32)entity)
+    return true
 }
 
 @(private="file")
@@ -28,16 +42,3 @@ get_new_entity_id :: proc(world: ^World) -> u32 {
 
 @(private="file")
 entity_id : u32 = 0
-
-EntityBuilder :: struct {
-    entity : Entity,
-    world  : ^World,
-}
-
-EntityBuilder_VTable :: struct {
-    add_component : proc(builder: ^EntityBuilder),
-}
-
-entity_builder_vtable := EntityBuilder_VTable {
-
-}

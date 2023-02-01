@@ -88,7 +88,8 @@ mushroom_update :: proc(world: ^ecs.World, ) {
         }
     }
 
-    if get_key_down(.B) { remove_sprites(world) }
+    if get_key_down(.B) { remove_sprite(world) }
+    if get_key_down(.V) { remove_sprite_entity(world) }
 
     time_delta := time.duration_seconds(app.duration_frame)
     if camera.type == .Ortho {
@@ -127,7 +128,7 @@ add_mesh_renderers :: proc(world: ^ecs.World, asset : ^dude.ModelAsset) {
 
 
 @(private="file")
-remove_sprites :: proc(world: ^ecs.World) {
+remove_sprite :: proc(world: ^ecs.World) {
     using dude
     sprites := ecs.get_components(world, dude.SpriteRenderer)
     sprite : ^SpriteRenderer
@@ -143,6 +144,26 @@ remove_sprites :: proc(world: ^ecs.World) {
         log.debugf("Remove sprite of entity: {}", ecs.entity_info(world, entity).name)
     } else {
         log.warnf("No sprite to remove")
+    }
+}
+@(private="file")
+remove_sprite_entity :: proc(world: ^ecs.World) {
+    using dude
+    sprites := ecs.get_components(world, dude.SpriteRenderer)
+    sprite : ^SpriteRenderer
+    for sp, i in &sprites {
+        if sp.space == .World {
+            sprite = &sp
+            break
+        }
+    }
+    if sprite != nil {
+        ent_name := ecs.entity_info(world, sprite.entity).name
+        if ecs.remove_entity(world, sprite.entity) {
+            log.debugf("Remove entity: {}", ent_name)
+        }
+    } else {
+        log.warnf("No sprite entity to remove")
     }
 }
 

@@ -113,33 +113,32 @@ component_type_check :: proc(T: typeid) -> ComponentType {
     }
 }
 
-remove_component :: proc(world: ^World, entity: Entity, T: typeid) {
+remove_component :: proc(world: ^World, entity: Entity, T: typeid, try := false) -> bool {
     // Remove the component instance in the component pool.
     assert(T in world.components, "ECS Error: Entity data dismatches the component pool.")
     pool := &world.components[T]
     size := size_of(T)
 
     components := &pool.components
-    if components.len == 0 do return
-
-    bytes := slice.bytes_from_ptr(components.data, components.len * size)
-
-    moved_entity : Entity
-    for entity, comp_id in pool.entities {
-        if comp_id == cast(u32)components.len - 1 {
-            moved_entity = entity
-            break
-        }
-    }
+    if components.len == 0 do return false
 
     if comp_id, ok := pool.entities[entity]; ok {
+        moved_entity : Entity
+        for entity, comp_id in pool.entities {
+            if comp_id == cast(u32)components.len - 1 {
+                moved_entity = entity
+                break
+            }
+        }
         last := components.len - 1
         swap_elem(components, cast(int)comp_id, last, T)
         components.len -= 1
         pool.entities[moved_entity] = comp_id
         delete_key(&pool.entities, entity)
+        return true
     } else {
-        log.errorf("ECS: Can't remove component {} because entity {} doesnt have.", T, entity)
+        if !try do log.errorf("ECS: Can't remove component {} because entity {} doesnt have.", T, entity)
+        return false
     }
 }
 
