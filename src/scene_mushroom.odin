@@ -44,27 +44,7 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
     create_world_space_sprite(world, texture, "WorldE", {.5, 0, .5})
     create_world_space_sprite(world, texture, "WorldF", {0, .1, 0})
     
-    // {// Add test SpriteRenderer 2.
-    //     sp := ecs.add_entity(world, {name="ScreenSpace"})
-    //     scale :f32= 0.06
-    //     sprite := SpriteRenderer {
-    //         texture_id = texture.id,
-    //         enable = true,
-    //         size = {cast(f32)texture.size.x * scale, cast(f32)texture.size.y * scale},
-    //         pivot = {0.0, 0.0},
-    //         space = .Screen,
-    //         color = COLORS.WHITE,
-    //     }
-    //     transform := Transform {
-    //         position = {0, 0, 0},
-    //         orientation = linalg.QUATERNIONF32_IDENTITY,
-    //         scale = {1, 1, 1},
-    //     }
-    //     ecs.add_components(world, sp,
-    //         transform, sprite)
-    // }
-
-    // add_mesh_renderers(world, mush)// mesh renderers
+    add_mesh_renderers(world, mush)// mesh renderers
 
     prefab_camera(world, "MainCamera", true)
     prefab_light(world, "MainLight")
@@ -76,7 +56,7 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
 mushroom_update :: proc(world: ^ecs.World, ) {
     using dude
     camera := get_main_camera(world)
-    if get_key_down(.C) {
+    if get_key_down(.Z) {
         if camera != nil {
             if camera.type == .Ortho { 
                 camera.type = .Persp 
@@ -90,6 +70,9 @@ mushroom_update :: proc(world: ^ecs.World, ) {
 
     if get_key_down(.B) { remove_sprite(world) }
     if get_key_down(.V) { remove_sprite_entity(world) }
+    if get_key_down(.C) { 
+        create_world_space_sprite(world, res_get_texture("texture/box.png"), "DynamicSprite", {0, 0, 0})
+    }
 
     time_delta := time.duration_seconds(app.duration_frame)
     if camera.type == .Ortho {
@@ -166,19 +149,6 @@ remove_sprite_entity :: proc(world: ^ecs.World) {
         log.warnf("No sprite entity to remove")
     }
 }
-
-@(private="file")
-log_sprites :: proc(world: ^ecs.World) {
-    using dude
-    sprites := ecs.get_components(world, SpriteRenderer)
-    sprite : ^SpriteRenderer
-    log.debugf("log sprites")
-    for sp, i in &sprites {
-        log.debugf("{}", &sp)
-    }
-
-}
-
 create_world_space_sprite :: proc(world: ^ecs.World, texture: ^dude.Texture, name: string, pos: dude.Vec3) {
     using dude
     sp := ecs.add_entity(world, {name=name})

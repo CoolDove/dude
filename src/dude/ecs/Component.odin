@@ -143,21 +143,7 @@ remove_component :: proc(world: ^World, entity: Entity, T: typeid, try := false)
 }
 
 @(private="file")
-swap_elem :: proc {
-    swap_elem_slice,
-    swap_elem_dynamic,
-}
-@(private="file")
-swap_elem_slice :: #force_inline proc(raw_array : ^runtime.Raw_Slice, from, to: int, T: typeid) {
-    size := type_info_of(T).size
-    bytes := slice.bytes_from_ptr(raw_array.data, raw_array.len * size)
-    slice.swap_with_slice(
-        bytes[from * size : (from + 1) * size], 
-        bytes[to * size : (to + 1) * size],
-    )
-}
-@(private="file")
-swap_elem_dynamic :: #force_inline proc(raw_array : ^runtime.Raw_Dynamic_Array, from, to: int, T: typeid) {
+swap_elem :: #force_inline proc(raw_array : ^runtime.Raw_Dynamic_Array, from, to: int, T: typeid) {
     size := type_info_of(T).size
     bytes := slice.bytes_from_ptr(raw_array.data, raw_array.len * size)
     slice.swap_with_slice(

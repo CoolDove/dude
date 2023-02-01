@@ -21,10 +21,10 @@ has_entity :: #force_inline proc(world: ^World, entity: Entity) -> bool {
     return spsset_contain(&world.entities, cast(u32) entity)
 }
 
-remove_entity :: proc(world: ^World, entity: Entity) -> bool {
+remove_entity :: proc(world: ^World, entity: Entity, try := false) -> bool {
     assert(world != nil )
     if !has_entity(world, entity) {
-        log.errorf("ECS: Can't remove entity {} because it doesn't exist.", entity);
+        if !try do log.errorf("ECS: Can't remove entity {} because it doesn't exist.", entity);
         return false
     }
     for type, comp in world.components {
