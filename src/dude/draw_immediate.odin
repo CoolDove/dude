@@ -104,6 +104,10 @@ immediate_end :: proc (wireframe:= false) {
         gl.UseProgram(basic_shader)
         dgl.set_vertex_format_PCU(basic_shader)
         loc_viewport_size, loc_main_texture = switch_shader(basic_shader)
+        gl.Uniform2f(
+            loc_viewport_size, 
+            cast(f32)(viewport.z - viewport.x), 
+            cast(f32)(viewport.w - viewport.y))
 
         for e in elements {
             gl.ActiveTexture(gl.TEXTURE0)

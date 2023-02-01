@@ -24,6 +24,7 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
     mush : ^ModelAsset
     texture : ^Texture
     {
+        context.allocator = allocators.level
         mushroom, err := res_load_model("model/mushroom.fbx", 
             dude.res_get_shader("shader/builtin_mesh_opaque.shader").id,
             dude.res_get_texture("texture/white.tex").id, 
@@ -83,8 +84,10 @@ mushroom_update :: proc(world: ^ecs.World, ) {
 
 @(private="file")
 mushroom_scene_unloader :: proc(world: ^ecs.World) {
+    context.allocator = dude.allocators.level
     dude.res_unload_model("model/mushroom.fbx")
     dude.res_unload_texture("texture/box.png")
+    free_all()
 }
 
 @(private="file")

@@ -7,9 +7,8 @@ DebugInfo :: struct {
     debug_name : string,
 }
 
-
 // ## Camera
-Camera :: struct #packed {
+Camera :: struct {
     using component : ecs.Component,
     type : CameraProjectType,
     size : f32, // for ortho camera
@@ -23,19 +22,19 @@ CameraProjectType :: enum {
 }
 
 // ## Mesh Renderer
-MeshRenderer :: struct #packed {
+MeshRenderer :: struct {
     using component : ecs.Component,
     mesh : ^TriangleMesh,
     transform_matrix: linalg.Matrix4x4f32,
 }
 
 // ## Text Renderer
-TextRenderer :: struct #packed {
+TextRenderer :: struct {
     // ...
 }
 
 // ## Light
-Light :: struct #packed {
+Light :: struct {
     using component : ecs.Component,
     direction : Vec3,
     color     : Vec4,
