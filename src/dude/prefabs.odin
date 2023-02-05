@@ -21,7 +21,7 @@ prefab_camera :: proc(world: ^ecs.World, name: string, built_in_controller: bool
             far  = 300,
         },
     )
-    if built_in_controller do add_component(world, camera, BuiltIn3DCameraController{---, .35, .006})
+    if built_in_controller do add_component(world, camera, EditorCameraController{---, .35, .006})
 }
 
 prefab_light :: proc(world: ^ecs.World, name: string, color: Color = COLORS.GREEN) {

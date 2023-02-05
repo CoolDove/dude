@@ -61,6 +61,11 @@ update_game :: proc() {
         if get_key_down(.F2) {
             game.status_window_alpha = 1 - game.status_window_alpha
         }
+        if get_key_down(.F3) {
+            @static vsync_on := true
+            vsync_on = !vsync_on
+            toggle_vsync(vsync_on)
+        }
     }
 
     // Game world

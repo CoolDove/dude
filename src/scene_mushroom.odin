@@ -3,10 +3,12 @@
 import "core:fmt"
 import "core:log"
 import "core:math"
+import "core:mem"
 import "core:strings"
 import "core:time"
 import "core:slice"
 import "core:runtime"
+import "core:reflect"
 import "core:math/linalg"
 
 import "dude"
@@ -17,14 +19,34 @@ when dude.DUDE_3D_GAME {
 scene_mushroom := dude.Scene { mushroom_scene_loader, mushroom_update, mushroom_scene_unloader }
 
 @(private="file")
+mushroom_allocator : mem.Allocator
+@(private="file")
+mushroom_buffer : []byte
+
+LevelArena :: struct {
+    buffer : []byte,
+    arena : mem.Arena,
+    allocator : mem.Allocator,
+}
+
+mush_arena : LevelArena
+
+
+@(private="file")
 mushroom_scene_loader :: proc(world: ^ecs.World) {
     using dude
     using ecs
 
+    {// init allocator
+        mush_arena.buffer = make([]byte, 128 * 1024 * 1024)
+        mem.arena_init(&mush_arena.arena, mush_arena.buffer)
+        mush_arena.allocator = mem.arena_allocator(&mush_arena.arena)
+    }
+
     mush : ^ModelAsset
     texture : ^Texture
     {
-        context.allocator = allocators.level
+        context.allocator = mush_arena.allocator
         mushroom, err := res_load_model("model/mushroom.fbx", 
             dude.res_get_shader("shader/builtin_mesh_opaque.shader").id,
             dude.res_get_texture("texture/white.tex").id, 
@@ -84,10 +106,13 @@ mushroom_update :: proc(world: ^ecs.World, ) {
 
 @(private="file")
 mushroom_scene_unloader :: proc(world: ^ecs.World) {
-    context.allocator = dude.allocators.level
+    context.allocator = mush_arena.allocator
     dude.res_unload_model("model/mushroom.fbx")
     dude.res_unload_texture("texture/box.png")
     free_all()
+    {
+        free(raw_data(mushroom_buffer))
+    }
 }
 
 @(private="file")

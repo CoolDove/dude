@@ -183,7 +183,7 @@ draw_status :: proc() {
 
     font := builtin_res.default_font
     if font != nil {
-        text := fmt.aprintf("FPS: {}", framerate)
+        text := fmt.aprintf("FPS: {}, ftime: {} ms", framerate, frame_ms)
         defer delete(text)
         immediate_text(font, text, {10, 32+10}, color)
     }

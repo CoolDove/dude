@@ -39,7 +39,8 @@ load_scene_by_ptr :: proc(scene: ^Scene) -> (ok: bool) {
 
     context.allocator = runtime.default_allocator()
     world := world_create(runtime.default_allocator())
-    add_system(world, built_in_3dcamera_controller_update)
+
+    add_system(world, editor_control)
 
     loader := scene.loader
     if loader != nil {
