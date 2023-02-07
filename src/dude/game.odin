@@ -64,7 +64,7 @@ update_game :: proc() {
         if get_key_down(.F3) {
             @static vsync_on := true
             vsync_on = !vsync_on
-            toggle_vsync(vsync_on)
+            // toggle_vsync(vsync_on)
         }
     }
 
@@ -124,7 +124,11 @@ check_scene_switch :: proc() -> bool {
 
 init_game :: proc() {
     using dgl
+
+    meta_pac_test()
+
     allocators_init()
+
 
     game.settings = new(GameSettings)
 
