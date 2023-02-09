@@ -74,7 +74,13 @@ DPacValue :: struct {
         DPacLiteral,// literal
         ^DPacObject,  // field - value pair
     },
+
+    // attributes
+    using attributes : DPacValueAttribute,
+}
+DPacValueAttribute :: struct {
     load_path : string,
+    is_private : bool,
 }
 
 DPacLiteral :: union {
@@ -98,6 +104,10 @@ list_dpac_value :: proc(sb: ^strings.Builder, v: ^DPacValue, ite:=0) {
     tab := to_string(tab_builder)
 
     write_string(sb, fmt.tprintf("{}#{}({})", tab, v.name, v.type))
+    if v.load_path != "" {
+        write_string(sb, "<<")
+        write_string(sb, v.load_path)
+    }
 
     #partial switch vtype in v.value {
     case DPacRef:
@@ -157,8 +167,30 @@ generate_value_decl :: proc(dpac: ^DPackage, decl: ^ast.Value_Decl) -> []^DPacVa
         {// check attributes
             for atb in attributes {
                 log.debugf("attrib: {}", atb.tok)
+                atb_kind, atb_value : string
                 for elem in atb.elems {
-                    log.debugf("    elem: {}", elem.derived_expr)
+                    #partial switch vtype in elem.derived_expr {
+                    case ^ast.Ident:
+                        ident := elem.derived_expr.(^ast.Ident)
+                        atb_kind = ident.name
+                    case ^ast.Field_Value:
+                        field_value_pair := elem.derived_expr.(^ast.Field_Value)
+                        field := field_value_pair.field.derived_expr.(^ast.Ident)
+                        value := field_value_pair.value.derived.(^ast.Basic_Lit)
+                        atb_kind = field.name
+                        atb_value = value.tok.text
+                    }
+                    // attributes
+                    switch atb_kind {
+                    case "private":
+                        value.is_private = true
+                    case "load":
+                        if atb_value != "" {
+                            value.load_path = atb_value
+                        }
+                    case:
+                        panic("Unknown attribute in dpackage.")
+                    }
                 }
             }
         }
