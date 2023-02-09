@@ -1,6 +1,7 @@
 ﻿package main
 
 import "core:log"
+import "core:strings"
 import "core:math/linalg"
 
 import "dude"
@@ -12,6 +13,21 @@ scene_demo := dude.Scene { test_scene_loader, test_scene_update, test_scene_unlo
 test_scene_loader :: proc(world: ^ecs.World) {
     using dude
     using ecs
+
+    {// load dpackage
+        pac, ok := dpackage_init("res/test_demo.dpackage")
+        if ok {
+            sb : strings.Builder
+            strings.builder_init(&sb)
+            defer strings.builder_destroy(&sb)
+           
+            for v in pac.values {
+                list_dpac_value(&sb, v)
+            }
+        } else {
+            log.errorf("Failed to load dpackage")
+        }
+    }
     
     {// Res load
         res_add_embbed("font/inkfree.ttf", #load("../res/font/inkfree.ttf"))
