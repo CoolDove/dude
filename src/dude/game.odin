@@ -125,7 +125,7 @@ check_scene_switch :: proc() -> bool {
 init_game :: proc() {
     using dgl
 
-    meta_pac_test()
+    // meta_pac_test()
 
     allocators_init()
 
@@ -134,6 +134,7 @@ init_game :: proc() {
 
     load_builtin_assets() 
     tween_init()
+
     if default_scene != "" {
         load_scene(default_scene)
     }

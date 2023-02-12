@@ -14,7 +14,6 @@ Scene :: struct {
     unloader : proc(world: ^ecs.World),
 }
 
-
 // Unload current scene and load a new scene.
 @private
 to_switch_scene : ^Scene
@@ -37,8 +36,8 @@ load_scene_by_ptr :: proc(scene: ^Scene) -> (ok: bool) {
     using game
     using ecs
 
-    context.allocator = runtime.default_allocator()
-    world := world_create(runtime.default_allocator())
+    context.allocator = allocators.default
+    world := world_create()
 
     add_system(world, editor_control)
 

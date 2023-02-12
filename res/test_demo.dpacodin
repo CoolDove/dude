@@ -1,12 +1,15 @@
 package builtin
 
 @private
+color_yellow :: Color{ 1, 1, 0, 1 }
+
+@private
 color_white :: Color{ 1, 1, 1, 1 }
 
-@(load="shader/builtin_mesh_opaque.shader")
+@(load="res/shader/builtin_mesh_opaque.shader")
 shader_default : Shader
 
-@(load="dude.png")
+@(load="res/texture/dude.png")
 dude_logo :: Texture{
     scale = 1.0,
     tint = color_white,
@@ -15,6 +18,7 @@ dude_logo :: Texture{
 mat_default := Material {
     shader = shader_default,
 }
+
 mat_ext := Material {
     shader = extends.shader_default,
 }

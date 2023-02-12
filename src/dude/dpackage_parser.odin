@@ -13,59 +13,10 @@ import "core:odin/printer"
 import "core:odin/tokenizer"
 import "core:os"
 
-meta_pac_test :: proc() {
-    if true do return
-    psr : parser.Parser
-    // psr.err = nil
-    // psr.warn = nil
-
-    log.debugf("-----------parse src------------")
-
-    file := parse_src(&psr, `
-        package builtin
-
-        @private
-        color_white :: Color{ 1, 1, 1, 1 }
-
-        @(load="shader/builtin_mesh_opaque.shader")
-        shader_default : Shader
-
-        @(load="dude.png")
-        dude_logo :: Texture{
-            scale = 1.0,
-            tint = color_white,
-        }
-
-        mat_default := Material {
-            shader = shader_default,
-        }
-        mat_ext := Material {
-            shader = extends.shader_default,
-        }
-    `)
-
-    file_node, ok := file.node.derived.(^ast.File)
-    if ok {
-        log.debugf("Package name: {}", file_node.pkg_name)
-
-        dpac := generate_package(file_node)
-        sb : strings.Builder
-        strings.builder_init(&sb)
-        defer strings.builder_destroy(&sb)
-
-        for v in dpac.values {
-            list_dpac_value(&sb, v)
-            strings.write_rune(&sb, '\n')
-        }
-        log.debugf("\n{}\n", strings.to_string(sb))
-    }
-}
-
-
-DPackage :: struct {
+DPacMeta :: struct {
     name : strings.Builder,
     identifiers : map[string]int,
-    values : [dynamic]^DPacValue,
+    values : [dynamic]DPacValue,
 }
 
 DPacValue :: struct {
@@ -74,10 +25,9 @@ DPacValue :: struct {
     value : union {
         DPacRef,    // reference
         DPacLiteral,// literal
-        ^DPacObject,  // field - value pair
+        DPacObject,  // field - value pair
     },
 
-    // attributes
     using attributes : DPacValueAttribute,
 }
 DPacValueAttribute :: struct {
@@ -94,118 +44,128 @@ DPacRef :: struct {
 DPacObject :: struct {
     type   : string,
     fields : []string,
-    values : []^DPacValue,
+    values : []DPacValue,
 }
 
-list_dpac_value :: proc(sb: ^strings.Builder, v: ^DPacValue, ite:=0) {
-    using strings
-    tab_builder : Builder
-    builder_init(&tab_builder)
-    defer builder_destroy(&tab_builder)
-    for i in 0..=ite + 1 do write_string(&tab_builder, "  ")
-    tab := to_string(tab_builder)
+// list_dpac_value :: proc(sb: ^strings.Builder, v: ^DPacValue, ite:=0) {
+//     using strings
+//     tab_builder : Builder
+//     builder_init(&tab_builder)
+//     defer builder_destroy(&tab_builder)
+//     for i in 0..=ite + 1 do write_string(&tab_builder, "  ")
+//     tab := to_string(tab_builder)
 
-    write_string(sb, fmt.tprintf("{}#{}({})", tab, v.name, v.type))
-    if v.load_path != "" {
-        write_string(sb, "<<")
-        write_string(sb, v.load_path)
-    }
+//     write_string(sb, fmt.tprintf("{}#{}({})", tab, v.name, v.type))
+//     if v.load_path != "" {
+//         write_string(sb, "<<")
+//         write_string(sb, v.load_path)
+//     }
 
-    #partial switch vtype in v.value {
-    case DPacRef:
-        ref := v.value.(DPacRef)
-        if ref.pac == "" {
-            write_string(sb, fmt.tprintf(">[this.{}]\n", ref.name))
-        } else {
-            write_string(sb, fmt.tprintf(">[{}.{}]\n", ref.pac, ref.name))
-        }
-    case DPacLiteral:
-        lit := v.value.(DPacLiteral)
-        write_string(sb, fmt.tprintf(" {}\n", lit))
-    case ^DPacObject:
-        write_rune(sb, '\n')
-        data := v.value.(^DPacObject)
-        for i in 0..<len(data.values) {
-            subvalue := data.values[i]
-            list_dpac_value(sb, subvalue, ite + 1)
-        }
-    }
-}
+//     if v.value == nil {
+//         write_rune(sb, '\n')
+//         return
+//     } 
 
-generate_package_from_source :: proc(source: string) -> ^DPackage {
+//     #partial switch vtype in v.value {
+//     case DPacRef:
+//         ref := v.value.(DPacRef)
+//         if ref.pac == "" {
+//             write_string(sb, fmt.tprintf(">[this.{}]\n", ref.name))
+//         } else {
+//             write_string(sb, fmt.tprintf(">[{}.{}]\n", ref.pac, ref.name))
+//         }
+//     case DPacLiteral:
+//         lit := v.value.(DPacLiteral)
+//         write_string(sb, fmt.tprintf(" {}\n", lit))
+//     case DPacObject:
+//         write_rune(sb, '\n')
+//         data := v.value.(DPacObject)
+//         for i in 0..<len(data.values) {
+//             subvalue := data.values[i]
+//             list_dpac_value(sb, &subvalue, ite + 1)
+//         }
+//     }
+// }
+
+generate_package_from_source :: proc(source: string) -> ^DPacMeta {
     psr : parser.Parser
-    file := parse_src(&psr, source)
+    file := parse_src(&psr, source, runtime.default_allocator())
     file_node, ok := file.node.derived.(^ast.File)
     if ok {
         dpac := generate_package(file_node)
         return dpac
     }
+    free(file)
     return nil
 }
 
-generate_package :: proc(file: ^ast.File) -> ^DPackage {
-    dpac := new (DPackage)
+generate_package :: proc(file: ^ast.File) -> ^DPacMeta {
+    dpac := new (DPacMeta)
     strings.builder_init(&dpac.name)
     strings.write_string(&dpac.name, file.pkg_name)
 
-    dpac.values = make([dynamic]^DPacValue, 0, 512)
+    dpac.values = make([dynamic]DPacValue, 0, 512)
+
+    log.debugf("stmts count: {}", len(file.decls))
     for stmt in file.decls {
         decl, ok := stmt.derived_stmt.(^ast.Value_Decl)
         if ok {
+            log.debugf("is value decl")
             values := generate_value_decl(dpac, decl)
             for v in values {
                 append(&dpac.values, v)
             }
         } else {
-            log.errorf("Invalid statement in dpackage odin. {}", stmt)
+            log.errorf("Invalid statement in DPacMeta odin. {}", stmt)
         }
     }
     return dpac
 }
-generate_value_decl :: proc(dpac: ^DPackage, decl: ^ast.Value_Decl) -> []^DPacValue {
+generate_value_decl :: proc(dpac: ^DPacMeta, decl: ^ast.Value_Decl) -> []DPacValue {
     count  := len(decl.names)
     attributes := decl.attributes
 
-    values := make([]^DPacValue, count)
+    values := make([]DPacValue, count)
+    // log.debugf("{} value decls parsed.", count)
     for i in 0..<count {
-        value : ^DPacValue
+        value : DPacValue
         if decl.type != nil {
-            value = new(DPacValue)
             value.name = decl.names[i].derived_expr.(^ast.Ident).name
-             value.type = decl.type.derived_expr.(^ast.Ident).name
+            value.type = decl.type.derived_expr.(^ast.Ident).name
             value.value = nil
         } else {
             value_decl := decl.values[i]
             value = generate_value(dpac, value_decl)
             value.name = decl.names[i].derived_expr.(^ast.Ident).name
         }
-        values[i] = value
-        {// check attributes
-            for atb in attributes {
-                atb_kind, atb_value : string
-                for elem in atb.elems {
-                    #partial switch vtype in elem.derived_expr {
-                    case ^ast.Ident:
-                        ident := elem.derived_expr.(^ast.Ident)
-                        atb_kind = ident.name
-                    case ^ast.Field_Value:
-                        field_value_pair := elem.derived_expr.(^ast.Field_Value)
-                        field := field_value_pair.field.derived_expr.(^ast.Ident)
-                        value := field_value_pair.value.derived.(^ast.Basic_Lit)
-                        atb_kind = field.name
-                        atb_value = value.tok.text
+        values[i] = value // insert the value
+    }
+    for value in &values { // check attributes
+        for atb in attributes {
+            atb_kind, atb_value : string
+            for elem in atb.elems {
+                #partial switch vtype in elem.derived_expr {
+                case ^ast.Ident:
+                    ident := elem.derived_expr.(^ast.Ident)
+                    atb_kind = ident.name
+                case ^ast.Field_Value:
+                    field_value_pair := elem.derived_expr.(^ast.Field_Value)
+                    field_node := field_value_pair.field.derived_expr.(^ast.Ident)
+                    value_node := field_value_pair.value.derived.(^ast.Basic_Lit)
+                    atb_kind = field_node.name
+                    atb_text := value_node.tok.text
+                    atb_value = atb_text[1:len(atb_text) - 1]
+                }
+                // attributes
+                switch atb_kind {
+                case "private":
+                    value.is_private = true
+                case "load":
+                    if atb_value != "" {
+                        value.load_path = atb_value
                     }
-                    // attributes
-                    switch atb_kind {
-                    case "private":
-                        value.is_private = true
-                    case "load":
-                        if atb_value != "" {
-                            value.load_path = atb_value
-                        }
-                    case:
-                        panic("Unknown attribute in dpackage.")
-                    }
+                case:
+                    panic("Unknown attribute in DPacMeta.")
                 }
             }
         }
@@ -213,8 +173,8 @@ generate_value_decl :: proc(dpac: ^DPackage, decl: ^ast.Value_Decl) -> []^DPacVa
     return values
 }
 
-generate_value :: proc(dpac: ^DPackage, expr : ^ast.Expr) -> ^DPacValue {
-    value := new(DPacValue)
+generate_value :: proc(dpac: ^DPacMeta, expr : ^ast.Expr) -> DPacValue {
+    value : DPacValue
     #partial switch vtype in expr.derived_expr {
     case ^ast.Comp_Lit:
         comp_lit := generate_data(dpac, expr.derived_expr.(^ast.Comp_Lit))
@@ -248,13 +208,14 @@ generate_value :: proc(dpac: ^DPackage, expr : ^ast.Expr) -> ^DPacValue {
     return value
 }
 
-generate_data :: proc(dpac: ^DPackage, complit: ^ast.Comp_Lit) -> ^DPacObject {
-    comp := new (DPacObject)
+generate_data :: proc(dpac: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPacObject {
+    // comp := new (DPacObject)
+    comp : DPacObject
     type := complit.type.derived_expr.(^ast.Ident)
     comp.type = type.name
     count := len(complit.elems)
     comp.fields = make([]string, count)
-    comp.values = make([]^DPacValue, count)
+    comp.values = make([]DPacValue, count)
     for elem, ind in complit.elems {
         #partial switch vtype in elem.derived_expr {
         case ^ast.Field_Value:
@@ -266,7 +227,7 @@ generate_data :: proc(dpac: ^DPackage, complit: ^ast.Comp_Lit) -> ^DPacObject {
             comp.values[ind] = value
         case ^ast.Basic_Lit:
             tok := elem.derived_expr.(^ast.Basic_Lit).tok
-            value := new(DPacValue)
+            value : DPacValue
             value.type = reflect.enum_string(tok.kind)
             value.value = get_literal(&tok)
             value.name = ""
@@ -298,15 +259,14 @@ get_literal :: proc(tok : ^tokenizer.Token) -> DPacLiteral {
 
 
 // ## Parse tool.
-
-parse_src :: proc(p: ^parser.Parser, src: string) -> ^ast.File {
+parse_src :: proc(p: ^parser.Parser, src: string, allocator := context.allocator) -> ^ast.File {
+    context.allocator = allocator
     NO_POS :: tokenizer.Pos{}
     file := ast.new(ast.File, NO_POS, NO_POS)
     file.pkg = nil
     file.src = string(src)
     file.fullpath = "---"
     if parse_file(p, file) {
-        free(file)
         return file
     }
     return nil

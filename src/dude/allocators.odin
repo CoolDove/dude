@@ -2,6 +2,7 @@ package dude
 
 import "core:mem"
 import "core:log"
+import "core:runtime"
 
 
 @(private="file")
@@ -26,6 +27,7 @@ frame_buffer : [frame_arena_size] byte
 DudeAllocators :: struct {
     debug_arena, level_arena, frame_arena : mem.Arena,
     debug, level, frame : mem.Allocator,
+    default : mem.Allocator,
 }
 
 allocators : DudeAllocators
@@ -40,6 +42,8 @@ allocators_init :: proc() {
 
     mem.arena_init(&allocators.frame_arena, frame_buffer[:])
     allocators.frame = mem.arena_allocator(&allocators.frame_arena)
+
+    allocators.default = runtime.default_allocator()
 
     // mem.arena_init(&allocators.level_arena, level_buffer[:])
     // allocators.level = mem.arena_allocator(&allocators.level_arena)

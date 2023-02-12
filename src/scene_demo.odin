@@ -9,24 +9,18 @@ import "dude/ecs"
 
 scene_demo := dude.Scene { test_scene_loader, test_scene_update, test_scene_unloader }
 
+demo_dpackage : ^dude.DPackage
+
 @(private="file")
 test_scene_loader :: proc(world: ^ecs.World) {
     using dude
     using ecs
 
-    {// load dpackage
-        pac, ok := dpackage_init("res/test_demo.dpackage")
-        if ok {
-            sb : strings.Builder
-            strings.builder_init(&sb)
-            defer strings.builder_destroy(&sb)
-           
-            for v in pac.values {
-                list_dpac_value(&sb, v)
-            }
-        } else {
-            log.errorf("Failed to load dpackage")
-        }
+    {// load DPacMeta
+        pac, ok := dpac_init("res/test_demo.dpacodin")
+        dpac_load(pac)
+        demo_dpackage = pac
+        log.debugf("data in package: {}", pac.data)
     }
     
     {// Res load
@@ -78,13 +72,19 @@ test_scene_update :: proc(world: ^ecs.World) {
     wnd_size := game.window.size
     screen_center := Vec2{cast(f32)wnd_size.x, cast(f32)wnd_size.y} * 0.5
 
-    color := COLORS.WHITE
-    color.w = alpha
+    color := auto_cast dpac_query(demo_dpackage, "color_yellow", Color)
 
-    dude.immediate_text(inkfree, text, 
-        {screen_center.x - text_width * 0.5, screen_center.y},
-        COLORS.RED,
-    )
+    if color != nil {
+        dude.immediate_text(inkfree, text, 
+            {screen_center.x - text_width * 0.5, screen_center.y},
+            color^,
+        )
+    } else {
+        dude.immediate_text(inkfree, text, 
+            {screen_center.x - text_width * 0.5, screen_center.y},
+            COLORS.RED,
+        )
+    }
 
     if !start_triggered {
         if get_key_down(.RETURN) {
@@ -95,7 +95,7 @@ test_scene_update :: proc(world: ^ecs.World) {
             for sp in &sprites do sp.enable = false
         }
     } else {
-        immediate_quad(0, {cast(f32)wnd_size.x, cast(f32)wnd_size.y}, color)
+        immediate_quad(0, {cast(f32)wnd_size.x, cast(f32)wnd_size.y}, color^)
     }
 
 }
