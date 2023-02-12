@@ -95,7 +95,9 @@ test_scene_update :: proc(world: ^ecs.World) {
             for sp in &sprites do sp.enable = false
         }
     } else {
-        immediate_quad(0, {cast(f32)wnd_size.x, cast(f32)wnd_size.y}, color^)
+        curtain_color := color^
+        curtain_color.a = alpha
+        immediate_quad(0, {cast(f32)wnd_size.x, cast(f32)wnd_size.y}, curtain_color)
     }
 
 }
