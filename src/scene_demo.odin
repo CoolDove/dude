@@ -20,7 +20,7 @@ test_scene_loader :: proc(world: ^ecs.World) {
         pac, ok := dpac_init("res/test_demo.dpacodin")
         dpac_load(pac)
         demo_dpackage = pac
-        log.debugf("data in package: {}", pac.data)
+        // log.debugf("data in package: {}", pac.data)
     }
     
     {// Res load
@@ -85,6 +85,10 @@ test_scene_update :: proc(world: ^ecs.World) {
             COLORS.RED,
         )
     }
+
+    dude.immediate_texture(
+        {100, 100}, {64, 64}, COLORS.WHITE, 
+        dpac_query(demo_dpackage, "dude_logo", Texture).id)
 
     if !start_triggered {
         if get_key_down(.RETURN) {

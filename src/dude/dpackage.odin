@@ -6,6 +6,8 @@ import "core:strings"
 import "core:fmt"
 import "core:path/filepath"
 
+import "dgl"
+
 // Parse a dpackage script, create a `DPackage`. For resource management.
 dpac_init :: proc(path: string, allocator:= context.allocator) -> (^DPackage, bool) {
     context.allocator = allocator
@@ -19,6 +21,14 @@ dpac_init :: proc(path: string, allocator:= context.allocator) -> (^DPackage, bo
             pac := new(DPackage)
             pac.meta = meta
             pac.data = make(map[ResKey]rawptr)
+            if filepath.is_abs(path) {
+                pac.path = filepath.dir(path)
+            } else {
+                abs, _ := filepath.abs(path, context.temp_allocator)
+                pac.path = filepath.dir(abs)
+            }
+            log.debugf("DPac: Load package from: {} : [{}]", pac.path, filepath.base(path))
+            
             return pac, true
         } else {
             return nil, false
@@ -35,13 +45,49 @@ dpac_init_from_source :: proc(source: string, allocator:= context.allocator) -> 
     return dpac, true
 }
 
+dpac_release :: proc(dpac: ^DPackage) {
+    // ## release the resources
+    // ...
+
+    // ## release the meta
+    {
+        meta := dpac.meta
+        delete(meta.identifiers)
+        strings.builder_destroy(&meta.name)
+        for value in &meta.values {
+            dpac_release_value(&value)
+        }
+    }
+}
+dpac_release_value :: proc(value: ^DPacObject) {
+    if value.name != "" do delete(value.name)
+    if value.load_path != "" do delete(value.load_path)
+    switch vtype in value.value {
+    case DPacRef:
+        ref := value.value.(DPacRef)
+        if ref.name != "" do delete(ref.name)
+        if ref.pac != "" do delete(ref.pac)
+    case DPacLiteral:
+        lit := value.value.(DPacLiteral)
+        if text, ok := lit.(string); ok && text != "" {
+            delete(text)
+        }
+    case DPacInitializer:
+        ini := value.value.(DPacInitializer)
+        for field in &ini.fields {
+            if !ini.anonymous && field.field != "" do delete(field.field)
+            dpac_release_value(&field.value)
+        }
+    }
+}
+
 // To add a resource type with a `loader` process,
-// which creates a resource object from a `DPacValue`.
+// which creates a resource object from a `DPacObject`.
 dpac_register_loader :: proc(type: typeid, loader: DPacResLoader) {
     // TODO
 }
 
-DPacResLoader :: proc(value:^DPacValue) -> rawptr
+DPacResLoader :: proc(value:^DPacObject) -> rawptr
 
 @(private="file")
 dpac_resource_loaders : map[typeid]DPacResLoader
@@ -54,20 +100,21 @@ dpac_load :: proc(dpac: ^DPackage) {
     }
 }
 
-dpac_load_value :: proc(dpac: ^DPackage, value: ^DPacValue) -> rawptr {
+dpac_load_value :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
     the_data : rawptr
-
     switch value.type {
     case "Color":
         the_data = builtin_loader_color(dpac, value)
     case "Shader":
         the_data = builtin_loader_shader(dpac, value)
+    case "Texture":
+        the_data = builtin_loader_texture(dpac, value)
     case:
         log.errorf("DPac: Unknown resource type: {}", value.type)
         return nil
     }
 
-    if the_data != nil {
+    if the_data != nil && value.name != "" {
         map_insert(&dpac.data, res_key(value.name), the_data)
     } else {
         log.errorf("DPac: Failed to load resource {} for unknown reason.", value.name)
@@ -99,27 +146,28 @@ dpac_destroy :: proc(dpac: ^DPackage) {
     delete(dpac.data)
 }
 
-builtin_loader_color :: proc(dpac: ^DPackage, value: ^DPacValue) -> rawptr {
+builtin_loader_color :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
     name := value.name
-    obj, ok := value.value.(DPacObject)
+    ini, ok := value.value.(DPacInitializer)
     if ok {
         color := new(Color)
-        for i in 0..<len(obj.values) {
-            v, ok := obj.values[i].value.(DPacLiteral).(f32)
-            if !ok do v = cast(f32)obj.values[i].value.(DPacLiteral).(i32)
+        for i in 0..<len(ini.fields) {
+            v, ok := ini.fields[i].value.value.(DPacLiteral).(f32)
+            if !ok do v = cast(f32)ini.fields[i].value.value.(DPacLiteral).(i32)
             color[i] = v
         }
-        dpac.data[res_key(name)] = color
         return color
     }
     return nil
 }
 
-builtin_loader_shader :: proc(dpac: ^DPackage, value: ^DPacValue) -> rawptr {
-    path := value.load_path
+builtin_loader_shader :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
+    path := dpac_path_convert(dpac, value.load_path)
+    defer delete(path)
     if !os.is_file(path) {
         panic(fmt.tprintf("Invalid filepath: {}", path))
     }
+    log.debugf("DPac: Load shader from: {}", path)
     source, ok := os.read_entire_file_from_filename(path)
     if !ok { return nil }
     id := dshader_load_from_source(cast(string)source)
@@ -133,7 +181,37 @@ builtin_loader_shader :: proc(dpac: ^DPackage, value: ^DPacValue) -> rawptr {
     return shader
 }
 
+builtin_loader_texture :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
+    path := dpac_path_convert(dpac, value.load_path)
+    defer delete(path)
+    if !os.is_file(path) {
+        panic(fmt.tprintf("Invalid filepath: {}", path))
+    }
+    log.debugf("DPac: Load texture from : {}", path)
+
+    tex := dgl.texture_load(path)
+    if tex.id == 0 do return nil
+    ptex := new(Texture)
+    ptex^ = Texture{
+        size = tex.size,
+        id = tex.id,
+    }
+
+    return cast(rawptr)ptex
+}
+
+dpac_path_convert :: proc(dpac: ^DPackage, path: string, allocator := context.allocator) -> string {
+    context.allocator = allocator
+    if filepath.is_abs(path) do return strings.clone(path)
+    else do return filepath.join({ dpac.path, path })
+}
+
+dpac_debug_log :: proc(dpac: ^DPackage) {
+
+}
+
 DPackage :: struct {
     meta : ^DPacMeta,
     data : map[ResKey]rawptr,
+    path : string,
 }
