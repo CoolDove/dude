@@ -58,6 +58,9 @@ dpac_release :: proc(dpac: ^DPackage) {
             dpac_release_value(&value)
         }
     }
+
+    free(dpac.meta)
+    delete(dpac.data)
 }
 dpac_release_value :: proc(value: ^DPacObject) {
     if value.name != "" do delete(value.name)
@@ -139,11 +142,6 @@ dpac_query_key :: proc(dpac: ^DPackage, key:  ResKey, $T: typeid) -> ^T {
     data, ok := dpac.data[key]
     if ok do return transmute(^T)data
     else do return nil
-}
-
-dpac_destroy :: proc(dpac: ^DPackage) {
-    free(dpac.meta)
-    delete(dpac.data)
 }
 
 builtin_loader_color :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {

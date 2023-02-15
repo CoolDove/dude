@@ -1,7 +1,10 @@
 package builtin
 
 @private
-color_yellow :: Color{ 1, 1, 0, 1 }
+color_text :: Color{ 0, .1, 0.2, 1 }
+
+@private
+color_yellow :: Color{ 0, .6, 0.8, 1 }
 
 @private
 color_white :: Color{ 1, 1, 1, 1 }
@@ -19,41 +22,3 @@ mat_default := Material {
 mat_ext := Material {
     shader = extends.shader_default,
 }
-
-
-/*
-
-Maybe i should use a simpler syntax to define the package and parse it by myself.
-
-Like:
-
-Package: builtin
-
-
-Color: white { 1, 1, 1, 1 }
-Color: black { 0, 0, 0, 1 }
-Color: red   { 1, 0, 0, 1 }
-Color: green { 0, 1, 0, 1 }
-Color: blue  { 0, 0, 1, 1 }
-
-[load:"shader/builtin_mesh_opaque.shader", private]
-Shader: shader_default 
-
--- complex object
-[load:"texture/dude.png"]
-Texture: dude_logo {
-    filter_min = linear
-    filter_mag = linear
-    mutable = false
-}
-
-mat_general: Material {
-    shader  = shader_default
-    diffuse = Texture[load:"texture/dude.png"]:{
-        filter_min = linear
-        filter_mag = linear
-        mutable = false}
-    tint = white
-}
-
-*/

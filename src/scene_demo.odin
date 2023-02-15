@@ -72,7 +72,7 @@ test_scene_update :: proc(world: ^ecs.World) {
     wnd_size := game.window.size
     screen_center := Vec2{cast(f32)wnd_size.x, cast(f32)wnd_size.y} * 0.5
 
-    color := auto_cast dpac_query(demo_dpackage, "color_yellow", Color)
+    color := auto_cast dpac_query(demo_dpackage, "color_text", Color)
 
     if color != nil {
         dude.immediate_text(inkfree, text, 
@@ -113,6 +113,7 @@ start_game :: proc(nothing:rawptr=nil) {
 
 @(private="file")
 test_scene_unloader :: proc(world: ^ecs.World) {
+    dude.dpac_release(demo_dpackage)
     dude.res_unload_texture("texture/box.png")
     dude.res_unload_font("font/inkfree.ttf")
 }

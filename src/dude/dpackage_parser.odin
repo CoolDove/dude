@@ -96,7 +96,6 @@ generate_value_decl :: proc(dpac: ^DPacMeta, decl: ^ast.Value_Decl) -> DPacObjec
         value.name = strings.clone(name_str)
         value.type = strings.clone(decl.type.derived_expr.(^ast.Ident).name)
         value.value = nil
-        log.debugf("Parsing value decl with a type: {}", value.type)
     } else {
         value_decl := decl.values[0]
         value = generate_value(dpac, value_decl)
