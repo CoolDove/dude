@@ -1,4 +1,4 @@
-﻿package dude
+﻿package dpac
 
 import "core:log"
 import "core:os"
@@ -7,14 +7,20 @@ import "core:fmt"
 import "core:mem"
 import "core:runtime"
 import "core:reflect"
+import "core:hash"
 import "core:path/filepath"
 
-import "dgl"
+import "../dgl"
 
 DPacResLoader :: proc(value:^DPacObject) -> rawptr
 
 @(private="file")
 dpac_resource_loaders : map[typeid]DPacResLoader
+
+DPacKey :: distinct u64
+dpac_key :: proc(name:string) -> DPacKey {
+    return cast(DPacKey)hash.crc64_xz(raw_data(name)[:len(name)])
+}
 
 dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> rawptr {
     the_data : rawptr
@@ -29,7 +35,7 @@ dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> rawptr {
 
     if the_data != nil {
         if obj.name != "" {
-            map_insert(&dpac.data, res_key(obj.name), the_data)
+            map_insert(&dpac.data, dpac_key(obj.name), the_data)
             log.debugf("DPac: Load value [{}]: {}", obj.name, the_data)
         } else {
             log.debugf("DPac: Load anonymous value: {}", the_data)
@@ -41,7 +47,6 @@ dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> rawptr {
 
     return the_data
 }
-
 
 load_literal :: proc(obj: ^DPacObject) -> rawptr {
     lit := obj.value.(DPacLiteral)
@@ -165,55 +170,56 @@ load_initializer_anonymous :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype
 }
 
 builtin_loader_color :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
-    name := value.name
-    ini, ok := value.value.(DPacInitializer)
-    if ok {
-        color := new(Color)
-        for i in 0..<len(ini.fields) {
-            v, ok := ini.fields[i].value.value.(DPacLiteral).(f32)
-            if !ok do v = cast(f32)ini.fields[i].value.value.(DPacLiteral).(i32)
-            color[i] = v
-        }
-        return color
-    }
+    // name := value.name
+    // ini, ok := value.value.(DPacInitializer)
+    // if ok {
+    //     color := new(Color)
+    //     for i in 0..<len(ini.fields) {
+    //         v, ok := ini.fields[i].value.value.(DPacLiteral).(f32)
+    //         if !ok do v = cast(f32)ini.fields[i].value.value.(DPacLiteral).(i32)
+    //         color[i] = v
+    //     }
+    //     return color
+    // }
     return nil
 }
 
 builtin_loader_shader :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
-    path := dpac_path_convert(dpac, value.load_path)
-    defer delete(path)
-    if !os.is_file(path) {
-        panic(fmt.tprintf("Invalid filepath: {}", path))
-    }
-    log.debugf("DPac: Load shader from: {}", path)
-    source, ok := os.read_entire_file_from_filename(path)
-    if !ok { return nil }
-    id := dshader_load_from_source(cast(string)source)
-    delete(source)
+    // path := dpac_path_convert(dpac, value.load_path)
+    // defer delete(path)
+    // if !os.is_file(path) {
+    //     panic(fmt.tprintf("Invalid filepath: {}", path))
+    // }
+    // log.debugf("DPac: Load shader from: {}", path)
+    // source, ok := os.read_entire_file_from_filename(path)
+    // if !ok { return nil }
+    // id := dshader_load_from_source(cast(string)source)
+    // delete(source)
 
-    if id == 0 { return nil }
+    // if id == 0 { return nil }
 
-    shader := new(DShader)
-    shader.id = id
+    // shader := new(DShader)
+    // shader.id = id
 
-    return shader
+    // return shader
+    return nil
 }
 
 builtin_loader_texture :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
-    path := dpac_path_convert(dpac, value.load_path)
-    defer delete(path)
-    if !os.is_file(path) {
-        panic(fmt.tprintf("Invalid filepath: {}", path))
-    }
-    log.debugf("DPac: Load texture from : {}", path)
+    // path := dpac_path_convert(dpac, value.load_path)
+    // defer delete(path)
+    // if !os.is_file(path) {
+    //     panic(fmt.tprintf("Invalid filepath: {}", path))
+    // }
+    // log.debugf("DPac: Load texture from : {}", path)
 
-    tex := dgl.texture_load(path)
-    if tex.id == 0 do return nil
-    ptex := new(Texture)
-    ptex^ = Texture{
-        size = tex.size,
-        id = tex.id,
-    }
-
-    return cast(rawptr)ptex
+    // tex := dgl.texture_load(path)
+    // if tex.id == 0 do return nil
+    // ptex := new(Texture)
+    // ptex^ = Texture{
+    //     size = tex.size,
+    //     id = tex.id,
+    // }
+    // return cast(rawptr)ptex
+    return nil
 }

@@ -1,4 +1,5 @@
-package dude
+//+private
+package dpac
 
 import "core:odin/parser"
 import "core:odin/ast"
@@ -13,10 +14,7 @@ import "core:odin/printer"
 import "core:odin/tokenizer"
 import "core:os"
 
-types := map[string]typeid {
-    "Texture" = Texture,
-    "Shader" = DShader,
-}
+types := map[string]typeid { }
 
 DPacMeta :: struct {
     name : strings.Builder,

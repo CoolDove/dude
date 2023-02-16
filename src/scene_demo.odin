@@ -7,10 +7,11 @@ import "core:math/linalg"
 
 import "dude"
 import "dude/ecs"
+import "dude/dpac"
 
 scene_demo := dude.Scene { test_scene_loader, test_scene_update, test_scene_unloader }
 
-demo_dpackage : ^dude.DPackage
+demo_dpackage : ^dpac.DPackage
 
 Dove :: struct {
     name : string,
@@ -25,6 +26,7 @@ test_scene_loader :: proc(world: ^ecs.World) {
     using ecs
 
     {// load DPacMeta
+        using dpac
         dpac_register_asset("Dove", Dove, nil)
         pac, ok := dpac_init("res/test_demo.dpacodin")
         dpac_load(pac)
@@ -107,6 +109,7 @@ test_scene_update :: proc(world: ^ecs.World) {
     @static allocated := false
 
     if get_key_down(.K) {
+        using dpac
         log.debugf("global_name: {}", dpac_query(demo_dpackage, "global_name", string)^)
         log.debugf("global_f32: {}", dpac_query(demo_dpackage, "global_f32", f32)^)
         log.debugf("global_i32: {}", dpac_query(demo_dpackage, "global_i32", i32)^)
@@ -136,7 +139,8 @@ start_game :: proc(nothing:rawptr=nil) {
 
 @(private="file")
 test_scene_unloader :: proc(world: ^ecs.World) {
-    dude.dpac_destroy(demo_dpackage)
+    using dpac
+    dpac_destroy(demo_dpackage)
     // dude.res_unload_texture("texture/box.png")
     // dude.res_unload_font("font/inkfree.ttf")
 }

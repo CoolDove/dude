@@ -18,6 +18,7 @@ when DUDE_IMGUI do import "pac:imgui"
 
 import "dgl"
 import "ecs"
+import "dpac"
 
 @private
 registered_scenes : map[string]Scene
@@ -126,8 +127,8 @@ init_game :: proc() {
     using dgl
     allocators_init()
 
-    dpac_install(&allocators.default)
-    dpac_register_asset("Color", Color, nil)
+    dpac.dpac_install(&allocators.default)
+    dpac.dpac_register_asset("Color", Color, nil)
 
 
     game.settings = new(GameSettings)

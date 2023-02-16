@@ -1,4 +1,4 @@
-﻿package dude
+﻿package dpac
 
 import "core:log"
 import "core:os"
@@ -9,11 +9,11 @@ import "core:runtime"
 import "core:reflect"
 import "core:path/filepath"
 
-import "dgl"
+import "../dgl"
 
 DPackage :: struct {
     meta : ^DPacMeta,
-    data : map[ResKey]rawptr,
+    data : map[DPacKey]rawptr,
     path : string,
     loaded : bool,
     // mem
@@ -88,7 +88,7 @@ dpac_uninstall :: proc() {
 
 // Parse a dpackage script, create a `DPackage`. For resource management.
 dpac_init :: proc(path: string) -> (^DPackage, bool) {
-    context.allocator = allocators.default
+    context.allocator = dpac_default_allocator^
     data, ok := os.read_entire_file(path)
     defer delete(data)
 
@@ -119,7 +119,7 @@ dpac_init :: proc(path: string) -> (^DPackage, bool) {
 }
 
 dpac_alloc_storage :: proc(using storage: ^DPackageStorage, size : int) -> mem.Allocator_Error  {
-    context.allocator = allocators.default
+    context.allocator = dpac_default_allocator^
     err : mem.Allocator_Error
     buffer, err = mem.alloc_bytes(size)
     mem.arena_init(&arena, buffer)
@@ -127,12 +127,12 @@ dpac_alloc_storage :: proc(using storage: ^DPackageStorage, size : int) -> mem.A
     return err
 }
 dpac_free_storage :: proc(using dpacstore : ^DPackageStorage) {
-    context.allocator = allocators.default
+    context.allocator = dpac_default_allocator^
     mem.free_bytes(buffer)
 }
 
 dpac_init_from_source :: proc(dpac: ^DPackage, source: string) -> (^DPacMeta, bool) {
-    context.allocator = allocators.default
+    context.allocator = dpac_default_allocator^
     if len(dpac.meta_storage.buffer) == 0 {
         log.errorf("DPac: DPac's meta storage is not allocated, cannot generate.")
         return nil, false
@@ -143,7 +143,7 @@ dpac_init_from_source :: proc(dpac: ^DPackage, source: string) -> (^DPacMeta, bo
 }
 
 dpac_destroy :: proc(dpac: ^DPackage) {
-    context.allocator = allocators.default
+    context.allocator = dpac_default_allocator^
     // ## release the resources
     // ...
     dpac_unload(dpac)
@@ -154,11 +154,11 @@ dpac_destroy :: proc(dpac: ^DPackage) {
 }
 
 dpac_load :: proc(dpac: ^DPackage) {
-    context.allocator = allocators.default
+    context.allocator = dpac_default_allocator^
     dpac_alloc_storage(&dpac.pac_storage, 10 * 1024 * 1024)
     context.allocator = dpac.pac_storage.allocator
     meta := dpac.meta
-    dpac.data = make(map[ResKey]rawptr)
+    dpac.data = make(map[DPacKey]rawptr)
     values := meta.values
     for value in &values {
         dpac_load_value(dpac, &value)
@@ -174,7 +174,7 @@ dpac_load :: proc(dpac: ^DPackage) {
 
 dpac_unload :: proc(using dpac: ^DPackage) {
     if loaded {
-        context.allocator = allocators.default
+        context.allocator = dpac_default_allocator^
         dpac_free_storage(&dpac.pac_storage)
         loaded = false
     }
@@ -185,9 +185,9 @@ dpac_query :: proc {
     dpac_query_name,
 }
 dpac_query_name :: proc(dpac: ^DPackage, name: string, $T: typeid) -> ^T {
-    return dpac_query_key(dpac, res_key(name), T)
+    return dpac_query_key(dpac, dpac_key(name), T)
 }
-dpac_query_key :: proc(dpac: ^DPackage, key:  ResKey, $T: typeid) -> ^T {
+dpac_query_key :: proc(dpac: ^DPackage, key: DPacKey, $T: typeid) -> ^T {
     assert(dpac != nil, "Invalid dpackage pointer.")
     data, ok := dpac.data[key]
     if ok do return transmute(^T)data

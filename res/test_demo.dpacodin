@@ -12,7 +12,6 @@ dove_test := Dove{
     "Dove",
     23,
     "chaos",
-    global_f32,
 }
 
 // @private
