@@ -24,16 +24,16 @@ DPacMeta :: struct {
     values : [dynamic]DPacObject,
 }
 
-// ** All the string in these structs should be manually deleted.
 DPacObject :: struct {
     name  : string,
     type  : string,
-    value : union {
-        DPacRef,    // reference
-        DPacLiteral,// literal
-        DPacInitializer,  // field - value pair
-    },
+    value : DPacValue,
     using attributes : DPacObjectAttribute,
+}
+DPacValue :: union {
+    DPacRef,    // reference
+    DPacLiteral,// literal
+    DPacInitializer,  // field - value pair
 }
 DPacObjectAttribute :: struct {
     load_path : string,
@@ -54,36 +54,37 @@ DPacFields :: struct {
     value : DPacObject,
 }
 
-generate_package_from_source :: proc(source: string) -> ^DPacMeta {
+dpac_gen_meta_from_source :: proc(dpac: ^DPackage, source: string) -> ^DPacMeta {
+    context.allocator = dpac.meta_storage.allocator
     psr : parser.Parser
-    file := parse_src(&psr, source, runtime.default_allocator())
+    file := parse_src(&psr, source)
     file_node, ok := file.node.derived.(^ast.File)
     if ok {
-        dpac := generate_package(file_node)
-        return dpac
+        meta := dpac_gen_meta(dpac, file_node)
+        return meta
     }
-    free(file)
     return nil
 }
 
-generate_package :: proc(file: ^ast.File) -> ^DPacMeta {
-    dpac := new (DPacMeta)
-    strings.builder_init(&dpac.name)
-    strings.write_string(&dpac.name, file.pkg_name)
-    dpac.values = make([dynamic]DPacObject, 0, 512)
+dpac_gen_meta :: proc(dpac: ^DPackage, file: ^ast.File) -> ^DPacMeta {
+    dpacmeta := new (DPacMeta)
+    strings.builder_init(&dpacmeta.name)
+    strings.write_string(&dpacmeta.name, file.pkg_name)
+    dpacmeta.values = make([dynamic]DPacObject, 0, 512)
+
     for stmt in file.decls {
         decl, ok := stmt.derived_stmt.(^ast.Value_Decl)
         if ok {
-            v := generate_value_decl(dpac, decl)
-            append(&dpac.values, v)
+            v := generate_value_decl(dpac, dpacmeta, decl)
+            append(&dpacmeta.values, v)
         } else {
             log.errorf("Invalid statement in DPacMeta odin. {}", stmt)
         }
     }
-    return dpac
+    return dpacmeta
 }
 
-generate_value_decl :: proc(dpac: ^DPacMeta, decl: ^ast.Value_Decl) -> DPacObject {
+generate_value_decl :: proc(dpac: ^DPackage, dpacmeta: ^DPacMeta, decl: ^ast.Value_Decl) -> DPacObject {
     assert(len(decl.names) == 1, "DPac: Not support multi value declaration.")
 
     attributes := decl.attributes
@@ -98,7 +99,7 @@ generate_value_decl :: proc(dpac: ^DPacMeta, decl: ^ast.Value_Decl) -> DPacObjec
         value.value = nil
     } else {
         value_decl := decl.values[0]
-        value = generate_value(dpac, value_decl)
+        value = generate_value(dpacmeta, value_decl)
         value.name = strings.clone(name_str)
     }
     for atb in attributes {
@@ -132,20 +133,20 @@ generate_value_decl :: proc(dpac: ^DPacMeta, decl: ^ast.Value_Decl) -> DPacObjec
     return value
 }
 
-generate_value :: proc(dpac: ^DPacMeta, expr : ^ast.Expr) -> DPacObject {
+generate_value :: proc(dpacmeta: ^DPacMeta, expr : ^ast.Expr) -> DPacObject {
     value : DPacObject
     #partial switch vtype in expr.derived_expr {
     case ^ast.Comp_Lit:
-        value = generate_initializer(dpac, expr.derived_expr.(^ast.Comp_Lit))
+        value = generate_initializer(dpacmeta, expr.derived_expr.(^ast.Comp_Lit))
     case ^ast.Selector_Expr:
-        value = generate_identifier(dpac, expr.derived_expr.(^ast.Selector_Expr))
+        value = generate_identifier(dpacmeta, expr.derived_expr.(^ast.Selector_Expr))
     case ^ast.Ident:
-        value = generate_identifier(dpac, expr.derived_expr.(^ast.Ident))
+        value = generate_identifier(dpacmeta, expr.derived_expr.(^ast.Ident))
     }
     return value
 }
 
-generate_initializer :: proc(dpac: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPacObject {
+generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPacObject {
     ini : DPacInitializer
     type := complit.type.derived_expr.(^ast.Ident)
     count := len(complit.elems)
@@ -155,8 +156,8 @@ generate_initializer :: proc(dpac: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPacObj
         case ^ast.Field_Value:
             field_value_pair := elem.derived_expr.(^ast.Field_Value) 
             field := field_value_pair.field.derived_expr.(^ast.Ident).name
-            value := generate_value(dpac, field_value_pair.value)
-            value.name = field
+            value := generate_value(dpacmeta, field_value_pair.value)
+            value.name = strings.clone(field)
             ini.fields[ind] = DPacFields{field, value} 
         case ^ast.Basic_Lit:
             tok := elem.derived_expr.(^ast.Basic_Lit).tok
@@ -169,13 +170,13 @@ generate_initializer :: proc(dpac: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPacObj
         }
     }
 
-    value : DPacObject
-    value.type  = strings.clone(type.name)
-    value.value = ini
-    return value
+    return DPacObject {
+        type  = strings.clone(type.name),
+        value = ini,
+    }
 }
 
-generate_identifier :: proc(dpac: ^DPacMeta, ident: union{^ast.Selector_Expr, ^ast.Ident}) -> DPacObject {
+generate_identifier :: proc(dpacmeta: ^DPacMeta, ident: union{^ast.Selector_Expr, ^ast.Ident}) -> DPacObject {
     switch node_type in ident {
     case ^ast.Selector_Expr:
         select_expr := ident.(^ast.Selector_Expr)
@@ -183,7 +184,7 @@ generate_identifier :: proc(dpac: ^DPacMeta, ident: union{^ast.Selector_Expr, ^a
         pac  := select.expr.derived_expr.(^ast.Ident).name
         name := select.field.derived_expr.(^ast.Ident).name
         return DPacObject{
-            type = "Reference",
+            type = strings.clone("Reference"),// @Temporary: later the type will be a typeid
             value = DPacRef {
                 pac=strings.clone(pac),
                 name=strings.clone(name),
@@ -192,7 +193,7 @@ generate_identifier :: proc(dpac: ^DPacMeta, ident: union{^ast.Selector_Expr, ^a
     case ^ast.Ident:
         ident_expr := ident.(^ast.Ident)
         return DPacObject{
-            type = "Reference",
+            type = strings.clone("Reference"),
             value = DPacRef{
                 pac="",
                 name=strings.clone(ident_expr.derived_expr.(^ast.Ident).name),

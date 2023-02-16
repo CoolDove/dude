@@ -4,23 +4,43 @@ import "core:log"
 import "core:os"
 import "core:strings"
 import "core:fmt"
+import "core:mem"
+import "core:runtime"
 import "core:path/filepath"
 
 import "dgl"
 
+DPackage :: struct {
+    meta : ^DPacMeta,
+    data : map[ResKey]rawptr,
+    path : string,
+    loaded : bool,
+    // mem
+    pac_storage  : DPackageStorage,
+    meta_storage : DPackageStorage,
+}
+
+DPackageStorage :: struct {
+    buffer : []byte,
+    arena  : mem.Arena,
+    allocator : runtime.Allocator,
+}
+
 // Parse a dpackage script, create a `DPackage`. For resource management.
-dpac_init :: proc(path: string, allocator:= context.allocator) -> (^DPackage, bool) {
-    context.allocator = allocator
+dpac_init :: proc(path: string) -> (^DPackage, bool) {
+    context.allocator = allocators.default
     data, ok := os.read_entire_file(path)
     defer delete(data)
 
     if ok {
         source := cast(string)data
-        meta, ok := dpac_init_from_source(source, allocator)
+        pac := new(DPackage)
+        dpac_alloc_storage(&pac.meta_storage, 1024 * 1024)
+
+        meta, ok := dpac_init_from_source(pac, source)
+
         if ok {
-            pac := new(DPackage)
             pac.meta = meta
-            pac.data = make(map[ResKey]rawptr)
             if filepath.is_abs(path) {
                 pac.path = filepath.dir(path)
             } else {
@@ -38,50 +58,39 @@ dpac_init :: proc(path: string, allocator:= context.allocator) -> (^DPackage, bo
     }
 }
 
-dpac_init_from_source :: proc(source: string, allocator:= context.allocator) -> (^DPacMeta, bool) {
-    context.allocator = allocator
-    dpac := generate_package_from_source(source)
+dpac_alloc_storage :: proc(using storage: ^DPackageStorage, size : int) -> mem.Allocator_Error  {
+    context.allocator = allocators.default
+    err : mem.Allocator_Error
+    buffer, err = mem.alloc_bytes(size)
+    mem.arena_init(&arena, buffer)
+    allocator = mem.arena_allocator(&arena)
+    return err
+}
+dpac_free_storage :: proc(using dpacstore : ^DPackageStorage) {
+    context.allocator = allocators.default
+    mem.free_bytes(buffer)
+}
+
+dpac_init_from_source :: proc(dpac: ^DPackage, source: string) -> (^DPacMeta, bool) {
+    context.allocator = allocators.default
+    if len(dpac.meta_storage.buffer) == 0 {
+        log.errorf("DPac: DPac's meta storage is not allocated, cannot generate.")
+        return nil, false
+    }
+    dpac := dpac_gen_meta_from_source(dpac, source)
     log.debugf("DPac: DPacMeta [ {} ] created!", strings.to_string(dpac.name))
     return dpac, true
 }
 
-dpac_release :: proc(dpac: ^DPackage) {
+dpac_destroy :: proc(dpac: ^DPackage) {
+    context.allocator = allocators.default
     // ## release the resources
     // ...
+    dpac_unload(dpac)
 
     // ## release the meta
-    {
-        meta := dpac.meta
-        delete(meta.identifiers)
-        strings.builder_destroy(&meta.name)
-        for value in &meta.values {
-            dpac_release_value(&value)
-        }
-    }
+    dpac_free_storage(&dpac.meta_storage)
 
-    free(dpac.meta)
-    delete(dpac.data)
-}
-dpac_release_value :: proc(value: ^DPacObject) {
-    if value.name != "" do delete(value.name)
-    if value.load_path != "" do delete(value.load_path)
-    switch vtype in value.value {
-    case DPacRef:
-        ref := value.value.(DPacRef)
-        if ref.name != "" do delete(ref.name)
-        if ref.pac != "" do delete(ref.pac)
-    case DPacLiteral:
-        lit := value.value.(DPacLiteral)
-        if text, ok := lit.(string); ok && text != "" {
-            delete(text)
-        }
-    case DPacInitializer:
-        ini := value.value.(DPacInitializer)
-        for field in &ini.fields {
-            if !ini.anonymous && field.field != "" do delete(field.field)
-            dpac_release_value(&field.value)
-        }
-    }
 }
 
 // To add a resource type with a `loader` process,
@@ -96,11 +105,16 @@ DPacResLoader :: proc(value:^DPacObject) -> rawptr
 dpac_resource_loaders : map[typeid]DPacResLoader
 
 dpac_load :: proc(dpac: ^DPackage) {
+    context.allocator = allocators.default
+    dpac_alloc_storage(&dpac.pac_storage, 100 * 1024 * 1024)
+    context.allocator = dpac.pac_storage.allocator
     meta := dpac.meta
+    dpac.data = make(map[ResKey]rawptr)
     values := meta.values
     for value in &values {
         dpac_load_value(dpac, &value)
     }
+    dpac.loaded = true
 }
 
 dpac_load_value :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
@@ -127,7 +141,12 @@ dpac_load_value :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
     return the_data
 }
 
-dpac_unload :: proc(dpac: ^DPackage) {
+dpac_unload :: proc(using dpac: ^DPackage) {
+    if loaded {
+        context.allocator = allocators.default
+        dpac_free_storage(&dpac.pac_storage)
+        loaded = false
+    }
 }
 
 dpac_query :: proc {
@@ -206,10 +225,4 @@ dpac_path_convert :: proc(dpac: ^DPackage, path: string, allocator := context.al
 
 dpac_debug_log :: proc(dpac: ^DPackage) {
 
-}
-
-DPackage :: struct {
-    meta : ^DPacMeta,
-    data : map[ResKey]rawptr,
-    path : string,
 }

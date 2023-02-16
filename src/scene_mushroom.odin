@@ -29,7 +29,7 @@ LevelArena :: struct {
     allocator : mem.Allocator,
 }
 
-mush_arena : LevelArena
+// mush_arena : LevelArena
 
 
 @(private="file")
@@ -38,15 +38,15 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
     using ecs
 
     {// init allocator
-        mush_arena.buffer = make([]byte, 128 * 1024 * 1024)
-        mem.arena_init(&mush_arena.arena, mush_arena.buffer)
-        mush_arena.allocator = mem.arena_allocator(&mush_arena.arena)
+        // mush_arena.buffer = make([]byte, 128 * 1024 * 1024)
+        // mem.arena_init(&mush_arena.arena, mush_arena.buffer)
+        // mush_arena.allocator = mem.arena_allocator(&mush_arena.arena)
     }
 
     mush : ^ModelAsset
     texture : ^Texture
     {
-        context.allocator = mush_arena.allocator
+        // context.allocator = mush_arena.allocator
         mushroom, err := res_load_model("model/mushroom.fbx", 
             dude.res_get_shader("shader/builtin_mesh_opaque.shader").id,
             dude.res_get_texture("texture/white.tex").id, 
@@ -69,7 +69,7 @@ mushroom_scene_loader :: proc(world: ^ecs.World) {
     
     add_mesh_renderers(world, mush)// mesh renderers
 
-    prefab_camera(world, "MainCamera", true)
+    prefab_editor_camera(world, "MainCamera", true)
     prefab_light(world, "MainLight")
 
     log.debugf("Scnene build up")
@@ -106,7 +106,7 @@ mushroom_update :: proc(world: ^ecs.World, ) {
 
 @(private="file")
 mushroom_scene_unloader :: proc(world: ^ecs.World) {
-    context.allocator = mush_arena.allocator
+    // context.allocator = mush_arena.allocator
     dude.res_unload_model("model/mushroom.fbx")
     dude.res_unload_texture("texture/box.png")
     free_all()

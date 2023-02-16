@@ -15,7 +15,13 @@ EditorCameraController :: struct {
 @private
 editor_control :: proc(world: ^ecs.World) {
     controllers := ecs.get_components(world, EditorCameraController)
-    if controllers == nil || len(controllers) == 0 do return
+    count := len(controllers)
+    if controllers == nil || count == 0 do return
+    if count > 1 {
+        log.errorf("Dude: There are multiple EditorCameraController component in the scene. Which is invalid.")
+        return
+    }
+    
     for controller in controllers {
         transform := ecs.get_component(controller.world, controller.entity, Transform)
         camera    := ecs.get_component(controller.world, controller.entity, Camera)
@@ -24,7 +30,7 @@ editor_control :: proc(world: ^ecs.World) {
         up      := UP3
         right   := linalg.cross(up, forward)
 
-        dtime := cast(f32)time.duration_milliseconds(app.duration_frame)
+        dtime := cast(f32)time.duration_seconds(app.duration_frame)
         move_value := controller.move_speed * dtime
 
         if get_key(.W) { transform.position += forward * move_value }

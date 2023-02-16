@@ -5,7 +5,7 @@ import "core:strings"
 
 import "ecs"
 
-prefab_camera :: proc(world: ^ecs.World, name: string, built_in_controller: bool = true) {
+prefab_editor_camera :: proc(world: ^ecs.World, name: string, built_in_controller: bool = true) {
     using ecs
     camera := add_entity(world, {name})
     add_components(world, camera, 
@@ -21,7 +21,12 @@ prefab_camera :: proc(world: ^ecs.World, name: string, built_in_controller: bool
             far  = 300,
         },
     )
-    if built_in_controller do add_component(world, camera, EditorCameraController{---, .35, .006})
+    if built_in_controller do add_component(world, camera, 
+        EditorCameraController{
+            move_speed = .35, 
+            rotate_speed = .6,
+        },
+    )
 }
 
 prefab_light :: proc(world: ^ecs.World, name: string, color: Color = COLORS.GREEN) {
