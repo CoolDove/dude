@@ -6,6 +6,7 @@ import "core:strings"
 import "core:fmt"
 import "core:mem"
 import "core:runtime"
+import "core:reflect"
 import "core:path/filepath"
 
 import "dgl"
@@ -25,6 +26,65 @@ DPackageStorage :: struct {
     arena  : mem.Arena,
     allocator : runtime.Allocator,
 }
+
+@private
+dpac_asset_types : map[string]DPacAssetType
+@private
+dpac_default_allocator : ^runtime.Allocator
+
+DPacAssetType :: struct {
+    type : typeid, 
+    loader : DPacResLoader,
+}
+
+// ## Install and uninstall, invoke before you use any dpac api, and after you use any api.
+dpac_install :: proc(default_allocator: ^runtime.Allocator) {
+    dpac_default_allocator = default_allocator
+    context.allocator = dpac_default_allocator^
+    dpac_asset_types = make(map[string]DPacAssetType)
+}
+
+// To add a resource type with a `loader` process,
+// which creates a resource object from a `DPacObject`.
+dpac_register_asset :: proc(key: string, type: typeid, loader: DPacResLoader = nil) -> bool {
+    if dpac_default_allocator == nil {
+        log.errorf("DPac: DPac is not installed, cannot reigster loader before it's installed.")
+        return false
+    }
+    if !dpac_asset_type_valid(type) {
+        log.errorf("DPac: DPac can only reigster asset type by struct, while {} is not a struct.", type)
+        return false
+    }
+    if key in dpac_asset_types {
+        log.warnf("DPac: asset type {} has been registered.", key)
+        dpac_asset_types[key] = DPacAssetType{ type, loader }
+    } else {
+        map_insert(&dpac_asset_types, strings.clone(key), DPacAssetType{ type, loader })
+    }
+    return true
+}
+
+dpac_asset_type_valid :: proc(type: typeid) -> bool {
+    type_info := type_info_of(type)
+    #partial switch t in type_info.variant {
+    case runtime.Type_Info_Named :
+        named := type_info.variant.(runtime.Type_Info_Named)
+        base_info := type_info_of(named.base.id)
+        return reflect.is_struct(base_info) || reflect.is_array(base_info)
+    case runtime.Type_Info_Array : 
+        return true
+    case runtime.Type_Info_Struct :
+        return true
+    }
+    return false
+}
+
+dpac_uninstall :: proc() {
+    context.allocator = dpac_default_allocator^
+    delete(dpac_asset_types)
+}
+
+// ## Main api.
 
 // Parse a dpackage script, create a `DPackage`. For resource management.
 dpac_init :: proc(path: string) -> (^DPackage, bool) {
@@ -93,20 +153,9 @@ dpac_destroy :: proc(dpac: ^DPackage) {
 
 }
 
-// To add a resource type with a `loader` process,
-// which creates a resource object from a `DPacObject`.
-dpac_register_loader :: proc(type: typeid, loader: DPacResLoader) {
-    // TODO
-}
-
-DPacResLoader :: proc(value:^DPacObject) -> rawptr
-
-@(private="file")
-dpac_resource_loaders : map[typeid]DPacResLoader
-
 dpac_load :: proc(dpac: ^DPackage) {
     context.allocator = allocators.default
-    dpac_alloc_storage(&dpac.pac_storage, 100 * 1024 * 1024)
+    dpac_alloc_storage(&dpac.pac_storage, 10 * 1024 * 1024)
     context.allocator = dpac.pac_storage.allocator
     meta := dpac.meta
     dpac.data = make(map[ResKey]rawptr)
@@ -115,30 +164,12 @@ dpac_load :: proc(dpac: ^DPackage) {
         dpac_load_value(dpac, &value)
     }
     dpac.loaded = true
-}
 
-dpac_load_value :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
-    the_data : rawptr
-    switch value.type {
-    case "Color":
-        the_data = builtin_loader_color(dpac, value)
-    case "Shader":
-        the_data = builtin_loader_shader(dpac, value)
-    case "Texture":
-        the_data = builtin_loader_texture(dpac, value)
-    case:
-        log.errorf("DPac: Unknown resource type: {}", value.type)
-        return nil
-    }
+    log.debugf("DPac: Package {} loaded, mem usage: {}/{}.", dpac.path, 
+        dpac.pac_storage.arena.peak_used, 
+        len(dpac.pac_storage.arena.data),
+    )
 
-    if the_data != nil && value.name != "" {
-        map_insert(&dpac.data, res_key(value.name), the_data)
-    } else {
-        log.errorf("DPac: Failed to load resource {} for unknown reason.", value.name)
-        return nil
-    }
-
-    return the_data
 }
 
 dpac_unload :: proc(using dpac: ^DPackage) {
@@ -161,60 +192,6 @@ dpac_query_key :: proc(dpac: ^DPackage, key:  ResKey, $T: typeid) -> ^T {
     data, ok := dpac.data[key]
     if ok do return transmute(^T)data
     else do return nil
-}
-
-builtin_loader_color :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
-    name := value.name
-    ini, ok := value.value.(DPacInitializer)
-    if ok {
-        color := new(Color)
-        for i in 0..<len(ini.fields) {
-            v, ok := ini.fields[i].value.value.(DPacLiteral).(f32)
-            if !ok do v = cast(f32)ini.fields[i].value.value.(DPacLiteral).(i32)
-            color[i] = v
-        }
-        return color
-    }
-    return nil
-}
-
-builtin_loader_shader :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
-    path := dpac_path_convert(dpac, value.load_path)
-    defer delete(path)
-    if !os.is_file(path) {
-        panic(fmt.tprintf("Invalid filepath: {}", path))
-    }
-    log.debugf("DPac: Load shader from: {}", path)
-    source, ok := os.read_entire_file_from_filename(path)
-    if !ok { return nil }
-    id := dshader_load_from_source(cast(string)source)
-    delete(source)
-
-    if id == 0 { return nil }
-
-    shader := new(DShader)
-    shader.id = id
-
-    return shader
-}
-
-builtin_loader_texture :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
-    path := dpac_path_convert(dpac, value.load_path)
-    defer delete(path)
-    if !os.is_file(path) {
-        panic(fmt.tprintf("Invalid filepath: {}", path))
-    }
-    log.debugf("DPac: Load texture from : {}", path)
-
-    tex := dgl.texture_load(path)
-    if tex.id == 0 do return nil
-    ptex := new(Texture)
-    ptex^ = Texture{
-        size = tex.size,
-        id = tex.id,
-    }
-
-    return cast(rawptr)ptex
 }
 
 dpac_path_convert :: proc(dpac: ^DPackage, path: string, allocator := context.allocator) -> string {

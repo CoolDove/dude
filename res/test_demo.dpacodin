@@ -1,24 +1,36 @@
 package builtin
 
-@private
-color_text :: Color{ 0, .1, 0.2, 1 }
+global_f32 := 8.0
+global_i32 := 3
+global_name := "reload"
+
+// @private
+// color_text := Color{ 0, .1, 0.2, 1 }
 
 @private
-color_yellow :: Color{ 0, .6, 0.8, 1 }
-
-@private
-color_white :: Color{ 1, 1, 1, 1 }
-
-@(load="shader/builtin_mesh_opaque.shader")
-shader_default : Shader
-
-@(load="texture/dude.png")
-dude_logo : Texture
-
-mat_default := Material {
-    shader = shader_default,
+dove_test := Dove{
+    "Dove",
+    23,
+    "chaos",
+    global_f32,
 }
 
-mat_ext := Material {
-    shader = extends.shader_default,
-}
+// @private
+// color_yellow :: Color{ 0, .6, 0.8, 1 }
+
+// @private
+// color_white :: Color{ 1, 1, 1, 1 }
+
+// @(load="shader/builtin_mesh_opaque.shader")
+// shader_default : Shader
+
+// @(load="texture/dude.png")
+// dude_logo : Texture
+
+// mat_default := Material {
+//     shader = shader_default,
+// }
+
+// mat_ext := Material {
+//     shader = extends.shader_default,
+// }

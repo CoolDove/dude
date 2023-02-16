@@ -142,6 +142,12 @@ generate_value :: proc(dpacmeta: ^DPacMeta, expr : ^ast.Expr) -> DPacObject {
         value = generate_identifier(dpacmeta, expr.derived_expr.(^ast.Selector_Expr))
     case ^ast.Ident:
         value = generate_identifier(dpacmeta, expr.derived_expr.(^ast.Ident))
+    case ^ast.Basic_Lit:
+        tok := expr.derived_expr.(^ast.Basic_Lit).tok
+        value.type = reflect.enum_string(tok.kind)
+        value.value = generate_literal(&tok)
+    case :
+        log.errorf("DPacParser: Unhandled value decl type: {}", expr.derived_expr)
     }
     return value
 }
@@ -163,7 +169,7 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
             tok := elem.derived_expr.(^ast.Basic_Lit).tok
             value : DPacObject
             value.type = reflect.enum_string(tok.kind)
-            value.value = get_literal(&tok)
+            value.value = generate_literal(&tok)
             value.name = ""
             ini.fields[ind] = DPacFields{"", value}
             ini.anonymous = true;
@@ -203,7 +209,7 @@ generate_identifier :: proc(dpacmeta: ^DPacMeta, ident: union{^ast.Selector_Expr
     return DPacObject{}
 }
 
-get_literal :: proc(tok : ^tokenizer.Token) -> DPacLiteral {
+generate_literal :: proc(tok : ^tokenizer.Token) -> DPacLiteral {
     lit : DPacLiteral
     #partial switch tok.kind {
     case .Ident: fallthrough

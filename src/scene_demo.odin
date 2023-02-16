@@ -12,16 +12,23 @@ scene_demo := dude.Scene { test_scene_loader, test_scene_update, test_scene_unlo
 
 demo_dpackage : ^dude.DPackage
 
+Dove :: struct {
+    name : string,
+    age : ^i32,
+    line : string,
+    height: f32,
+}
+
 @(private="file")
 test_scene_loader :: proc(world: ^ecs.World) {
     using dude
     using ecs
 
     {// load DPacMeta
+        dpac_register_asset("Dove", Dove, nil)
         pac, ok := dpac_init("res/test_demo.dpacodin")
         dpac_load(pac)
         demo_dpackage = pac
-        // log.debugf("data in package: {}", pac.data)
     }
     
     // {// Res load
@@ -100,13 +107,10 @@ test_scene_update :: proc(world: ^ecs.World) {
     @static allocated := false
 
     if get_key_down(.K) {
-        if !allocated {
-            test_buffer, _ = mem.alloc_bytes(512 * 1024 * 1024)
-            allocated = true
-        } else {
-            mem.free_bytes(test_buffer)
-            allocated = false
-        }
+        log.debugf("global_name: {}", dpac_query(demo_dpackage, "global_name", string)^)
+        log.debugf("global_f32: {}", dpac_query(demo_dpackage, "global_f32", f32)^)
+        log.debugf("global_i32: {}", dpac_query(demo_dpackage, "global_i32", i32)^)
+        log.debugf("dove: {}", dpac_query(demo_dpackage, "dove_test", Dove)^)
     }
 
     if !start_triggered {
