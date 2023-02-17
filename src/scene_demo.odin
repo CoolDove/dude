@@ -15,7 +15,7 @@ demo_dpackage : ^dpac.DPackage
 
 Dove :: struct {
     name : string,
-    age : ^i32,
+    age : i32,
     line : string,
     height: f32,
 }
@@ -116,7 +116,7 @@ test_scene_update :: proc(world: ^ecs.World) {
         log.debugf("dove_test: {}", dpac_query(demo_dpackage, "dove_test", Dove)^)
         dove_named := dpac_query(demo_dpackage, "dove_named", Dove)^
         log.debugf("dove_named: {}", dove_named)
-        log.debugf("dove_named.age: {}", dove_named.age^)
+        log.debugf("dove_named.age: {}", dove_named.age)
     }
 
     if !start_triggered {

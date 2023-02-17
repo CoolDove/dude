@@ -5,11 +5,14 @@ import "core:os"
 import "core:strings"
 import "core:fmt"
 import "core:mem"
+import "core:hash"
 import "core:runtime"
 import "core:reflect"
 import "core:path/filepath"
 
 import "../dgl"
+
+DPacKey :: distinct u64
 
 DPackage :: struct {
     meta : ^DPacMeta,
@@ -85,6 +88,10 @@ dpac_uninstall :: proc() {
 }
 
 // ## Main api.
+
+dpac_key :: proc(name:string) -> DPacKey {
+    return cast(DPacKey)hash.crc64_xz(raw_data(name)[:len(name)])
+}
 
 // Parse a dpackage script, create a `DPackage`. For resource management.
 dpac_init :: proc(path: string) -> (^DPackage, bool) {

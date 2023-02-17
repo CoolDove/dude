@@ -7,19 +7,15 @@ import "core:fmt"
 import "core:mem"
 import "core:runtime"
 import "core:reflect"
-import "core:hash"
 import "core:path/filepath"
-
-// import "../dgl"
 
 DPacResLoader :: proc(value:^DPacObject) -> rawptr
 
 @(private="file")
 dpac_resource_loaders : map[typeid]DPacResLoader
 
-DPacKey :: distinct u64
-dpac_key :: proc(name:string) -> DPacKey {
-    return cast(DPacKey)hash.crc64_xz(raw_data(name)[:len(name)])
+DPacErr_Load :: enum {
+    None, TypeMismatch, UnknownField, TooMuchFields,
 }
 
 dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> rawptr {
@@ -125,7 +121,6 @@ load_initializer_anonymous :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype
     for f, ind in &ini.fields {
         fptr := mem.ptr_offset(obj, field_offsets[ind])
         ftype := field_types[ind]
-        // value := dpac_load_value(dpac, &f.value)
         err := set_field_value(dpac, obj, ftype, field_offsets[ind], &f.value)
         if err != .None {
             log.errorf("DPac: Error {} occured when load anonymous initializer.", err)
@@ -133,8 +128,6 @@ load_initializer_anonymous :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype
             return nil
         }
     }
-
-    // log.errorf("DPac: Failed to load initializer anonymous.")
     return obj
 }
 
@@ -169,10 +162,7 @@ load_initializer_named :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype : D
     return obj
 }
 
-DPacErr_FieldSet :: enum {
-    None, TypeMismatch, UnknownField, TooMuchFields,
-}
-set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, foffset: uintptr, value_node: ^DPacObject) -> DPacErr_FieldSet {
+set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, foffset: uintptr, value_node: ^DPacObject) -> DPacErr_Load {
     fptr := mem.ptr_offset(obj, foffset)
     value := dpac_load_value(dpac, value_node)
     if lit, ok := value_node.value.(DPacLiteral); ok {
@@ -227,7 +217,6 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
     }
     return .None
 }
-
 
 // builtin_loader_color :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {
 //     // name := value.name
