@@ -12,3 +12,10 @@ Run `./update_builder.bat`, then a builder program will be generated to build th
 - [x] Ortho camera.
 - [ ] World space sprite renderer.
 - [ ] Clickable button.
+
+- [ ] DPackage system
+    - [ ] Load references.
+    - [ ] Array/Slice initializer.
+    - [ ] Parsing error handling.
+
+    - [ ] Fix the mem leaking.

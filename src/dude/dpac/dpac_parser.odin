@@ -17,7 +17,7 @@ import "core:os"
 types := map[string]typeid { }
 
 // ## Those types are used to present the dpac syntax tree.
-// All of them are allocated by the meta_storage of the dpackage.
+// All of them are allocated by the `meta_storage` of the dpackage.
 // The dpac ast will be created after call `dpac_init`.
 // And the loading process happens when `dpac_load` is called.
 
@@ -59,7 +59,7 @@ DPacRef :: struct {
 }
 // A node used to build certain object.
 // The object is an odin type, you could use `dpac_register_asset` to register your own asset type.
-// The object type could be a **struct** or **array**.
+// The object type could be a **struct** or **array/slice**.
 // `anonymous` indicates the initialize syntax.
 DPacInitializer :: struct {
     fields : []DPacFields,
@@ -159,9 +159,9 @@ generate_value :: proc(dpacmeta: ^DPacMeta, expr : ^ast.Expr) -> DPacObject {
     case ^ast.Comp_Lit:
         value = generate_initializer(dpacmeta, expr.derived_expr.(^ast.Comp_Lit))
     case ^ast.Selector_Expr:
-        value = generate_identifier(dpacmeta, expr.derived_expr.(^ast.Selector_Expr))
+        value = generate_reference(dpacmeta, expr.derived_expr.(^ast.Selector_Expr))
     case ^ast.Ident:
-        value = generate_identifier(dpacmeta, expr.derived_expr.(^ast.Ident))
+        value = generate_reference(dpacmeta, expr.derived_expr.(^ast.Ident))
     case ^ast.Basic_Lit:
         tok := expr.derived_expr.(^ast.Basic_Lit).tok
         value.type = reflect.enum_string(tok.kind)
@@ -224,7 +224,7 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
     }
 }
 
-generate_identifier :: proc(dpacmeta: ^DPacMeta, ident: union{^ast.Selector_Expr, ^ast.Ident}) -> DPacObject {
+generate_reference :: proc(dpacmeta: ^DPacMeta, ident: union{^ast.Selector_Expr, ^ast.Ident}) -> DPacObject {
     switch node_type in ident {
     case ^ast.Selector_Expr:
         select_expr := ident.(^ast.Selector_Expr)
