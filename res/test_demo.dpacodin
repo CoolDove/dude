@@ -8,10 +8,15 @@ global_name := "reload"
 // color_text := Color{ 0, .1, 0.2, 1 }
 
 @private
-dove_test := Dove{
+dove_test := Dove {
     "Dove",
-    23,
-    "chaos",
+    "MISMATCH THIS",
+}
+
+dove_named := Dove {
+    name = "Zato=1",
+    line = "Shadow Walker",
+    age = 23,
 }
 
 // @private
