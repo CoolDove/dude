@@ -16,6 +16,11 @@ import "core:os"
 
 types := map[string]typeid { }
 
+// ## Those types are used to present the dpac syntax tree.
+// All of them are allocated by the meta_storage of the dpackage.
+// The dpac ast will be created after call `dpac_init`.
+// And the loading process happens when `dpac_load` is called.
+
 DPacMeta :: struct {
     name : strings.Builder,
     identifiers : map[string]int,
@@ -28,25 +33,42 @@ DPacObject :: struct {
     value : DPacValue,
     using attributes : DPacObjectAttribute,
 }
+
+DPacObjectAttribute :: struct {
+    load_path : string,
+    is_private : bool,
+}
+
+// The actual value of a dpac AST node.
 DPacValue :: union {
     DPacRef,    // reference
     DPacLiteral,// literal
     DPacInitializer,  // field - value pair
 }
-DPacObjectAttribute :: struct {
-    load_path : string,
-    is_private : bool,
-}
+
+// Literal values.
 DPacLiteral :: union {
     f32, i32, string,
 }
+
+// A reference to another value symbol in some dpackage.
+// When you load the value before its depending dpackage is loaded,
+// it leads to an error.
 DPacRef :: struct {
     pac, name : string,
 }
+// A node used to build certain object.
+// The object is an odin type, you could use `dpac_register_asset` to register your own asset type.
+// The object type could be a **struct** or **array**.
+// `anonymous` indicates the initialize syntax.
 DPacInitializer :: struct {
     fields : []DPacFields,
+    array  : bool,
     anonymous : bool,
 }
+// Field element in initializer.
+// When in an anonymous initializer,
+// the `field` should be an empty string.
 DPacFields :: struct {
     field : string,
     value : DPacObject,
@@ -155,14 +177,23 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
     type := complit.type.derived_expr.(^ast.Ident)
     count := len(complit.elems)
     ini.fields = make([]DPacFields, count)
+
+    typename := complit.type.derived_expr.(^ast.Ident).name
+
+    log.debugf("DPac: typename: {}", typename)
+    
+    anonymous := false
+    named := false
     for elem, ind in complit.elems {
+        // log.warnf("DPac: generating ini: {}, elem type: {}", ini, elem.derived_expr)
         #partial switch vtype in elem.derived_expr {
         case ^ast.Field_Value:
-            field_value_pair := elem.derived_expr.(^ast.Field_Value) 
+            field_value_pair := elem.derived_expr.(^ast.Field_Value)
             field := field_value_pair.field.derived_expr.(^ast.Ident).name
             value := generate_value(dpacmeta, field_value_pair.value)
             value.name = strings.clone(field)
             ini.fields[ind] = DPacFields{field, value} 
+            named = true
         case ^ast.Basic_Lit:
             tok := elem.derived_expr.(^ast.Basic_Lit).tok
             value : DPacObject
@@ -170,7 +201,20 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
             value.value = generate_literal(&tok)
             value.name = ""
             ini.fields[ind] = DPacFields{"", value}
-            ini.anonymous = true;
+            anonymous = true
+        case ^ast.Comp_Lit:
+            subini := generate_initializer(dpacmeta, elem.derived_expr.(^ast.Comp_Lit))
+            ini.fields[ind] = DPacFields{"", subini}// anonymous value
+            subini_ini := subini.value.(DPacInitializer)
+            anonymous = true
+        }
+    }
+
+    if anonymous {
+        if named {
+            log.warnf("DPac: Incorrect syntax, object initializer cannot mix between `anonymous` and `named`. It'll be taken as a named initializer.")
+        } else {
+            ini.anonymous = true
         }
     }
 

@@ -37,7 +37,6 @@ dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> rawptr {
             log.debugf("DPac: Load anonymous value: {}", the_data)
         }
     } else {
-        // log.errorf("DPac: Failed to load resource {}.", obj)
         return nil
     }
 
@@ -90,6 +89,11 @@ load_literal :: proc(obj: ^DPacObject) -> rawptr {
     return nil
 }
 
+
+// Load an object initializer, either anonymous nor named.
+// 
+// If a object initalizer is mixing between anonymous or named.
+// It'll be take as a named initializer, and all the anonymous fields would be just **ignored**.
 load_initializer :: proc(dpac: ^DPackage, obj: ^DPacObject) -> rawptr {
     context.allocator = dpac.pac_storage.allocator
 
@@ -141,8 +145,10 @@ load_initializer_named :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype : D
             len(field_offsets), len(ini.fields))
         return nil
     }
+
     obj := cast(^byte)mem.alloc(type_info.size)
     for f, ind in &ini.fields {
+        if f.field == "" do continue // Ignore anonymous fields.
         find := -1
         for af, aind in field_names {
             if af == f.field {
@@ -166,6 +172,7 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
     fptr := mem.ptr_offset(obj, foffset)
     value := dpac_load_value(dpac, value_node)
     if lit, ok := value_node.value.(DPacLiteral); ok {
+        // ## Load literal value
         if pointer_type, ok := ftype.variant.(reflect.Type_Info_Pointer); ok {
             base_type := runtime.type_info_core(pointer_type.elem).id
             mismatch := false
@@ -211,9 +218,30 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
                 }
             }
         }
-    } else {
-        log.errorf("DPac: Only support literal field now.")
-        return .UnknownField
+    } else if ini, ok := value_node.value.(DPacInitializer); ok {
+        using reflect
+        obj := load_initializer(dpac, value_node)
+        value_type := type_info_of(dpac_asset_types[value_node.type].type)
+        if reflect.is_pointer(ftype) {
+            pointer_type := ftype.variant.(Type_Info_Pointer).elem
+            if pointer_type != value_type {
+                log.errorf("DPac: Field value type mismatch: Expected: {}, but actually {}.", pointer_type.id, value_type.id)
+                return .TypeMismatch
+            } else {
+                mem.copy(fptr, &obj, size_of(rawptr))
+            }
+        } else {
+            if ftype.id != value_type.id {
+                log.errorf("DPac: Field value type mismatch: Expected: {}, but actually {}.", ftype.id, value_type.id)
+                return .TypeMismatch
+            } else {
+                mem.copy(fptr, obj, ftype.size)
+            }
+        }
+        // log.errorf("DPac: Only support literal field now.")
+        // return .UnknownField
+    } else if ref, ok := value_node.value.(DPacRef); ok {
+        panic("DPacRef value not implemented yet.")
     }
     return .None
 }

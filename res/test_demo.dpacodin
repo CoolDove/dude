@@ -7,16 +7,34 @@ global_name := "reload"
 // @private
 // color_text := Color{ 0, .1, 0.2, 1 }
 
-@private
-dove_test := Dove {
-    "Dove",
-    "MISMATCH THIS",
-}
 
-dove_named := Dove {
-    name = "Zato=1",
-    line = "Shadow Walker",
-    age = 23,
+// dove := Hero {
+//     "Dove",
+//     98,
+//     13, 10, 20,
+// }
+
+// jet := Hero {
+//     name = "Jet",
+//     level = 72,
+//     att = 5,
+//     spd = 12,
+//     hitp = 10,
+// }
+
+player_team := Team {
+    main = Hero {
+        name = "Jet",
+        level = 72,
+        att = 5,
+        spd = 12,
+        hitp = 10,
+    },
+    Hero {
+        "Dove",
+        98,
+        13, 10, 20,
+    },
 }
 
 // @private

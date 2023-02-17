@@ -13,11 +13,14 @@ scene_demo := dude.Scene { test_scene_loader, test_scene_update, test_scene_unlo
 
 demo_dpackage : ^dpac.DPackage
 
-Dove :: struct {
+Hero :: struct {
     name : string,
-    age : i32,
-    line : string,
-    height: f32,
+    level : i32,
+    att, spd, hitp : i32,
+}
+Team :: struct {
+    main : ^Hero,
+    sub : Hero,
 }
 
 @(private="file")
@@ -27,7 +30,10 @@ test_scene_loader :: proc(world: ^ecs.World) {
 
     {// load DPacMeta
         using dpac
-        dpac_register_asset("Dove", Dove, nil)
+
+        dpac_register_asset("Hero", Hero, nil)
+        dpac_register_asset("Team", Team, nil)
+
         pac, ok := dpac_init("res/test_demo.dpacodin")
         dpac_load(pac)
         demo_dpackage = pac
@@ -113,10 +119,11 @@ test_scene_update :: proc(world: ^ecs.World) {
         log.debugf("global_name: {}", dpac_query(demo_dpackage, "global_name", string)^)
         log.debugf("global_f32: {}", dpac_query(demo_dpackage, "global_f32", f32)^)
         log.debugf("global_i32: {}", dpac_query(demo_dpackage, "global_i32", i32)^)
-        log.debugf("dove_test: {}", dpac_query(demo_dpackage, "dove_test", Dove)^)
-        dove_named := dpac_query(demo_dpackage, "dove_named", Dove)^
-        log.debugf("dove_named: {}", dove_named)
-        log.debugf("dove_named.age: {}", dove_named.age)
+        log.debugf("player_team: {}", dpac_query(demo_dpackage, "player_team", Team)^)
+        // log.debugf("dove_test: {}", dpac_query(demo_dpackage, "dove_test", Dove)^)
+        // dove_named := dpac_query(demo_dpackage, "dove_named", Dove)^
+        // log.debugf("dove_named: {}", dove_named)
+        // log.debugf("dove_named.age: {}", dove_named.age)
     }
 
     if !start_triggered {
