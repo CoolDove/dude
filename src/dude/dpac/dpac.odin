@@ -104,6 +104,8 @@ dpac_key :: proc(name:string) -> DPacKey {
 }
 
 // Parse a dpackage script, create a `DPackage`. For resource management.
+// After this, the `meta` of the dpackage is allocated and correctly setup.
+// You can load then.
 dpac_init :: proc(path: string) -> (^DPackage, bool) {
     context.allocator = dpac_default_allocator^
     data, ok := os.read_entire_file(path)
@@ -113,9 +115,8 @@ dpac_init :: proc(path: string) -> (^DPackage, bool) {
         source := cast(string)data
         pac := new(DPackage)
         dpac_alloc_storage(&pac.meta_storage, 1024 * 1024)
-
-        context.allocator = dpac_default_allocator^
         
+        context.allocator = dpac_default_allocator^
         meta := generate_meta_from_source(pac, source)
 
         if ok {
@@ -136,9 +137,11 @@ dpac_init :: proc(path: string) -> (^DPackage, bool) {
             
             return pac, true
         } else {
+            log.errorf("DPac: Failed to generate meta from: {}.", path)
             return nil, false
         }
     } else {
+        log.errorf("DPac: Failed to load file from: {}.", path)
         return nil, false
     }
 }
