@@ -233,26 +233,43 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
             }
         }
     } else if ref, ok := value_node.value.(DPacRef); ok {
+        log.warnf("DPac: loading reference.")
         if (ref.pac == "") {
             key := dpac_key(ref.name)
             if symbol, ok := dpac.symbols[key]; ok {
-                log.debugf("A SYMBOL!!!!!!")
-                // if symbol.data.ptr != nil {
-                // }
+                ref_data := load_reference(dpac, value_node)
+                set_reference_value(fptr, &ref_data, reflect.is_pointer(ftype))
             }
         } else {
             panic("DPac: Only support ref to the same package for now.")
         }
-
-        panic("DPacRef value not implemented yet.")
     }
     return .None
 }
 
+set_reference_value :: proc(target : ^byte, data : ^DPackageAsset, by_pointer : bool) {
+    if by_pointer {
+        mem.copy(target, &data.ptr, size_of(rawptr))
+    } else {
+        mem.copy(target, data.ptr, size_of(data.type))
+    }
+}
+
 load_reference :: proc(dpac: ^DPackage, obj: ^DPacObject) -> DPackageAsset {
-    // TODO
-    // obj.value.(DPacRef)
-    // return
+    data : DPackageAsset
+    ref := obj.value.(DPacRef)
+    key := dpac_key(ref.name)
+    if symbol, ok := dpac.symbols[key]; ok {
+        if symbol.data.ptr == nil {// The data is not loaded.
+            data = dpac_load_value(dpac, &symbol.obj)
+        } else {// The data has been loaded.
+            data = symbol.data
+        }
+        return data
+    } else {
+        log.errorf("DPac: Unknown symbol: {}.", ref.name)
+        return {}
+    }
     return {}
 }
 

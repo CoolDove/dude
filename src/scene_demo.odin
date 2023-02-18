@@ -125,6 +125,7 @@ test_scene_update :: proc(world: ^ecs.World) {
         // log.debugf("dove_named.age: {}", dove_named.age)
 
         log.debugf("player_team: {}", dpac_query(demo_dpackage, "player_team", Team)^)
+        log.debugf("ref_team: {}", dpac_query(demo_dpackage, "ref_team", Team)^)
     }
 
     if !start_triggered {

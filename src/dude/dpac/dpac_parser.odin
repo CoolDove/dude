@@ -206,6 +206,11 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
             value.name = strings.clone(field)
             ini.fields[ind] = DPacFields{field, value} 
             named = true
+        case ^ast.Comp_Lit:
+            subini := generate_initializer(dpacmeta, elem.derived_expr.(^ast.Comp_Lit))
+            ini.fields[ind] = DPacFields{"", subini}// anonymous value
+            subini_ini := subini.value.(DPacInitializer)
+            anonymous = true
         case ^ast.Basic_Lit:
             tok := elem.derived_expr.(^ast.Basic_Lit).tok
             value : DPacObject
@@ -214,11 +219,14 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
             value.name = ""
             ini.fields[ind] = DPacFields{"", value}
             anonymous = true
-        case ^ast.Comp_Lit:
-            subini := generate_initializer(dpacmeta, elem.derived_expr.(^ast.Comp_Lit))
-            ini.fields[ind] = DPacFields{"", subini}// anonymous value
-            subini_ini := subini.value.(DPacInitializer)
-            anonymous = true
+        case ^ast.Ident:
+            ident := elem.derived_expr.(^ast.Ident)
+            ref := generate_reference(dpacmeta, ident)
+            ini.fields[ind] = DPacFields{"", ref}
+        case ^ast.Selector_Expr:
+            ident := elem.derived_expr.(^ast.Ident)
+            ref := generate_reference(dpacmeta, ident)
+            ini.fields[ind] = DPacFields{"", ref}
         }
     }
 

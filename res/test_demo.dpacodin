@@ -7,11 +7,11 @@ global_name := "reload"
 // @private
 // color_text := Color{ 0, .1, 0.2, 1 }
 
-// dove := Hero {
-//     "Dove",
-//     98,
-//     13, 10, 20,
-// }
+dove := Hero {
+    "Dove",
+    98,
+    13, 10, 20,
+}
 
 player_team := Team {
     Hero {
@@ -28,48 +28,12 @@ player_team := Team {
     },
 }
 
-player_team1 := Team {
-    Hero {
-        name = "Jet",
-        level = 72,
-        att = 5,
-        spd = 12,
-        hitp = 10,
-    },
+ref_team := Team {
+    dove,
     Hero {
         "Dove",
-        98,
-        13, 10, 20,
-    },
-}
-
-player_team2 := Team {
-    Hero {
-        name = "Jet",
-        level = 72,
-        att = 5,
-        spd = 12,
-        hitp = 10,
-    },
-    Hero {
-        "Dove",
-        98,
-        13, 10, 20,
-    },
-}
-
-player_team3 := Team {
-    Hero {
-        name = "Jet",
-        level = 72,
-        att = 5,
-        spd = 12,
-        hitp = 10,
-    },
-    Hero {
-        "Dove",
-        98,
-        13, 10, 20,
+        20,
+        2, 3, 4,
     },
 }
 
