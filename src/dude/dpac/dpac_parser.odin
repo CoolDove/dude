@@ -23,8 +23,9 @@ types := map[string]typeid { }
 
 DPacMeta :: struct {
     name : strings.Builder,
-    identifiers : map[string]int,
-    values : [dynamic]DPacObject,
+    symbols : map[DPacKey]DPacObject,
+    // identifiers : map[string]int,
+    // values : [dynamic]DPacObject,
 }
 
 DPacObject :: struct {
@@ -75,44 +76,49 @@ DPacFields :: struct {
     value : DPacObject,
 }
 
-dpac_gen_meta_from_source :: proc(dpac: ^DPackage, source: string) -> ^DPacMeta {
+generate_meta_from_source :: proc(dpac: ^DPackage, source: string) -> ^DPacMeta {
     context.allocator = dpac.meta_storage.allocator
     psr : parser.Parser
     file := parse_src(&psr, source)
-    file_node, ok := file.node.derived.(^ast.File)
-    if ok {
-        meta := dpac_gen_meta(dpac, file_node)
-        return meta
+    {// ## Generate meta AST
+        dpacmeta := new (DPacMeta)
+        strings.builder_init(&dpacmeta.name)
+        strings.write_string(&dpacmeta.name, file.pkg_name)
+        dpacmeta.symbols = make(map[DPacKey]DPacObject, len(file.decls))
+
+        for stmt in file.decls {
+            decl, ok := stmt.derived_stmt.(^ast.Value_Decl)
+            if ok {
+                v, succ := generate_value_decl(dpac, dpacmeta, decl)
+                key := dpac_key(v.name)
+                if succ {
+                    // If the key has been in the symbols map, `generate_value_decl` wouldn't have been suceeded.
+                    map_insert(&dpacmeta.symbols, key, v)
+                } 
+            } else {
+                log.errorf("Invalid statement in DPacMeta odin. {}", stmt)
+            }
+        }
+        return dpacmeta
     }
     return nil
 }
 
-dpac_gen_meta :: proc(dpac: ^DPackage, file: ^ast.File) -> ^DPacMeta {
-    dpacmeta := new (DPacMeta)
-    strings.builder_init(&dpacmeta.name)
-    strings.write_string(&dpacmeta.name, file.pkg_name)
-    dpacmeta.values = make([dynamic]DPacObject, 0, 512)
-
-    for stmt in file.decls {
-        decl, ok := stmt.derived_stmt.(^ast.Value_Decl)
-        if ok {
-            v := generate_value_decl(dpac, dpacmeta, decl)
-            append(&dpacmeta.values, v)
-        } else {
-            log.errorf("Invalid statement in DPacMeta odin. {}", stmt)
-        }
-    }
-    return dpacmeta
-}
-
-generate_value_decl :: proc(dpac: ^DPackage, dpacmeta: ^DPacMeta, decl: ^ast.Value_Decl) -> DPacObject {
-    assert(len(decl.names) == 1, "DPac: Not support multi value declaration.")
+generate_value_decl :: proc(dpac: ^DPackage, dpacmeta: ^DPacMeta, decl: ^ast.Value_Decl) -> (DPacObject, bool) {
+    assert(len(decl.names) == 1, "DPac: Not support multi-values declaration.")
 
     attributes := decl.attributes
 
     value : DPacObject
     name := decl.names[0]
     name_str := name.derived_expr.(^ast.Ident).name
+    name_key := dpac_key(name_str)
+
+    if name_key in dpacmeta.symbols {
+        log.errorf("DPac: Repeated symbol: {}.", name_str)
+        return {} , false
+    }
+
     type := decl.type
     if decl.type != nil {
         value.name = strings.clone(name_str)
@@ -151,7 +157,8 @@ generate_value_decl :: proc(dpac: ^DPackage, dpacmeta: ^DPacMeta, decl: ^ast.Val
             }
         }
     }
-    return value
+    
+    return value, true
 }
 
 generate_value :: proc(dpacmeta: ^DPacMeta, expr : ^ast.Expr) -> DPacObject {

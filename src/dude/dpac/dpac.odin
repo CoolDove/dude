@@ -15,13 +15,18 @@ import "../dgl"
 DPacKey :: distinct u64
 
 DPackage :: struct {
-    meta : ^DPacMeta,
-    data : map[DPacKey]DPackageAsset,
+    using meta_part : DPackageMetaStorage,
+    using pac_part  : DPackagePacStorage,
+}
+DPackageMetaStorage :: struct {
+    meta_storage : DPackageStorage,
     path : string,
     loaded : bool,
-    // mem
+    meta : ^DPacMeta,
+}
+DPackagePacStorage :: struct {
     pac_storage  : DPackageStorage,
-    meta_storage : DPackageStorage,
+    data : map[DPacKey]DPackageAsset,
 }
 
 DPackageAsset :: struct {
@@ -110,7 +115,8 @@ dpac_init :: proc(path: string) -> (^DPackage, bool) {
         dpac_alloc_storage(&pac.meta_storage, 1024 * 1024)
 
         context.allocator = dpac_default_allocator^
-        meta, ok := dpac_init_from_source(pac, source)
+        
+        meta := generate_meta_from_source(pac, source)
 
         if ok {
             pac.meta = meta
@@ -150,15 +156,9 @@ dpac_free_storage :: proc(using dpacstore : ^DPackageStorage) {
     mem.free_bytes(buffer)
 }
 
-dpac_init_from_source :: proc(dpac: ^DPackage, source: string) -> (^DPacMeta, bool) {
-    if len(dpac.meta_storage.buffer) == 0 {
-        log.errorf("DPac: DPac's meta storage is not allocated, cannot generate.")
-        return nil, false
-    }
-    dpac := dpac_gen_meta_from_source(dpac, source)
-    log.debugf("DPac: DPacMeta [ {} ] created!", strings.to_string(dpac.name))
-    return dpac, true
-}
+// dpac_init_from_source :: proc(dpac: ^DPackage, source: string) -> (^DPacMeta, bool) {
+//     return dpac, true
+// }
 
 dpac_destroy :: proc(dpac: ^DPackage) {
     // ## release the resources
@@ -176,9 +176,9 @@ dpac_load :: proc(dpac: ^DPackage) {
     context.allocator = dpac.pac_storage.allocator
     meta := dpac.meta
     dpac.data = make(map[DPacKey]DPackageAsset)
-    values := meta.values
-    for value in &values {
-        dpac_load_value(dpac, &value)
+    symbols := meta.symbols
+    for key, symb in &symbols {
+        dpac_load_value(dpac, &symb)
     }
     dpac.loaded = true
 

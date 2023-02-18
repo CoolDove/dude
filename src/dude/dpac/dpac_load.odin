@@ -216,6 +216,7 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
             }
         }
     } else if ini, ok := value_node.value.(DPacInitializer); ok {
+        // ## Load initializer value
         using reflect
         obj := load_initializer(dpac, value_node)
         value_type := type_info_of(dpac_asset_types[value_node.type].type)
@@ -235,9 +236,15 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
                 mem.copy(fptr, obj.ptr, ftype.size)
             }
         }
-        // log.errorf("DPac: Only support literal field now.")
-        // return .UnknownField
     } else if ref, ok := value_node.value.(DPacRef); ok {
+        if (ref.pac == "") {
+            key := dpac_key(ref.name)
+            if data, ok := dpac.data[key]; ok {
+            }
+        } else {
+            panic("DPac: Only support ref to the same package for now.")
+        }
+
         panic("DPacRef value not implemented yet.")
     }
     return .None
