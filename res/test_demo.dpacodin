@@ -28,6 +28,51 @@ player_team := Team {
     },
 }
 
+player_team1 := Team {
+    Hero {
+        name = "Jet",
+        level = 72,
+        att = 5,
+        spd = 12,
+        hitp = 10,
+    },
+    Hero {
+        "Dove",
+        98,
+        13, 10, 20,
+    },
+}
+
+player_team2 := Team {
+    Hero {
+        name = "Jet",
+        level = 72,
+        att = 5,
+        spd = 12,
+        hitp = 10,
+    },
+    Hero {
+        "Dove",
+        98,
+        13, 10, 20,
+    },
+}
+
+player_team3 := Team {
+    Hero {
+        name = "Jet",
+        level = 72,
+        att = 5,
+        spd = 12,
+        hitp = 10,
+    },
+    Hero {
+        "Dove",
+        98,
+        13, 10, 20,
+    },
+}
+
 // @private
 // color_yellow :: Color{ 0, .6, 0.8, 1 }
 

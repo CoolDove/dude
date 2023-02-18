@@ -62,6 +62,7 @@ DPacRef :: struct {
 // The object type could be a **struct** or **array/slice**.
 // `anonymous` indicates the initialize syntax.
 DPacInitializer :: struct {
+    type   : string,
     fields : []DPacFields,
     array  : bool,
     anonymous : bool,
@@ -179,8 +180,8 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
     ini.fields = make([]DPacFields, count)
 
     typename := complit.type.derived_expr.(^ast.Ident).name
-
-    log.debugf("DPac: typename: {}", typename)
+    ini.type = strings.clone(typename)
+    // log.debugf("DPac: typename: {}", typename)
     
     anonymous := false
     named := false
@@ -219,7 +220,7 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
     }
 
     return DPacObject {
-        type  = strings.clone(type.name),
+        type  = ini.type,
         value = ini,
     }
 }
@@ -234,16 +235,16 @@ generate_reference :: proc(dpacmeta: ^DPacMeta, ident: union{^ast.Selector_Expr,
         return DPacObject{
             type = strings.clone("Reference"),// @Temporary: later the type will be a typeid
             value = DPacRef {
-                pac=strings.clone(pac),
+                pac =strings.clone(pac),
                 name=strings.clone(name),
             },
         }
     case ^ast.Ident:
         ident_expr := ident.(^ast.Ident)
         return DPacObject{
-            type = strings.clone("Reference"),
+            type  = strings.clone("Reference"),
             value = DPacRef{
-                pac="",
+                pac ="",
                 name=strings.clone(ident_expr.derived_expr.(^ast.Ident).name),
             },
         }

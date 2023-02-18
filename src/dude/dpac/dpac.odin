@@ -16,12 +16,17 @@ DPacKey :: distinct u64
 
 DPackage :: struct {
     meta : ^DPacMeta,
-    data : map[DPacKey]rawptr,
+    data : map[DPacKey]DPackageAsset,
     path : string,
     loaded : bool,
     // mem
     pac_storage  : DPackageStorage,
     meta_storage : DPackageStorage,
+}
+
+DPackageAsset :: struct {
+    ptr  : rawptr,
+    type : typeid,
 }
 
 DPackageStorage :: struct {
@@ -104,17 +109,24 @@ dpac_init :: proc(path: string) -> (^DPackage, bool) {
         pac := new(DPackage)
         dpac_alloc_storage(&pac.meta_storage, 1024 * 1024)
 
+        context.allocator = dpac_default_allocator^
         meta, ok := dpac_init_from_source(pac, source)
 
         if ok {
             pac.meta = meta
+            package_path : string
             if filepath.is_abs(path) {
-                pac.path = filepath.dir(path)
+                package_path = filepath.dir(path)
             } else {
                 abs, _ := filepath.abs(path, context.temp_allocator)
-                pac.path = filepath.dir(abs)
+                package_path = filepath.dir(abs)
             }
-            log.debugf("DPac: Load package from: {} : [{}]", pac.path, filepath.base(path))
+            pac.path = strings.clone(package_path, pac.meta_storage.allocator)
+
+            log.debugf("DPac: Load package from: {} : [{}]. Meta data storage: {}/{}", 
+                pac.path, filepath.base(path),
+                pac.meta_storage.arena.peak_used, len(pac.meta_storage.arena.data),
+            )
             
             return pac, true
         } else {
@@ -139,7 +151,6 @@ dpac_free_storage :: proc(using dpacstore : ^DPackageStorage) {
 }
 
 dpac_init_from_source :: proc(dpac: ^DPackage, source: string) -> (^DPacMeta, bool) {
-    context.allocator = dpac_default_allocator^
     if len(dpac.meta_storage.buffer) == 0 {
         log.errorf("DPac: DPac's meta storage is not allocated, cannot generate.")
         return nil, false
@@ -150,7 +161,6 @@ dpac_init_from_source :: proc(dpac: ^DPackage, source: string) -> (^DPacMeta, bo
 }
 
 dpac_destroy :: proc(dpac: ^DPackage) {
-    context.allocator = dpac_default_allocator^
     // ## release the resources
     // ...
     dpac_unload(dpac)
@@ -165,7 +175,7 @@ dpac_load :: proc(dpac: ^DPackage) {
     dpac_alloc_storage(&dpac.pac_storage, 10 * 1024 * 1024)
     context.allocator = dpac.pac_storage.allocator
     meta := dpac.meta
-    dpac.data = make(map[DPacKey]rawptr)
+    dpac.data = make(map[DPacKey]DPackageAsset)
     values := meta.values
     for value in &values {
         dpac_load_value(dpac, &value)
@@ -190,6 +200,8 @@ dpac_unload :: proc(using dpac: ^DPackage) {
 dpac_query :: proc {
     dpac_query_key, 
     dpac_query_name,
+    dpac_query_key_raw, 
+    dpac_query_name_raw,
 }
 dpac_query_name :: proc(dpac: ^DPackage, name: string, $T: typeid) -> ^T {
     return dpac_query_key(dpac, dpac_key(name), T)
@@ -197,9 +209,19 @@ dpac_query_name :: proc(dpac: ^DPackage, name: string, $T: typeid) -> ^T {
 dpac_query_key :: proc(dpac: ^DPackage, key: DPacKey, $T: typeid) -> ^T {
     assert(dpac != nil, "Invalid dpackage pointer.")
     data, ok := dpac.data[key]
-    if ok do return transmute(^T)data
+    if ok do return transmute(^T)data.ptr
     else do return nil
 }
+dpac_query_name_raw :: proc(dpac: ^DPackage, name: string) -> DPackageAsset {
+    return dpac_query_key_raw(dpac, dpac_key(name))
+}
+dpac_query_key_raw :: proc(dpac: ^DPackage, key: DPacKey) -> DPackageAsset {
+    assert(dpac != nil, "Invalid dpackage pointer.")
+    data, ok := dpac.data[key]
+    if ok do return data
+    else do return {}
+}
+
 
 dpac_path_convert :: proc(dpac: ^DPackage, path: string, allocator := context.allocator) -> string {
     context.allocator = allocator

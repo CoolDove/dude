@@ -18,18 +18,18 @@ DPacErr_Load :: enum {
     None, TypeMismatch, UnknownField, TooMuchFields,
 }
 
-dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> rawptr {
-    the_data : rawptr
+dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> DPackageAsset {
+    the_data : DPackageAsset
 
     if lit, ok := obj.value.(DPacLiteral); ok {
         the_data = load_literal(obj)
     } else if ini, ok := obj.value.(DPacInitializer); ok {
         the_data = load_initializer(dpac, obj)
     } else if ref, ok := obj.value.(DPacRef); ok {
-        // TODO
+        the_data = load_reference(dpac, obj)
     }
 
-    if the_data != nil {
+    if the_data.ptr != nil {
         if obj.name != "" {
             map_insert(&dpac.data, dpac_key(obj.name), the_data)
             log.debugf("DPac: Load value [{}]: {}", obj.name, the_data)
@@ -37,56 +37,55 @@ dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> rawptr {
             log.debugf("DPac: Load anonymous value: {}", the_data)
         }
     } else {
-        return nil
+        return {}
     }
 
     return the_data
 }
 
-load_literal :: proc(obj: ^DPacObject) -> rawptr {
+load_literal :: proc(obj: ^DPacObject) -> DPackageAsset {
     lit := obj.value.(DPacLiteral)
     switch obj.type {
     case "String":
         if str, ok := lit.(string); ok {
             ret := new(string)
             ret^ = strings.clone(str)
-            return ret
+            return DPackageAsset{ret, typeid_of(string)}
         } else {
             log.errorf("DPac: Invalid literal string: {}", lit)
-            return nil
+            return DPackageAsset{nil, typeid_of(string)}
         }
     case "Float":
         if f, ok := lit.(f32); ok {
             ret := new(f32)
             ret^ = f
-            return ret
+            return DPackageAsset{ret, typeid_of(f32)}
         } else if i, ok := lit.(i32); ok {
             ret := new(f32)
             ret^ = cast(f32)i
-            return ret
+            return DPackageAsset{ret, typeid_of(f32)}
         } else {
-            log.errorf("DPac: Invalid literal f32: {}", lit)
-            return nil
+            return DPackageAsset{nil, typeid_of(f32)}
         }
     case "Integer":
         if f, ok := lit.(f32); ok {
             ret := new(i32)
             ret^ = cast(i32)f
-            return ret
+            return DPackageAsset{ret, typeid_of(i32)}
         } else if i, ok := lit.(i32); ok {
             ret := new(i32)
             ret^ = i
-            return ret
+            return DPackageAsset{ret, typeid_of(i32)}
         } else {
             log.errorf("DPac: Invalid literal i32: {}", lit)
-            return nil
+            return DPackageAsset{nil, typeid_of(i32)}
         }
     case:
         log.errorf("DPac: Unknown literal type: {}", obj.type)
-        return nil
+        return DPackageAsset{nil, typeid_of(any)}
     }
     log.errorf("DPac: Unknown error when load literal: {}", obj)
-    return nil
+    return DPackageAsset{nil, typeid_of(any)}
 }
 
 
@@ -94,7 +93,7 @@ load_literal :: proc(obj: ^DPacObject) -> rawptr {
 // 
 // If a object initalizer is mixing between anonymous or named.
 // It'll be take as a named initializer, and all the anonymous fields would be just **ignored**.
-load_initializer :: proc(dpac: ^DPackage, obj: ^DPacObject) -> rawptr {
+load_initializer :: proc(dpac: ^DPackage, obj: ^DPacObject) -> DPackageAsset {
     context.allocator = dpac.pac_storage.allocator
 
     ini := obj.value.(DPacInitializer)
@@ -105,21 +104,20 @@ load_initializer :: proc(dpac: ^DPackage, obj: ^DPacObject) -> rawptr {
             return load_initializer_named(dpac, &ini, atype)
         }
     } else {
-        return nil
+        log.errorf("DPac: Asset type is not registered: {}", ini.type)
+        return {}
     }
-
-    log.errorf("DPac: Unknown error when load initializer: {}", obj)
-    return nil
+    return {}
 }
 
-load_initializer_anonymous :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype : DPacAssetType) -> rawptr {
+load_initializer_anonymous :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype : DPacAssetType) -> DPackageAsset {
     type_info := type_info_of(atype.type)
     field_types   := reflect.struct_field_types(atype.type)
     field_offsets := reflect.struct_field_offsets(atype.type)
     if len(field_offsets) < len(ini.fields) {
         log.errorf("DPac: Too much elements in anonymous initializer. Expected: {}, actual: {}", 
             len(field_offsets), len(ini.fields))
-        return nil
+        return DPackageAsset{nil, type_info.id}
     }
     obj := cast(^byte)mem.alloc(type_info.size)
     for f, ind in &ini.fields {
@@ -129,13 +127,13 @@ load_initializer_anonymous :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype
         if err != .None {
             log.errorf("DPac: Error {} occured when load anonymous initializer.", err)
             free(obj)
-            return nil
+            return DPackageAsset{nil, type_info.id}
         }
     }
-    return obj
+    return DPackageAsset{obj, type_info.id}
 }
 
-load_initializer_named :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype : DPacAssetType) -> rawptr {
+load_initializer_named :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype : DPacAssetType) -> DPackageAsset {
     type_info := type_info_of(atype.type)
     field_names   := reflect.struct_field_names(atype.type)
     field_types   := reflect.struct_field_types(atype.type)
@@ -143,7 +141,7 @@ load_initializer_named :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype : D
     if len(field_offsets) < len(ini.fields) {
         log.errorf("DPac: Too much elements in named initializer. Expected: {}, actual: {}", 
             len(field_offsets), len(ini.fields))
-        return nil
+        return DPackageAsset{nil, type_info.id}
     }
 
     obj := cast(^byte)mem.alloc(type_info.size)
@@ -164,8 +162,7 @@ load_initializer_named :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype : D
             log.errorf("DPac: Unknown field: {} in {}.", f.field, atype.type)
         }
     }
-
-    return obj
+    return DPackageAsset{obj, type_info.id}
 }
 
 set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, foffset: uintptr, value_node: ^DPacObject) -> DPacErr_Load {
@@ -200,19 +197,19 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
             case string:
                 if ftype.id == string {
                     str_ptr := transmute(^string)fptr
-                    src_str := (transmute(^string)value)^
+                    src_str := (transmute(^string)value.ptr)^
                     str_ptr^ = strings.clone(src_str[1:len(src_str) - 1])
                 } else {
                     log.errorf("DPac: Invalid literal: {}", lit)
                     return .TypeMismatch
                 }
             case f32:
-                if !set_lit(fptr, value, f32, ftype) {
+                if !set_lit(fptr, value.ptr, f32, ftype) {
                     log.errorf("DPac: Invalid literal: {}", lit)
                     return .TypeMismatch
                 }
             case i32:
-                if !set_lit(fptr, value, i32, ftype) {
+                if !set_lit(fptr, value.ptr, i32, ftype) {
                     log.errorf("DPac: Invalid literal: {}", lit)
                     return .TypeMismatch
                 }
@@ -235,7 +232,7 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
                 log.errorf("DPac: Field value type mismatch: Expected: {}, but actually {}.", ftype.id, value_type.id)
                 return .TypeMismatch
             } else {
-                mem.copy(fptr, obj, ftype.size)
+                mem.copy(fptr, obj.ptr, ftype.size)
             }
         }
         // log.errorf("DPac: Only support literal field now.")
@@ -244,6 +241,13 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
         panic("DPacRef value not implemented yet.")
     }
     return .None
+}
+
+load_reference :: proc(dpac: ^DPackage, obj: ^DPacObject) -> DPackageAsset {
+    // TODO
+    // obj.value.(DPacRef)
+    // return
+    return {}
 }
 
 // builtin_loader_color :: proc(dpac: ^DPackage, value: ^DPacObject) -> rawptr {

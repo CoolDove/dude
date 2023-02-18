@@ -116,14 +116,15 @@ test_scene_update :: proc(world: ^ecs.World) {
 
     if get_key_down(.K) {
         using dpac
-        log.debugf("global_name: {}", dpac_query(demo_dpackage, "global_name", string)^)
-        log.debugf("global_f32: {}", dpac_query(demo_dpackage, "global_f32", f32)^)
-        log.debugf("global_i32: {}", dpac_query(demo_dpackage, "global_i32", i32)^)
-        log.debugf("player_team: {}", dpac_query(demo_dpackage, "player_team", Team)^)
+        // log.debugf("global_name: {}", dpac_query(demo_dpackage, "global_name", string)^)
+        // log.debugf("global_f32: {}", dpac_query(demo_dpackage, "global_f32", f32)^)
+        // log.debugf("global_i32: {}", dpac_query(demo_dpackage, "global_i32", i32)^)
         // log.debugf("dove_test: {}", dpac_query(demo_dpackage, "dove_test", Dove)^)
         // dove_named := dpac_query(demo_dpackage, "dove_named", Dove)^
         // log.debugf("dove_named: {}", dove_named)
         // log.debugf("dove_named.age: {}", dove_named.age)
+
+        log.debugf("player_team: {}", dpac_query(demo_dpackage, "player_team", Team)^)
     }
 
     if !start_triggered {

@@ -17,5 +17,6 @@ Run `./update_builder.bat`, then a builder program will be generated to build th
     - [ ] Load references.
     - [ ] Array/Slice initializer.
     - [ ] Parsing error handling.
+    - [ ] Serialize dpackage, load dpackage.
 
-    - [ ] Fix the mem leaking.
+    - [ ] Fix the mem leaking. In mushroom scene.
