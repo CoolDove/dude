@@ -18,9 +18,11 @@ DPacErr_Load :: enum {
     None, TypeMismatch, UnknownField, TooMuchFields,
 }
 
+// NOTE(Dove): DPackage Load Process
+// Allocate the asset data in `pac_storage`, then set the symbol data in the dpackage meta.
+
 dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> DPackageAsset {
     the_data : DPackageAsset
-
     if lit, ok := obj.value.(DPacLiteral); ok {
         the_data = load_literal(obj)
     } else if ini, ok := obj.value.(DPacInitializer); ok {
@@ -28,18 +30,12 @@ dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> DPackageAsset {
     } else if ref, ok := obj.value.(DPacRef); ok {
         the_data = load_reference(dpac, obj)
     }
-
     if the_data.ptr != nil {
-        if obj.name != "" {
-            map_insert(&dpac.data, dpac_key(obj.name), the_data)
-            log.debugf("DPac: Load value [{}]: {}", obj.name, the_data)
-        } else {
-            log.debugf("DPac: Load anonymous value: {}", the_data)
-        }
+        if obj.name != "" { log.debugf("DPac: Load value [{}]: {}", obj.name, the_data) } 
+        else              { log.debugf("DPac: Load anonymous value: {}", the_data) }
     } else {
         return {}
     }
-
     return the_data
 }
 
@@ -239,7 +235,10 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
     } else if ref, ok := value_node.value.(DPacRef); ok {
         if (ref.pac == "") {
             key := dpac_key(ref.name)
-            if data, ok := dpac.data[key]; ok {
+            if symbol, ok := dpac.symbols[key]; ok {
+                log.debugf("A SYMBOL!!!!!!")
+                // if symbol.data.ptr != nil {
+                // }
             }
         } else {
             panic("DPac: Only support ref to the same package for now.")

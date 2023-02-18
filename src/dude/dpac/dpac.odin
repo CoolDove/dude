@@ -15,20 +15,23 @@ import "../dgl"
 DPacKey :: distinct u64
 
 DPackage :: struct {
-    using meta_part : DPackageMetaStorage,
-    using pac_part  : DPackagePacStorage,
+    using meta_part : DPackageMetaPart,
+    using pac_part  : DPackagePacPart,
 }
-DPackageMetaStorage :: struct {
-    meta_storage : DPackageStorage,
+DPackageMetaPart :: struct {
+    meta_storage : DPackageStorage,// Used when initing the dpacakge.
     path : string,
     loaded : bool,
-    meta : ^DPacMeta,
+    using meta : ^DPacMeta,
 }
-DPackagePacStorage :: struct {
-    pac_storage  : DPackageStorage,
-    data : map[DPacKey]DPackageAsset,
+DPackagePacPart :: struct {
+    pac_storage  : DPackageStorage, // Used when loading the dpackage.
+    // data : map[DPacKey]DPackageAsset,
 }
 
+// Asset representation of the dpackage asset.
+// Points to one specific allocated and initialized data, the actual data is stored in the `pac_storage`.
+// When you query an asset, you should go for the `dpac.meta.symbols`, which stored in the `meta_storage`.
 DPackageAsset :: struct {
     ptr  : rawptr,
     type : typeid,
@@ -178,10 +181,30 @@ dpac_load :: proc(dpac: ^DPackage) {
     dpac_alloc_storage(&dpac.pac_storage, 10 * 1024 * 1024)
     context.allocator = dpac.pac_storage.allocator
     meta := dpac.meta
-    dpac.data = make(map[DPacKey]DPackageAsset)
+    // dpac.data = make(map[DPacKey]DPackageAsset)
     symbols := meta.symbols
     for key, symb in &symbols {
-        dpac_load_value(dpac, &symb)
+        if symb.data.ptr == nil {// Means not loaded.
+            asset := dpac_load_value(dpac, &symb.obj)
+            symb.data = asset
+            // if asset.ptr != nil {// Success fully load value. Store into the data map.
+                // map_insert(&dpac.data, dpac_key(symb.obj.name), asset)
+            // }
+        }
+        // if the_data.ptr != nil {
+        //     if obj.name != "" {
+        //         map_insert(&dpac.data, dpac_key(obj.name), the_data)
+        //         key := dpac_key(obj.name)
+        //         symb := &dpac.meta.symbols[key]
+        //         data := &dpac.data[key]
+        //         symb.data = data
+        //         log.debugf("DPac: Load value [{}]: {}", obj.name, the_data)
+        //     } else {
+        //         log.debugf("DPac: Load anonymous value: {}", the_data)
+        //     }
+        // } else {
+        //     return {}
+        // }
     }
     dpac.loaded = true
 
@@ -194,6 +217,10 @@ dpac_load :: proc(dpac: ^DPackage) {
 
 dpac_unload :: proc(using dpac: ^DPackage) {
     if loaded {
+        context.allocator = dpac.meta_storage.allocator
+        for key, symb in &dpac.meta.symbols {
+            symb.data.ptr = nil // Mark them as unloaded.
+        }
         context.allocator = dpac_default_allocator^
         dpac_free_storage(&dpac.pac_storage)
         loaded = false
@@ -211,8 +238,9 @@ dpac_query_name :: proc(dpac: ^DPackage, name: string, $T: typeid) -> ^T {
 }
 dpac_query_key :: proc(dpac: ^DPackage, key: DPacKey, $T: typeid) -> ^T {
     assert(dpac != nil, "Invalid dpackage pointer.")
-    data, ok := dpac.data[key]
-    if ok do return transmute(^T)data.ptr
+    symb, ok := dpac.symbols[key]
+    ptr := symb.data.ptr
+    if ok && ptr != nil do return transmute(^T)ptr
     else do return nil
 }
 dpac_query_name_raw :: proc(dpac: ^DPackage, name: string) -> DPackageAsset {
@@ -220,8 +248,8 @@ dpac_query_name_raw :: proc(dpac: ^DPackage, name: string) -> DPackageAsset {
 }
 dpac_query_key_raw :: proc(dpac: ^DPackage, key: DPacKey) -> DPackageAsset {
     assert(dpac != nil, "Invalid dpackage pointer.")
-    data, ok := dpac.data[key]
-    if ok do return data
+    data, ok := dpac.symbols[key]
+    if ok && data.data.ptr != nil do return data.data
     else do return {}
 }
 

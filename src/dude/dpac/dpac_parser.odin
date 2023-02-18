@@ -23,9 +23,12 @@ types := map[string]typeid { }
 
 DPacMeta :: struct {
     name : strings.Builder,
-    symbols : map[DPacKey]DPacObject,
-    // identifiers : map[string]int,
-    // values : [dynamic]DPacObject,
+    symbols : map[DPacKey]DPacSymbol,
+}
+
+DPacSymbol :: struct {
+    obj : DPacObject,     // AST node.
+    data : DPackageAsset, // The actual loaded data.
 }
 
 DPacObject :: struct {
@@ -51,7 +54,6 @@ DPacValue :: union {
 DPacLiteral :: union {
     f32, i32, string,
 }
-
 // A reference to another value symbol in some dpackage.
 // When you load the value before its depending dpackage is loaded,
 // it leads to an error.
@@ -84,16 +86,18 @@ generate_meta_from_source :: proc(dpac: ^DPackage, source: string) -> ^DPacMeta 
         dpacmeta := new (DPacMeta)
         strings.builder_init(&dpacmeta.name)
         strings.write_string(&dpacmeta.name, file.pkg_name)
-        dpacmeta.symbols = make(map[DPacKey]DPacObject, len(file.decls))
+        dpacmeta.symbols = make(map[DPacKey]DPacSymbol, len(file.decls))
 
         for stmt in file.decls {
             decl, ok := stmt.derived_stmt.(^ast.Value_Decl)
             if ok {
-                v, succ := generate_value_decl(dpac, dpacmeta, decl)
-                key := dpac_key(v.name)
+                obj, succ := generate_value_decl(dpac, dpacmeta, decl)
+                key := dpac_key(obj.name)
                 if succ {
                     // If the key has been in the symbols map, `generate_value_decl` wouldn't have been suceeded.
-                    map_insert(&dpacmeta.symbols, key, v)
+                    symbol : DPacSymbol
+                    symbol.obj = obj
+                    map_insert(&dpacmeta.symbols, key, DPacSymbol{obj, DPackageAsset{}})
                 } 
             } else {
                 log.errorf("Invalid statement in DPacMeta odin. {}", stmt)
