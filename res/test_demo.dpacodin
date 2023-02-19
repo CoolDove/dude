@@ -1,8 +1,8 @@
 package builtin
 
-global_f32 := 8.0
-global_i32 := 3
-global_name := "reload"
+// global_f32 := 8.0
+// global_i32 := 3
+// global_name := "reload"
 
 // @private
 // color_text := Color{ 0, .1, 0.2, 1 }
@@ -13,28 +13,15 @@ dove := Hero {
     13, 10, 20,
 }
 
-player_team := Team {
-    Hero {
-        name = "Jet",
-        level = 72,
-        att = 5,
-        spd = 12,
-        hitp = 10,
-    },
-    Hero {
-        "Dove",
-        98,
-        13, 10, 20,
-    },
+jet := Hero {
+    "Jet",
+    77,
+    10, 17, 10,
 }
 
 ref_team := Team {
     dove,
-    Hero {
-        "Dove",
-        20,
-        2, 3, 4,
-    },
+    jet,
 }
 
 // @private

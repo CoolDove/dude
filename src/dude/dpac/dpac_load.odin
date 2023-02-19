@@ -21,6 +21,9 @@ DPacErr_Load :: enum {
 // NOTE(Dove): DPackage Load Process
 // Allocate the asset data in `pac_storage`, then set the symbol data in the dpackage meta.
 
+// Everytime you want to load an object, call this function.
+// It'll allocate an asset object, and correctly set it up.
+// Then call an object loader function that you specified with `dpac_register_asset`.
 dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> DPackageAsset {
     the_data : DPackageAsset
     if lit, ok := obj.value.(DPacLiteral); ok {
@@ -31,6 +34,10 @@ dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> DPackageAsset {
         the_data = load_reference(dpac, obj)
     }
     if the_data.ptr != nil {
+        if asset_type, ok := dpac_asset_types[obj.type]; ok {
+            loader := asset_type.loader
+            if loader != nil do loader(obj)
+        }
         if obj.name != "" { log.debugf("DPac: Load value [{}]: {}", obj.name, the_data) } 
         else              { log.debugf("DPac: Load anonymous value: {}", the_data) }
     } else {
@@ -119,7 +126,7 @@ load_initializer_anonymous :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype
     for f, ind in &ini.fields {
         fptr := mem.ptr_offset(obj, field_offsets[ind])
         ftype := field_types[ind]
-        err := set_field_value(dpac, obj, ftype, field_offsets[ind], &f.value)
+        err := set_field_value(dpac, obj, ftype, fptr, &f.value)
         if err != .None {
             log.errorf("DPac: Error {} occured when load anonymous initializer.", err)
             free(obj)
@@ -153,7 +160,8 @@ load_initializer_named :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype : D
         if find != -1 {
             ftype := field_types[find]
             foffset := field_offsets[find]
-            set_field_value(dpac, obj, ftype, foffset, &f.value)
+            fptr := mem.ptr_offset(obj, foffset)
+            set_field_value(dpac, obj, ftype, fptr, &f.value)
         } else {
             log.errorf("DPac: Unknown field: {} in {}.", f.field, atype.type)
         }
@@ -161,8 +169,7 @@ load_initializer_named :: proc(dpac: ^DPackage, ini: ^DPacInitializer, atype : D
     return DPackageAsset{obj, type_info.id}
 }
 
-set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, foffset: uintptr, value_node: ^DPacObject) -> DPacErr_Load {
-    fptr := mem.ptr_offset(obj, foffset)
+set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, fptr: ^byte, value_node: ^DPacObject) -> DPacErr_Load {
     value := dpac_load_value(dpac, value_node)
     if lit, ok := value_node.value.(DPacLiteral); ok {
         // ## Load literal value
@@ -233,7 +240,6 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
             }
         }
     } else if ref, ok := value_node.value.(DPacRef); ok {
-        log.warnf("DPac: loading reference.")
         if (ref.pac == "") {
             key := dpac_key(ref.name)
             if symbol, ok := dpac.symbols[key]; ok {
@@ -249,9 +255,11 @@ set_field_value :: proc(dpac: ^DPackage, obj: ^byte, ftype: ^runtime.Type_Info, 
 
 set_reference_value :: proc(target : ^byte, data : ^DPackageAsset, by_pointer : bool) {
     if by_pointer {
+        log.debugf("Load reference by pointer, data: {}", data)
         mem.copy(target, &data.ptr, size_of(rawptr))
     } else {
-        mem.copy(target, data.ptr, size_of(data.type))
+        log.debugf("Load reference by value, data: {}", data)
+        mem.copy(target, data.ptr, type_info_of(data.type).size)
     }
 }
 
@@ -259,9 +267,10 @@ load_reference :: proc(dpac: ^DPackage, obj: ^DPacObject) -> DPackageAsset {
     data : DPackageAsset
     ref := obj.value.(DPacRef)
     key := dpac_key(ref.name)
-    if symbol, ok := dpac.symbols[key]; ok {
+    if symbol, ok := &dpac.symbols[key]; ok {
         if symbol.data.ptr == nil {// The data is not loaded.
             data = dpac_load_value(dpac, &symbol.obj)
+            symbol.data = data
         } else {// The data has been loaded.
             data = symbol.data
         }

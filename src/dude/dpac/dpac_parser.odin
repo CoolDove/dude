@@ -194,7 +194,7 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
     ini.type = strings.clone(typename)
     // log.debugf("DPac: typename: {}", typename)
     
-    anonymous := false
+    anonymous := true
     named := false
     for elem, ind in complit.elems {
         // log.warnf("DPac: generating ini: {}, elem type: {}", ini, elem.derived_expr)
@@ -206,11 +206,11 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
             value.name = strings.clone(field)
             ini.fields[ind] = DPacFields{field, value} 
             named = true
+            anonymous = false
         case ^ast.Comp_Lit:
             subini := generate_initializer(dpacmeta, elem.derived_expr.(^ast.Comp_Lit))
             ini.fields[ind] = DPacFields{"", subini}// anonymous value
             subini_ini := subini.value.(DPacInitializer)
-            anonymous = true
         case ^ast.Basic_Lit:
             tok := elem.derived_expr.(^ast.Basic_Lit).tok
             value : DPacObject
@@ -218,14 +218,13 @@ generate_initializer :: proc(dpacmeta: ^DPacMeta, complit: ^ast.Comp_Lit) -> DPa
             value.value = generate_literal(&tok)
             value.name = ""
             ini.fields[ind] = DPacFields{"", value}
-            anonymous = true
         case ^ast.Ident:
             ident := elem.derived_expr.(^ast.Ident)
             ref := generate_reference(dpacmeta, ident)
             ini.fields[ind] = DPacFields{"", ref}
         case ^ast.Selector_Expr:
-            ident := elem.derived_expr.(^ast.Ident)
-            ref := generate_reference(dpacmeta, ident)
+            selector := elem.derived_expr.(^ast.Selector_Expr)
+            ref := generate_reference(dpacmeta, selector)
             ini.fields[ind] = DPacFields{"", ref}
         }
     }

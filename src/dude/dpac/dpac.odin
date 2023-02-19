@@ -187,24 +187,7 @@ dpac_load :: proc(dpac: ^DPackage) {
         if symb.data.ptr == nil {// Means not loaded.
             asset := dpac_load_value(dpac, &symb.obj)
             symb.data = asset
-            // if asset.ptr != nil {// Success fully load value. Store into the data map.
-                // map_insert(&dpac.data, dpac_key(symb.obj.name), asset)
-            // }
         }
-        // if the_data.ptr != nil {
-        //     if obj.name != "" {
-        //         map_insert(&dpac.data, dpac_key(obj.name), the_data)
-        //         key := dpac_key(obj.name)
-        //         symb := &dpac.meta.symbols[key]
-        //         data := &dpac.data[key]
-        //         symb.data = data
-        //         log.debugf("DPac: Load value [{}]: {}", obj.name, the_data)
-        //     } else {
-        //         log.debugf("DPac: Load anonymous value: {}", the_data)
-        //     }
-        // } else {
-        //     return {}
-        // }
     }
     dpac.loaded = true
 
@@ -212,7 +195,6 @@ dpac_load :: proc(dpac: ^DPackage) {
         dpac.pac_storage.arena.peak_used, 
         len(dpac.pac_storage.arena.data),
     )
-
 }
 
 dpac_unload :: proc(using dpac: ^DPackage) {
