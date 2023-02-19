@@ -10,8 +10,6 @@ import "core:runtime"
 import "core:reflect"
 import "core:path/filepath"
 
-import "../dgl"
-
 DPacKey :: distinct u64
 
 DPackage :: struct {

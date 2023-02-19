@@ -14,7 +14,7 @@ Run `./update_builder.bat`, then a builder program will be generated to build th
 - [ ] Clickable button.
 
 - [ ] DPackage system
-    - [ ] Load references.
+    - [x] Load references.
     - [ ] Array/Slice initializer.
     - [ ] Parsing error handling.
     - [ ] Serialize dpackage, load dpackage.
