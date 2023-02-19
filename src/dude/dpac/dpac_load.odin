@@ -137,7 +137,7 @@ load_initializer_anonymous :: proc(dpac: ^DPackage, obj: ^DPacObject, atype : DP
             log.debugf("Anonymous field: {} - {}", ftype, value)
             if value.ptr == nil {
                 log.errorf("DPac: Faild to load field: {} when load anonymous initializer.", f)
-                free(obj)
+                free(target)
                 return DPackageAsset{nil, type_info.id}
             }
         }
@@ -150,16 +150,24 @@ load_initializer_anonymous :: proc(dpac: ^DPackage, obj: ^DPacObject, atype : DP
             log.errorf("DPac: Too much elements to load array type {}. Expected: {}, actual: {}.", 
                 type_info, array_type.elem_size, len(ini.fields))
         }
+
+        target := cast(^byte)mem.alloc(type_info.size)
         elem_is_pointer := is_pointer(type_info_core(array_type.elem))
-        for field, ind in ini.fields {
-            if elem_is_pointer {
-
+        for field, ind in &ini.fields {
+            fptr := mem.ptr_offset(target, ind * array_type.elem.size)
+            data := dpac_load_value(dpac, &field.value)
+            if data.ptr != nil {
+                set_value(fptr, data, elem_is_pointer)
             } else {
-
+                free(target)
+                log.errorf("DPac: Failed to load value: {}", field.value)
+                return {}
             }
         }
-        log.errorf("DPac: Try to load an array: {}.", array_type)
-        panic("panic")
+        return DPackageAsset{target, type_info.id}
+    } else if reflect.is_slice(core_type_info) {
+        panic("TODO: impl slice loading")
+
     }
     return {}
 }
@@ -170,6 +178,11 @@ load_initializer_named :: proc(dpac: ^DPackage, obj: ^DPacObject, atype : DPacAs
     field_names   := reflect.struct_field_names(atype.type)
     field_types   := reflect.struct_field_types(atype.type)
     field_offsets := reflect.struct_field_offsets(atype.type)
+
+    if reflect.is_array(type_info) {
+        log.errorf("DPac: It's invalid to initialize an array type by named initializer.")
+        return DPackageAsset{nil, type_info.id}
+    }
     if len(field_offsets) < len(ini.fields) {
         log.errorf("DPac: Too much elements in named initializer. Expected: {}, actual: {}", 
             len(field_offsets), len(ini.fields))

@@ -130,7 +130,6 @@ init_game :: proc() {
     dpac.dpac_install(&allocators.default)
     dpac.dpac_register_asset("Color", Color, nil)
 
-
     game.settings = new(GameSettings)
 
     load_builtin_assets() 

@@ -79,18 +79,9 @@ dpac_register_asset :: proc(key: string, type: typeid, loader: DPacResLoader = n
 }
 
 dpac_asset_type_valid :: proc(type: typeid) -> bool {
+    using reflect
     type_info := type_info_of(type)
-    #partial switch t in type_info.variant {
-    case runtime.Type_Info_Named :
-        named := type_info.variant.(runtime.Type_Info_Named)
-        base_info := type_info_of(named.base.id)
-        return reflect.is_struct(base_info) || reflect.is_array(base_info)
-    case runtime.Type_Info_Array : 
-        return true
-    case runtime.Type_Info_Struct :
-        return true
-    }
-    return false
+    return is_struct(type_info) || is_array(type_info)
 }
 
 dpac_uninstall :: proc() {
