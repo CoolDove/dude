@@ -24,6 +24,8 @@ Team :: struct {
     sub : ^Hero,
 }
 
+HeroGroup :: []Hero
+
 @(private="file")
 test_scene_loader :: proc(world: ^ecs.World) {
     using dude
@@ -35,6 +37,7 @@ test_scene_loader :: proc(world: ^ecs.World) {
         dpac_register_asset("Color", Color, nil)
         dpac_register_asset("Hero", Hero, nil)
         dpac_register_asset("Team", Team, nil)
+        dpac_register_asset("HeroGroup", HeroGroup, nil)
 
         pac, ok := dpac_init("res/test_demo.dpacodin")
         dpac_load(pac)
@@ -130,6 +133,7 @@ test_scene_update :: proc(world: ^ecs.World) {
         // log.debugf("player_team: {}", dpac_query(demo_dpackage, "player_team", Team)^)
         log.debugf("ref_team: {}", dpac_query(demo_dpackage, "ref_team", Team)^)
         log.debugf("color_text: {}", dpac_query(demo_dpackage, "color_text", Color)^)
+        log.debugf("group: {}", dpac_query(demo_dpackage, "group", HeroGroup)^)
     }
 
     if !start_triggered {

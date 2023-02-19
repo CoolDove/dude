@@ -66,7 +66,7 @@ dpac_register_asset :: proc(key: string, type: typeid, loader: DPacResLoader = n
         return false
     }
     if !dpac_asset_type_valid(type) {
-        log.errorf("DPac: DPac can only reigster asset type by struct, while {} is not a struct.", type)
+        log.errorf("DPac: Failed to register asset type: {}.", type)
         return false
     }
     if key in dpac_asset_types {
@@ -81,7 +81,7 @@ dpac_register_asset :: proc(key: string, type: typeid, loader: DPacResLoader = n
 dpac_asset_type_valid :: proc(type: typeid) -> bool {
     using reflect
     type_info := type_info_of(type)
-    return is_struct(type_info) || is_array(type_info)
+    return is_struct(type_info) || is_array(type_info) || is_slice(type_info)
 }
 
 dpac_uninstall :: proc() {

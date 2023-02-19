@@ -25,6 +25,10 @@ ref_team := Team {
     jet,
 }
 
+group := HeroGroup {
+    dove, jet
+}
+
 // @private
 // color_yellow :: Color{ 0, .6, 0.8, 1 }
 
