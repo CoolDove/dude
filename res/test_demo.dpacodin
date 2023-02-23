@@ -26,7 +26,11 @@ ref_team := Team {
 }
 
 group := HeroGroup {
-    dove, jet
+    dove, jet,
+}
+
+dude := Texture {
+    load = "res/texture/dude.png",
 }
 
 // @private

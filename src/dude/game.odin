@@ -127,8 +127,7 @@ init_game :: proc() {
     using dgl
     allocators_init()
 
-    dpac.dpac_install(&allocators.default)
-    dpac.dpac_register_asset("Color", Color, nil)
+    dpac_init()
 
     game.settings = new(GameSettings)
 

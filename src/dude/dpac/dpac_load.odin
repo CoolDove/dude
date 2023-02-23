@@ -10,7 +10,7 @@ import "core:runtime"
 import "core:reflect"
 import "core:path/filepath"
 
-DPacResLoader :: proc(value:^DPacObject) -> rawptr
+DPacResLoader :: proc(data: rawptr, value:^DPacObject) -> rawptr
 
 @(private="file")
 dpac_resource_loaders : map[typeid]DPacResLoader
@@ -37,7 +37,7 @@ dpac_load_value :: proc(dpac: ^DPackage, obj: ^DPacObject) -> DPackageAsset {
     if the_data.ptr != nil {
         if asset_type, ok := dpac_asset_types[obj.type]; ok {
             loader := asset_type.loader
-            if loader != nil do loader(obj)
+            if loader != nil do loader(the_data.ptr, obj)
         }
         if obj.name != "" { log.debugf("DPac: Load value [{}]: {}", obj.name, the_data) } 
         else              { log.debugf("DPac: Load anonymous value: {}", the_data) }

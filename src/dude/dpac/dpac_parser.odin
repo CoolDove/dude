@@ -21,63 +21,6 @@ types := map[string]typeid { }
 // The dpac ast will be created after call `dpac_init`.
 // And the loading process happens when `dpac_load` is called.
 
-DPacMeta :: struct {
-    name : strings.Builder,
-    symbols : map[DPacKey]DPacSymbol,
-}
-
-DPacSymbol :: struct {
-    obj : DPacObject,     // AST node.
-    data : DPackageAsset, // The actual loaded data.
-}
-
-DPacObject :: struct {
-    name  : string,
-    type  : string,
-    value : DPacValue,
-    using attributes : DPacObjectAttribute,
-}
-
-DPacObjectAttribute :: struct {
-    load_path : string,
-    is_private : bool,
-}
-
-// The actual value of a dpac AST node.
-DPacValue :: union {
-    DPacRef,    // reference
-    DPacLiteral,// literal
-    DPacInitializer,  // field - value pair
-}
-
-// Literal values.
-DPacLiteral :: union {
-    f32, i32, string,
-}
-// A reference to another value symbol in some dpackage.
-// When you load the value before its depending dpackage is loaded,
-// it leads to an error.
-DPacRef :: struct {
-    pac, name : string,
-}
-// A node used to build certain object.
-// The object is an odin type, you could use `dpac_register_asset` to register your own asset type.
-// The object type could be a **struct** or **array/slice**.
-// `anonymous` indicates the initialize syntax.
-DPacInitializer :: struct {
-    type   : string,
-    fields : []DPacFields,
-    array  : bool,
-    anonymous : bool,
-}
-// Field element in initializer.
-// When in an anonymous initializer,
-// the `field` should be an empty string.
-DPacFields :: struct {
-    field : string,
-    value : DPacObject,
-}
-
 generate_meta_from_source :: proc(dpac: ^DPackage, source: string) -> ^DPacMeta {
     context.allocator = dpac.meta_storage.allocator
     psr : parser.Parser

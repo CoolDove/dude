@@ -34,7 +34,6 @@ test_scene_loader :: proc(world: ^ecs.World) {
     {// load DPacMeta
         using dpac
 
-        dpac_register_asset("Color", Color, nil)
         dpac_register_asset("Hero", Hero, nil)
         dpac_register_asset("Team", Team, nil)
         dpac_register_asset("HeroGroup", HeroGroup, nil)
@@ -115,22 +114,22 @@ test_scene_update :: proc(world: ^ecs.World) {
     //     {100, 100}, {64, 64}, COLORS.WHITE, 
     //     dpac_query(demo_dpackage, "dude_logo", Texture).id)
 
+    icon := dpac.dpac_query(demo_dpackage, "dude", AssetTexture)
+
+
+    if icon != nil {
+    dude.immediate_texture(
+        {100, 100}, {64, 64}, COLORS.WHITE, 
+        icon.id)
+    }
 
     @static test_buffer : []byte
     @static allocated := false
 
     if get_key_down(.K) {
         using dpac
-        // log.debugf("global_name: {}", dpac_query(demo_dpackage, "global_name", string)^)
-        // log.debugf("global_f32: {}", dpac_query(demo_dpackage, "global_f32", f32)^)
-        // log.debugf("global_i32: {}", dpac_query(demo_dpackage, "global_i32", i32)^)
-        // dove_named := dpac_query(demo_dpackage, "dove_named", Dove)^
-        // log.debugf("dove_named: {}", dove_named)
-        // log.debugf("dove_named.age: {}", dove_named.age)
-
         log.debugf("Hero:dove: {}", dpac_query(demo_dpackage, "dove", Hero)^)
         log.debugf("Hero:jet: {}", dpac_query(demo_dpackage, "jet", Hero)^)
-        // log.debugf("player_team: {}", dpac_query(demo_dpackage, "player_team", Team)^)
         log.debugf("ref_team: {}", dpac_query(demo_dpackage, "ref_team", Team)^)
         log.debugf("color_text: {}", dpac_query(demo_dpackage, "color_text", Color)^)
         log.debugf("group: {}", dpac_query(demo_dpackage, "group", HeroGroup)^)
