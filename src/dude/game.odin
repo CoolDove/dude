@@ -14,7 +14,7 @@ import "core:math/linalg"
 import sdl "vendor:sdl2"
 import gl "vendor:OpenGL"
 
-when DUDE_IMGUI do import "pac:imgui"
+import "vendor/imgui"
 
 import "dgl"
 import "ecs"
@@ -28,6 +28,10 @@ default_scene : string
 Game :: struct {
     using settings : ^GameSettings,
     window : ^Window,
+
+	global_tweener : Tweener,
+
+	timer : time.Stopwatch,
 
     current_scene : ^Scene,
     main_world : ^ecs.World,
@@ -47,6 +51,11 @@ GameObject :: struct {
 }
 
 update_game :: proc() {
+	duration := time.stopwatch_duration(game.timer)
+	delta :f32= auto_cast time.duration_seconds(duration)
+	time.stopwatch_start(&game.timer)
+
+
     // ## FRAME PREPARE
     check_scene_switch()
 
@@ -94,7 +103,8 @@ update_game :: proc() {
         draw_no_scene_logo(game.window)
     }
 
-    tween_update()
+	tweener_update(&game.global_tweener, delta)
+    // tween_update()
 
     // Game builtin draw.
     if game.settings.status_window_alpha > 0 do draw_status()
@@ -132,11 +142,16 @@ init_game :: proc() {
     game.settings = new(GameSettings)
 
     load_builtin_assets() 
-    tween_init()
+    tween_system_init()
+
+	tweener_init(&game.global_tweener, 16)
 
     if default_scene != "" {
         load_scene(default_scene)
     }
+	
+	time.stopwatch_start(&game.timer)
+
 }
 
 struct_offset_detail :: proc($T:typeid) -> uintptr {
@@ -161,8 +176,9 @@ struct_offset_detail :: proc($T:typeid) -> uintptr {
 }
 
 quit_game :: proc() {
+	tweener_release(&game.global_tweener)
     unload_scene()
-    tween_destroy()
+
     unload_builtin_assets()
     log.debug("QUIT GAME")
     free(game.settings)

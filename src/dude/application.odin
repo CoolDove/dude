@@ -7,9 +7,10 @@ import "core:time"
 import "core:c"
 import "core:log"
 
+import win32 "core:sys/windows"
+
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
-
 
 Application :: struct {
     windows : map[u32]^Window,
@@ -24,7 +25,7 @@ Application :: struct {
 app : ^Application
 
 app_init :: proc() {
-	when ODIN_OS == .Windows do os_windows_set_console_output_cp(65001)
+	when ODIN_OS == .Windows do win32.SetConsoleOutputCP(65001)
 
 	app = new(Application)
 

@@ -11,18 +11,16 @@ import "core:math/rand"
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
 
-when DUDE_IMGUI {
-	import imgl "pac:imgui/impl/opengl"
-	import imsdl "pac:imgui/impl/sdl"
-	import "pac:imgui"
+import imgl "vendor/imgui/impl/opengl"
+import imsdl "vendor/imgui/impl/sdl"
+import "vendor/imgui"
 
-	ImguiState :: struct {
-		sdl_state : imsdl.SDL_State,
-		opengl_state : imgl.OpenGL_State,
-	}
-
-	imgui_state : ImguiState
+ImguiState :: struct {
+	sdl_state : imsdl.SDL_State,
+	opengl_state : imgl.OpenGL_State,
 }
+
+imgui_state : ImguiState
 
 import dgl "dgl"
 
@@ -41,21 +39,18 @@ main_wnd_vtable := Window_DeriveVTable {
 	after_instantiate,
 }
 
+@(private="file")
+init_imgui :: proc(imgui_state:^ImguiState, wnd: ^sdl.Window) {
+	imgui.create_context()
+	imgui.style_colors_dark()
 
-when DUDE_IMGUI {
-	@(private="file")
-	init_imgui :: proc(imgui_state:^ImguiState, wnd: ^sdl.Window) {
-		imgui.create_context()
-		imgui.style_colors_dark()
+	// imsdl.setup_state(&imgui_state.sdl_state)
+	imsdl.init(&imgui_state.sdl_state, wnd)
+	imgl.setup_state(&imgui_state.opengl_state)
 
-		// imsdl.setup_state(&imgui_state.sdl_state)
-		imsdl.init(&imgui_state.sdl_state, wnd)
-		imgl.setup_state(&imgui_state.opengl_state)
+	imgui_version := imgui.get_version()
 
-		imgui_version := imgui.get_version()
-
-		log.infof("ImGui inited, version: %s", imgui_version)
-	}
+	log.infof("ImGui inited, version: %s", imgui_version)
 }
 
 @(private="file")

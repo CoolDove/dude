@@ -13,10 +13,7 @@ import "core:math/linalg"
 
 import "ecs"
 
-when DUDE_IMGUI {
-
-import "pac:imgui"
-
+import "vendor/imgui"
 
 @(private="file")
 dude_debug_guis := map[string]proc() {
@@ -50,10 +47,10 @@ dude_imgui_basic_settings :: proc() {
 
 gui_tween :: proc() {
     when ODIN_DEBUG {
-        for t, ind in &tweens {
-            text := fmt.tprintf("{}: {}", ind, "working" if !t.done else "done.")
-            imgui.selectable(text, !t.done)
-        }
+        // for t, ind in &tweens {
+            // text := fmt.tprintf("{}: {}", ind, "working" if !t.done else "done.")
+            // imgui.selectable(text, !t.done)
+        // }
     } else {
         imgui.text("Tween debug is invalid in release build.")
     }
@@ -137,10 +134,6 @@ imgui_transform :: proc(using transform : ^Transform) {
     imgui.drag_float3("scale", &scale)
 }
 
-}
-
-
-when DUDE_GIZMOS {
 
 gizmos_xz_grid :: proc(half_size : int, unit : f32, color: Color) {
     gizmos_set_color(color)
@@ -158,8 +151,6 @@ gizmos_xz_grid :: proc(half_size : int, unit : f32, color: Color) {
         y := min + cast(f32)i * unit
         gizmos_line({min, 0, y}, {max, 0, y})
     }
-
-}
 
 }
 

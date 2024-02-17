@@ -93,8 +93,7 @@ res_get_texture :: proc(keystr: string) -> ^Texture {
 }
 
 // ## Model
-when DUDE_3D_GAME {
-import "pac:assimp"
+import "vendor/assimp"
 
 ModelAsset :: struct {
     meshes : map[string]TriangleMesh,// Here stores the actual mesh data
@@ -161,8 +160,6 @@ res_get_model :: proc(keystr: string) -> ^ModelAsset {
     } else {
         return nil
     }
-}
-
 }
 
 // ## Font

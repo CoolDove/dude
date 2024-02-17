@@ -9,7 +9,7 @@ import gl "vendor:OpenGL"
 import "dgl"
 
 
-when DUDE_3D_GAME { import "pac:assimp" }
+import "vendor/assimp"
 
 TriangleMesh :: struct {
     name        : strings.Builder,

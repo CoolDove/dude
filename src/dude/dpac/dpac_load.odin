@@ -128,7 +128,10 @@ load_initializer_anonymous :: proc(dpac: ^DPackage, obj: ^DPacObject, atype : DP
             return DPackageAsset{nil, type_info.id}
         }
 
-        target := cast(^byte)mem.alloc(type_info.size)
+		bytes, err := mem.alloc(type_info.size)
+		assert(err == .None, "Failed to allocate memory for dpac.")
+        target := cast(^byte)bytes
+
         for f, ind in &ini.fields {
             fptr := mem.ptr_offset(target, field_offsets[ind])
             ftype := field_types[ind]
@@ -151,7 +154,10 @@ load_initializer_anonymous :: proc(dpac: ^DPackage, obj: ^DPacObject, atype : DP
             log.errorf("DPac: Too much elements to load array type {}. Expected: {}, actual: {}.", 
                 type_info, array_type.count, len(ini.fields))
         }
-        target := cast(^byte)mem.alloc(array_type.elem_size * array_type.count)
+		bytes, err := mem.alloc(array_type.elem_size * array_type.count)
+		assert(err == .None, "Failed to allocate memory for dpac.")
+        target := cast(^byte)bytes
+
         elem_is_pointer := is_pointer(type_info_core(array_type.elem))
         for field, ind in &ini.fields {
             fptr := mem.ptr_offset(target, ind * array_type.elem.size)
@@ -169,7 +175,11 @@ load_initializer_anonymous :: proc(dpac: ^DPackage, obj: ^DPacObject, atype : DP
         using reflect
         slice_type := core_type_info.variant.(Type_Info_Slice)
         count := len(ini.fields)
-        target := cast(^byte)mem.alloc(slice_type.elem_size * count)
+
+		bytes, err := mem.alloc(slice_type.elem_size * count)
+		assert(err == .None, "Failed to allocate memory for dpac.")
+        target := cast(^byte)bytes
+
         elem_is_pointer := is_pointer(type_info_core(slice_type.elem))
         for field, ind in &ini.fields {
             fptr := mem.ptr_offset(target, ind * slice_type.elem_size)
@@ -209,7 +219,8 @@ load_initializer_named :: proc(dpac: ^DPackage, obj: ^DPacObject, atype : DPacAs
         return DPackageAsset{nil, type_info.id}
     }
 
-    target := cast(^byte)mem.alloc(type_info.size)
+	bytes, err := mem.alloc(type_info.size)
+    target := cast(^byte)bytes
     for f, ind in &ini.fields {
         if f.field == "" do continue // Ignore anonymous fields.
         find := -1

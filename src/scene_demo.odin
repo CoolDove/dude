@@ -138,8 +138,11 @@ test_scene_update :: proc(world: ^ecs.World) {
     if !start_triggered {
         if get_key_down(.RETURN) {
             start_triggered = true
-            tween(&alpha, 1, 1.2)->
-                set_on_complete(start_game, nil)
+
+            // tween(&alpha, 1, 1.2)->
+                // set_on_complete(start_game, nil)
+			start_game()
+
             // sprites := ecs.get_components(world, SpriteRenderer)
             // for sp in &sprites do sp.enable = false
         }
