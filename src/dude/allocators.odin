@@ -35,10 +35,8 @@ allocators : DudeAllocators
 buffer : [dynamic]byte
 
 allocators_init :: proc() {
-    when DUDE_EDITOR {
-        mem.arena_init(&allocators.debug_arena, debug_buffer[:])
-        allocators.debug = mem.arena_allocator(&allocators.debug_arena)
-    }
+	mem.arena_init(&allocators.debug_arena, debug_buffer[:])
+	allocators.debug = mem.arena_allocator(&allocators.debug_arena)
 
     mem.arena_init(&allocators.frame_arena, frame_buffer[:])
     allocators.frame = mem.arena_allocator(&allocators.frame_arena)

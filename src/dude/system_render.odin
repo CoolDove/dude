@@ -69,14 +69,13 @@ render_sprites :: #force_inline proc(world: ^ecs.World, camera_matrix : ^linalg.
         1, false, linalg.matrix_to_ptr(camera_matrix))
     default_white := res_get_texture("texture/white.tex")
 
-    when DUDE_EDITOR {
-        immediate_text(builtin_res.default_font, 
-            fmt.tprintf("world: {}", len(world_sprites)), 
-            {0, 32}, COLORS.RED)
-        immediate_text(builtin_res.default_font, 
-            fmt.tprintf("screen: {}", len(screen_sprites)), 
-            {0, 100}, COLORS.RED)
-    }
+	immediate_text(builtin_res.default_font, 
+		fmt.tprintf("world: {}", len(world_sprites)), 
+		{0, 32}, COLORS.RED)
+	immediate_text(builtin_res.default_font, 
+		fmt.tprintf("screen: {}", len(screen_sprites)), 
+		{0, 100}, COLORS.RED)
+
 
     for sp in &world_sprites {// Render world space.
         if !sp.enable do continue

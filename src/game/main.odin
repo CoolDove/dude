@@ -14,7 +14,6 @@ main :: proc() {
 	dude.init("dude", {_package_game, _test})
 
     dude.install_scene("Demo", scene_demo)
-    when dude.DUDE_3D_GAME do dude.install_scene("Mushroom", scene_mushroom)
     dude.set_default_scene("Demo")
 
     dude.dude_main()

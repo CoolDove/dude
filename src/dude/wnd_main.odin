@@ -55,7 +55,7 @@ init_imgui :: proc(imgui_state:^ImguiState, wnd: ^sdl.Window) {
 
 @(private="file")
 after_instantiate :: proc(using wnd: ^Window) {
-	when DUDE_IMGUI do init_imgui(&imgui_state, window)
+	init_imgui(&imgui_state, window)
 
 	log.debugf("window {} instantiated.", name)
 
@@ -71,7 +71,7 @@ before_destroy :: proc(wnd: ^Window) {
 
 @(private="file")
 handler :: proc(using wnd:^Window, event:sdl.Event) {
-	when DUDE_IMGUI do imsdl.process_event(event, &imgui_state.sdl_state)
+	imsdl.process_event(event, &imgui_state.sdl_state)
 
 	input_handle_sdl2(event)
 
@@ -87,7 +87,7 @@ update :: proc(using wnd:^Window) {// Game runs in this.
 	input_after_update_sdl2()
 }
 
-when DUDE_IMGUI {
+
 @(private)
 imgui_frame_begin :: proc() {
 	imsdl.new_frame()
@@ -101,4 +101,4 @@ imgui_frame_end :: proc() {
 	draw_data := imgui.get_draw_data();
 	imgl.imgui_render(draw_data, imgui_state.opengl_state)
 }
-}
+

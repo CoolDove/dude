@@ -7,14 +7,6 @@ import "core:log"
 // Build settings.
 DUDE_STARTUP_COMMAND :string: #config(DUDE_STARTUP_COMMAND, "GAME")
 
-DUDE_3D_GAME 	   :: true  // assimp and ...
-DUDE_IMGUI_INGAME  :: false
-DUDE_GIZMOS_INGAME :: false
-
-DUDE_IMGUI  :: ODIN_DEBUG || DUDE_IMGUI_INGAME
-DUDE_GIZMOS :: ODIN_DEBUG || DUDE_GIZMOS_INGAME
-DUDE_EDITOR :: ODIN_DEBUG
-
 dude_main :: proc() {
 	when ODIN_DEBUG {
 		logger := log.create_console_logger(.Debug, {.Level, .Short_File_Path, .Line, .Terminal_Color})

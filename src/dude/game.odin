@@ -85,19 +85,16 @@ update_game :: proc() {
             game.current_scene.update(world)
         }
 
-        when DUDE_GIZMOS {
-            camera := get_main_camera(world)
-            if camera != nil do gizmos_begin(camera)
-        }
+       
+		camera := get_main_camera(world)
+		if camera != nil do gizmos_begin(camera)
+      
 
         ecs.world_update(world)
         render_world(world)
 
-        when DUDE_GIZMOS { gizmos_xz_grid(10, 1, COLORS.GRAY) }
-
-        when DUDE_GIZMOS {
-            if camera != nil do gizmos_end()
-        }
+        gizmos_xz_grid(10, 1, COLORS.GRAY)
+        if camera != nil do gizmos_end()
 
     } else {// Draw "No Scene Loaded" and the cool dude logo.
         draw_no_scene_logo(game.window)
@@ -113,11 +110,9 @@ update_game :: proc() {
     immediate_end(game.immediate_draw_wireframe)
 
     // ## DEBUG IMGUI
-	when DUDE_IMGUI {
-        imgui_frame_begin()
-		dude_imgui_basic_settings()
-        imgui_frame_end()
-	}
+	imgui_frame_begin()
+	dude_imgui_basic_settings()
+	imgui_frame_end()
 
     free_all(allocators.frame)
 }

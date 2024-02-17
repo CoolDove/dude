@@ -92,76 +92,6 @@ res_get_texture :: proc(keystr: string) -> ^Texture {
     return cast(^Texture)resource_manager.resources[res_key(keystr)]
 }
 
-// ## Model
-import "vendor/assimp"
-
-ModelAsset :: struct {
-    meshes : map[string]TriangleMesh,// Here stores the actual mesh data
-    assimp_scene : ^assimp.Scene,
-}
-ModelAssetSceneTree :: struct {
-    name : strings.Builder,
-    mesh : ^TriangleMesh,
-    parent, next, lchild : ^ModelAssetSceneTree,
-}
-
-res_load_model :: proc(keystr: string, shader: u32, texture: u32, scale: f32) -> (^ModelAsset, ResourceError) {
-    fpath := make_path(keystr)
-    defer delete(fpath)
-
-    key := res_key(keystr)
-    if key in resource_manager.resources { return nil, .Key_Has_Exists }
-
-    raw_asset := assimp.import_file(fpath, cast(u32) assimp.PostProcessPreset_MaxQuality)
-
-    if raw_asset == nil { return nil, .Invalid_Path }
-
-    asset := new(ModelAsset)
-    asset.assimp_scene = raw_asset
-    asset.meshes = make(map[string]TriangleMesh)
-
-    for i in 0..<raw_asset.mNumMeshes {
-        m := raw_asset.mMeshes[i]
-        name := assimp.string_clone_from_ai_string(&m.mName)
-        asset.meshes[name] = TriangleMesh{}
-        triangle_mesh := &asset.meshes[name]
-        strings.builder_init(&triangle_mesh.name)
-        aimesh_to_triangle_mesh(m, triangle_mesh, shader, texture)
-        mesh_upload(triangle_mesh, {.PCNU, .PCU})
-    }
-
-    resource_manager.resources[key] = asset
-
-    // TODO: Build scene tree.
-    // ...
-
-    return asset, nil
-}
-
-res_unload_model :: proc(keystr: string) {
-    key := res_key(keystr)
-    if !(key in resource_manager.resources) do return
-
-    asset := cast(^ModelAsset)resource_manager.resources[key]
-
-    for name, mesh in &asset.meshes {
-        mesh_destroy(&mesh)
-    }
-    clear(&asset.meshes)
-
-    assimp.release_import(asset.assimp_scene)
-    delete_key(&resource_manager.resources, key)
-}
-
-res_get_model :: proc(keystr: string) -> ^ModelAsset {
-    key := res_key(keystr)
-    if model, ok := resource_manager.resources[key]; ok {
-        return cast(^ModelAsset)model
-    } else {
-        return nil
-    }
-}
-
 // ## Font
 
 res_load_font :: proc(keystr: string, px: f32) -> (^DynamicFont, ResourceError) {
@@ -259,24 +189,6 @@ res_list_embbed :: proc() {
     }
 }
 
-when DUDE_EDITOR {
-    res_list_loaded :: proc() {
-        sb : strings.Builder
-        strings.builder_init(&sb)
-        defer strings.builder_destroy(&sb)
-
-        strings.write_string(&sb, "\nList Loaded Resource: \n")
-
-        for key, res in resource_manager.resources {
-            strings.write_string(&sb, "> ")
-            strings.write_string(&sb, res_name_lookup[key])
-            strings.write_rune(&sb, '\n')
-        }
-        log.debug(strings.to_string(sb))
-    }
-}
-
-
 @(private="file")
 make_path :: proc(path: string, allocator:= context.allocator) -> string {
     context.allocator = allocator
@@ -290,16 +202,6 @@ make_path :: proc(path: string, allocator:= context.allocator) -> string {
 
 ResKey :: distinct u64
 
-when DUDE_EDITOR {
-    @ private
-    res_name_lookup : map[ResKey]string
-    res_key :: proc(keystr:string) -> ResKey {
-        key := cast(ResKey)hash.crc64_xz(raw_data(keystr)[:len(keystr)]) 
-        if !(key in res_name_lookup) do res_name_lookup[key] = strings.clone(keystr, allocators.debug)
-        return key
-    }
-} else {
-    res_key :: proc(name:string) -> ResKey {
-        return cast(ResKey)hash.crc64_xz(raw_data(name)[:len(name)])
-    }
+res_key :: proc(name:string) -> ResKey {
+	return cast(ResKey)hash.crc64_xz(raw_data(name)[:len(name)])
 }
