@@ -75,10 +75,10 @@ gui_resource_viewer :: proc() {
     keys := make([dynamic]string, count, count)
     defer delete(keys)
     c := 0
-    for key, res in resource_manager.resources {
-        keys[c] = res_name_lookup[key]
-        c += 1
-    }
+    // for key, res in resource_manager.resources {
+        // keys[c] = res_name_lookup[key]
+        // c += 1
+    // }
     slice.sort(keys[:])
     for k in keys { imgui.text(k) }
 }

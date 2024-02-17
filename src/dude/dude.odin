@@ -1,8 +1,12 @@
 package dude
 
+import "core:fmt"
+import "core:os"
 import "core:log"
 
 // Build settings.
+DUDE_STARTUP_COMMAND :string: #config(DUDE_STARTUP_COMMAND, "GAME")
+
 DUDE_3D_GAME 	   :: true  // assimp and ...
 DUDE_IMGUI_INGAME  :: false
 DUDE_GIZMOS_INGAME :: false
@@ -18,18 +22,32 @@ dude_main :: proc() {
 	}
 
 	if !game_installed {
-		log.errorf("Dude: Game is not installed, `dude.install_game` please.")
+		log.errorf("Dude: Game is not installed, `dude.install_game` please. Now dude.init()")
 		return
 	}
 
-	app_init();
-	app_run();
-	app_release();
+	when DUDE_STARTUP_COMMAND == "PACKAGE_GAME" {
+		game_config.commands.package_game(os.args[1:])
+		return
+	} else when DUDE_STARTUP_COMMAND == "TEST" {
+		game_config.commands.test(os.args[1:])
+		return
+	} else when DUDE_STARTUP_COMMAND != "GAME" {
+		fmt.printf("unrecognized command: {}", DUDE_STARTUP_COMMAND)
+		return
+	}
+
+	when DUDE_STARTUP_COMMAND == "GAME" {
+		app_init();
+		app_run();
+		app_release();
+	}
 }
 
 @(private)
 GameConfig :: struct {
 	name : string,
+	commands : DudeStartupCommands,
 }
 
 @(private)
@@ -39,8 +57,9 @@ game_config := GameConfig {
 @(private)
 game_installed :bool= false
 
-install_game :: proc(name: string) {
+init :: proc(name: string, commands: DudeStartupCommands) {
 	game_config.name = name
+	game_config.commands = commands
 	game_installed = true
 }
 
@@ -50,4 +69,8 @@ install_scene :: proc(key: string, scene: Scene) {
 
 set_default_scene :: proc(key: string) {
 	default_scene = key
+}
+
+DudeStartupCommands :: struct {
+	package_game, test : proc(args: []string),
 }
