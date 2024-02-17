@@ -3,6 +3,7 @@ package dgl
 import gl "vendor:OpenGL"
 import "core:log"
 import "core:strings"
+import "core:fmt"
 
 ShaderType :: enum u32 {
     FRAGMENT_SHADER        = gl.FRAGMENT_SHADER,
@@ -13,9 +14,7 @@ ShaderType :: enum u32 {
     GEOMETRY_SHADER        = gl.GEOMETRY_SHADER,
 }
 
-Shader :: struct {
-    id : u32,
-}
+ShaderId :: u32
 
 ShaderComponent :: struct {
     id : u32,
@@ -42,7 +41,7 @@ shader_create_component :: proc (type : ShaderType, source : string) -> ShaderCo
 		shader_log_length:i32
 		info_buf : [512]u8
 		gl.GetShaderInfoLog(id, 512, &shader_log_length, &info_buf[0])
-		log.errorf("DGL: Shader ShaderComponent Compile Error: \n%s\n", info_buf);
+		fmt.printf("DGL: Shader ShaderComponent Compile Error: \n%s\n", info_buf);
         return ShaderComponent{}
 	}
     return shader
@@ -73,48 +72,57 @@ shader_destroy :: proc {
     shader_destroy_single,
     shader_destroy_multiple,
 }
-shader_destroy_single :: proc(using shader: ^Shader) {
-    gl.DeleteProgram(id)
+shader_destroy_single :: proc(shader: ShaderId) {
+    shader := shader
+    gl.DeleteProgram(shader)
 }
-shader_destroy_multiple :: proc(shaders: ..^Shader) {
+shader_destroy_multiple :: proc(shaders: ..ShaderId) {
     for sh in shaders {
-        gl.DeleteProgram(sh.id)
+        gl.DeleteProgram(sh)
     }
 }
 
-shader_create_from_components :: proc(comps: ..^ShaderComponent) -> Shader {
-    shader : Shader
-    shader.id = gl.CreateProgram()
+shader_create_from_components :: proc(comps: ..^ShaderComponent) -> ShaderId {
+    shader : ShaderId
+    shader = auto_cast gl.CreateProgram()
     for c in comps {
-        gl.AttachShader(shader.id, c.id)
+        gl.AttachShader(auto_cast shader, c.id)
     }
-    gl.LinkProgram(shader.id)
+    gl.LinkProgram(auto_cast shader)
 
     success : i32
 
-	gl.GetProgramiv(shader.id, gl.LINK_STATUS, &success)
+	gl.GetProgramiv(shader, gl.LINK_STATUS, &success)
 	if success == 0 {
 		info_length:i32
 		info_buf : [512]u8
-		gl.GetProgramInfoLog(shader.id, 512, &info_length, &info_buf[0]);
-		log.debugf("DGL Error: Shader Linking Error: \n%s\n", info_buf)
-        return Shader{}
+		gl.GetProgramInfoLog(shader, 512, &info_length, &info_buf[0]);
+		fmt.printf("DGL Error: Shader Linking Error: \n%s\n", info_buf)
+        return 0
 	}
-
     return shader
 }
 
-shader_bind :: proc(using shader: ^Shader) {
-    if id == 0 {
-        log.error("DGL Error: Failed to bind shader, the shader is not correctly initialized!")
-    } else {
-        gl.UseProgram(id)
-    }
+shader_bind :: proc(shader: ShaderId) {
+    gl.UseProgram(shader)
 }
 
-shader_load_vertex_and_fragment :: proc(vertex_source, fragment_source : string) -> Shader {
-	shader_comp_vertex := shader_create_component(.VERTEX_SHADER, vertex_source)
-	shader_comp_fragment := shader_create_component(.FRAGMENT_SHADER, fragment_source)
+shader_current :: proc() -> ShaderId {
+    id : i32
+    gl.GetIntegerv(gl.CURRENT_PROGRAM, &id)
+    return cast(u32)id
+}
+
+shader_load_from_sources :: proc(vertex_source, fragment_source : string, preprocess:= false) -> ShaderId {
+    vert, frag := vertex_source, fragment_source
+    if preprocess {
+        vert, frag = shader_preprocess(vert), shader_preprocess(frag)
+    }
+    defer if preprocess {
+        delete(vert); delete(frag)
+    }
+	shader_comp_vertex := shader_create_component(.VERTEX_SHADER, vert)
+	shader_comp_fragment := shader_create_component(.FRAGMENT_SHADER, frag)
 	shader := shader_create(&shader_comp_vertex, &shader_comp_fragment)
 	shader_destroy_components(&shader_comp_vertex, &shader_comp_fragment)
 	return shader
