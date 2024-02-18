@@ -21,18 +21,6 @@ CameraProjectType :: enum {
     Persp, Ortho,
 }
 
-// ## Mesh Renderer
-MeshRenderer :: struct {
-    using component : ecs.Component,
-    mesh : ^TriangleMesh,
-    transform_matrix: linalg.Matrix4x4f32,
-}
-
-// ## Text Renderer
-TextRenderer :: struct {
-    // ...
-}
-
 // ## Light
 Light :: struct {
     using component : ecs.Component,

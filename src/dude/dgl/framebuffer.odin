@@ -4,6 +4,8 @@ import gl "vendor:OpenGL"
 
 FramebufferId :: distinct u32
 
+FRAMEBUFFER_DEFAULT :FramebufferId: 0
+
 framebuffer_create :: proc() -> FramebufferId {
     id : u32
     gl.GenFramebuffers(1, &id)

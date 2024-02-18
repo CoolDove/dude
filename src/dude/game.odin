@@ -35,6 +35,9 @@ Game :: struct {
 
     current_scene : ^Scene,
     main_world : ^ecs.World,
+
+	render_layers : [dynamic]RenderLayer,
+
 }
 
 GameSettings :: struct {
@@ -44,11 +47,6 @@ GameSettings :: struct {
 }
 
 game : Game
-
-GameObject :: struct {
-    mesh      : TriangleMesh,
-    transform : Transform,
-}
 
 update_game :: proc() {
 	duration := time.stopwatch_duration(game.timer)
@@ -61,7 +59,7 @@ update_game :: proc() {
 
 	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT)
     wnd := game.window
-	immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
+	// immediate_begin(dgl.Vec4i{0, 0, wnd.size.x, wnd.size.y})
 
     // ## GAME LOGIC
     {// Engine input handling
@@ -84,14 +82,15 @@ update_game :: proc() {
         if game.current_scene.update != nil {
             game.current_scene.update(world)
         }
-
        
 		camera := get_main_camera(world)
 		if camera != nil do gizmos_begin(camera)
       
-
         ecs.world_update(world)
-        render_world(world)
+        // render_world(world)
+
+		// ## Test draw
+		test_render()
 
         gizmos_xz_grid(10, 1, COLORS.GRAY)
         if camera != nil do gizmos_end()
@@ -107,7 +106,7 @@ update_game :: proc() {
     if game.settings.status_window_alpha > 0 do draw_status()
 
     // ## RENDERING
-    immediate_end(game.immediate_draw_wireframe)
+    // immediate_end(game.immediate_draw_wireframe)
 
     // ## DEBUG IMGUI
 	imgui_frame_begin()
@@ -147,6 +146,7 @@ init_game :: proc() {
 	
 	time.stopwatch_start(&game.timer)
 
+	test_render_init()
 }
 
 struct_offset_detail :: proc($T:typeid) -> uintptr {
@@ -171,6 +171,8 @@ struct_offset_detail :: proc($T:typeid) -> uintptr {
 }
 
 quit_game :: proc() {
+	test_render_release()
+
 	tweener_release(&game.global_tweener)
     unload_scene()
 

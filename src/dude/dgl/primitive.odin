@@ -8,6 +8,12 @@ DrawPrimitive :: struct {
     count : i32,
 }
 
+draw_mesh :: proc(mesh : Mesh) {
+	gl.BindVertexArray(mesh.vao)
+	gl.DrawElements(gl.TRIANGLES, mesh.index_count, gl.UNSIGNED_INT, nil)
+	gl.BindVertexArray(0)
+}
+
 primitive_draw :: proc(using p: ^DrawPrimitive, shader: u32) {
     if ibo == 0 {
         gl.BindVertexArray(vao)

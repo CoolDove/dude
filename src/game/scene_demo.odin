@@ -117,11 +117,11 @@ test_scene_update :: proc(world: ^ecs.World) {
     icon := dpac.dpac_query(demo_dpackage, "dude", AssetTexture)
 
 
-    if icon != nil {
-    dude.immediate_texture(
-        {100, 100}, {64, 64}, COLORS.WHITE, 
-        icon.id)
-    }
+    // if icon != nil {
+    // dude.immediate_texture(
+        // {100, 100}, {64, 64}, COLORS.WHITE, 
+        // icon.id)
+    // }
 
     @static test_buffer : []byte
     @static allocated := false

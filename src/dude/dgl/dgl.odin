@@ -18,6 +18,21 @@ release :: proc() {
     delete(release_handler)
 }
 
+set_vertex_format :: proc(format: VertexFormat) {
+	channels :u32= 0
+	offset :u32= 0
+	stride :u32= 0
+	for i in 0..<VERTEX_MAX_CHANNEL do stride += cast(u32)format[i]
+
+	for i in 0..<VERTEX_MAX_CHANNEL {
+		c := format[i]
+		if c == 0 do continue
+		gl.EnableVertexAttribArray(channels)
+		gl.VertexAttribPointer(channels, cast(i32)c, gl.FLOAT, false, cast(i32)(stride * size_of(f32)), cast(uintptr)offset*size_of(f32))
+		channels += 1
+		offset += cast(u32)c
+	}
+}
 
 // A VertexArrayObject should be binded before these `set_vertex_format` things.
 set_vertex_format_PCU :: proc(shader: u32) {
@@ -72,11 +87,11 @@ Vec2i :: distinct [2]i32
 Vec3i :: distinct [3]i32
 Vec4i :: distinct [4]i32
 
-VertexTypes :: bit_set[VertexType]
+// VertexTypes :: bit_set[VertexType]
 
-VertexType :: enum u32 {
-    PCU, PCNU,
-}
+// VertexType :: enum u32 {
+    // PCU, PCNU,
+// }
 
 VertexPCU :: struct {
     position : Vec3,

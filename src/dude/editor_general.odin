@@ -108,10 +108,11 @@ gui_ecs :: proc() {
                 if c.type == typeid_of(Transform) {
                     transform := ecs.get_component(game.main_world, entity, Transform)
                     imgui_transform(transform)
-                } else if c.type == typeid_of(SpriteRenderer) {
-                    sprite := ecs.get_component(game.main_world, entity, SpriteRenderer)
-                    text_unformatted(fmt.tprintf("Space: {}", sprite.space))
                 }
+				// else if c.type == typeid_of(SpriteRenderer) {
+                    // sprite := ecs.get_component(game.main_world, entity, SpriteRenderer)
+                    // text_unformatted(fmt.tprintf("Space: {}", sprite.space))
+                // }
             }
             end_child()
         }
@@ -159,11 +160,11 @@ draw_no_scene_logo :: proc(wnd: ^Window) {
     wnd_size := wnd.size
     unifont := builtin_res.default_font
     text := "No Scene Loaded"
-    text_width := immediate_measure_text_width(unifont, text)
-    screen_center := Vec2{cast(f32)wnd_size.x, cast(f32)wnd_size.y} * 0.5
-    immediate_text(unifont, text,
-        {screen_center.x - text_width * 0.5, screen_center.y},
-        COLORS.GRAY)
+    // text_width := immediate_measure_text_width(unifont, text)
+    // screen_center := Vec2{cast(f32)wnd_size.x, cast(f32)wnd_size.y} * 0.5
+    // immediate_text(unifont, text,
+        // {screen_center.x - text_width * 0.5, screen_center.y},
+        // COLORS.GRAY)
 }
 
 draw_status :: proc() {
@@ -176,6 +177,6 @@ draw_status :: proc() {
     if font != nil {
         text := fmt.aprintf("FPS: {}, ftime: {} ms", framerate, frame_ms)
         defer delete(text)
-        immediate_text(font, text, {10, 32+10}, color)
+        // immediate_text(font, text, {10, 32+10}, color)
     }
 }

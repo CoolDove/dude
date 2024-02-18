@@ -30,7 +30,7 @@ GizmosDrawContext :: struct {
     gizmos_shader : u32,
 }
 @(private="file")
-LineSeg :: [2]VertexPCU
+LineSeg :: [2]Vec2
 
 @(private="file")
 gizmos_context : GizmosDrawContext
@@ -53,7 +53,7 @@ gizmos_end :: proc() {
     gl.GenBuffers(1, &vbuffer)
     defer gl.DeleteBuffers(1, &vbuffer)
     gl.BindBuffer(gl.ARRAY_BUFFER, vbuffer)
-    gl.BufferData(gl.ARRAY_BUFFER, len(lines) * size_of(VertexPCU) * 2, raw_data(lines), gl.STREAM_DRAW)
+    gl.BufferData(gl.ARRAY_BUFFER, len(lines) * size_of(LineSeg), raw_data(lines), gl.STREAM_DRAW)
 
     gl.UseProgram(gizmos_shader)
     dgl.set_vertex_format_PCU(gizmos_shader)
@@ -84,16 +84,8 @@ gizmos_line :: proc(positions : ..Vec3) {
     using gizmos_context
     if !drawing do return
     for i in 0..<len(positions)-1 {
-        a := VertexPCU {
-            positions[i],
-            color,
-            {0,0},
-        }
-        b := VertexPCU {
-            positions[i+1],
-            color,
-            {0,0},
-        }
+        a := Vec2 {positions[i].x, positions[i].y}
+        b := Vec2 {positions[i+1].x, positions[i+1].y}
         append(&lines, LineSeg{a, b})
     }
 }

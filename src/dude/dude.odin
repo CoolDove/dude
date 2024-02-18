@@ -6,6 +6,7 @@ import "core:log"
 
 // Build settings.
 DUDE_STARTUP_COMMAND :string: #config(DUDE_STARTUP_COMMAND, "GAME")
+DUDE_GAME :: DUDE_STARTUP_COMMAND == "GAME"
 
 dude_main :: proc() {
 	when ODIN_DEBUG {
