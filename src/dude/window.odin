@@ -15,7 +15,7 @@ Window :: struct {
 	// The GLContext is not correct during `handler`, 
 	// so do not use any OpenGL things in `handler`.
 	using vtable : ^Window_VTable,
-	using derive_vtable : ^Window_DeriveVTable,
+
 	using state : WindowState,
 
 	position, size : IVec2,
@@ -42,17 +42,10 @@ WindowState :: struct {
 }
 
 Window_VTable :: struct {
-	toggle_fullscreen : proc(wnd:^Window, mode: WindowFullscreenMode),
-}
-Window_DeriveVTable :: struct {
 	handler  : proc(wnd:^Window, event:sdl.Event), 
 	update 	 : proc(wnd:^Window),
 	before_destroy : proc(wnd:^Window),
 	after_instantiate : proc(wnd:^Window),
-}
-
-window_vtable := Window_VTable { 
-	toggle_fullscreen,
 }
 
 WindowFullscreenMode :: enum {
@@ -61,15 +54,10 @@ WindowFullscreenMode :: enum {
 
 IVec2 :: [2]i32
 
-Event :: struct {
-	event : ^sdl.Event,
-}
-
 window_get_basic_template :: proc(name: string, size : IVec2 = IVec2{800, 600}, is_opengl_window : bool = true) -> Window {
 	wnd : Window
 	wnd.name = name
-	// wnd.handler = nil
-	// wnd.render = nil
+
 	wnd.is_opengl_window = is_opengl_window
 	if is_opengl_window {
 		wnd.window_flags |= {.OPENGL}
@@ -79,38 +67,11 @@ window_get_basic_template :: proc(name: string, size : IVec2 = IVec2{800, 600}, 
     return wnd
 }
 
-window_instantiate :: proc {
-	window_instantiate_with_data,
-	window_instantiate_without_data,
-}
-
-window_instantiate_with_data :: proc(using wnd:^Window, $DataType: typeid) -> bool {
-	vtable = &window_vtable
-	create_result := create_window_and_init_opengl(wnd)
-	_data = new(DataType)
-	_data_type = DataType
-
-	if after_instantiate != nil do after_instantiate(wnd)
-	return create_result
-}
-window_instantiate_without_data :: proc(using wnd:^Window) -> bool {
-	vtable = &window_vtable
+window_instantiate :: proc(using wnd:^Window) -> bool {
 	create_result := create_window_and_init_opengl(wnd)
 	if after_instantiate != nil do after_instantiate(wnd)
 	return create_result
 }
-
-// ## VTable
-// FIXME: FullscreenDesktop mode is not correctly working, viewport and resolution broken.
-@(private="file")
-toggle_fullscreen :: proc (using wnd: ^Window, mode: WindowFullscreenMode) {
-	zero :u32= 0
-	flags : sdl.WindowFlags = transmute(sdl.WindowFlags)zero
-	if mode == .FullscreenDesktop do flags = sdl.WINDOW_FULLSCREEN_DESKTOP
-	else if mode == .Fullscreen do flags = sdl.WINDOW_FULLSCREEN
-	if sdl.SetWindowFullscreen(window, flags) >= 0 do fullscreen = mode
-}
-
 
 @(private="file")
 create_window_and_init_opengl :: proc(using wnd: ^Window)  -> bool {
@@ -142,11 +103,6 @@ create_window_and_init_opengl :: proc(using wnd: ^Window)  -> bool {
 	return true
 }
 
-window_data :: proc($Type:typeid, using wnd: ^Window) -> ^Type {
-	assert(_data != nil, fmt.tprintf("Failed to get window: {}'s data, cuz it has no data.\n", name))
-	return cast(^Type)_data
-}
-
 window_destroy :: proc(using wnd:^Window) {
 	if window == nil do return
 
@@ -163,4 +119,14 @@ window_is_good :: proc(using wnd:^Window) -> bool {
 
 window_get_id :: proc(using wnd:^Window) -> u32 {
 	return sdl.GetWindowID(window)
+}
+
+
+// FIXME: FullscreenDesktop mode is not correctly working, viewport and resolution broken.
+window_toggle_fullscreen :: proc(using wnd:^Window, mode: WindowFullscreenMode) {
+	zero :u32= 0
+	flags : sdl.WindowFlags = transmute(sdl.WindowFlags)zero
+	if mode == .FullscreenDesktop do flags = sdl.WINDOW_FULLSCREEN_DESKTOP
+	else if mode == .Fullscreen do flags = sdl.WINDOW_FULLSCREEN
+	if sdl.SetWindowFullscreen(window, flags) >= 0 do fullscreen = mode
 }
