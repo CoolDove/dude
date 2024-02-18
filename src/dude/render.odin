@@ -20,6 +20,8 @@ render_layer_release :: proc(layer: ^RenderLayer) {
 @(private="file")
 test_mesh : dgl.Mesh 
 @(private="file")
+test_mesh_triangle : dgl.Mesh 
+@(private="file")
 test_shader : dgl.ShaderId
 @(private="file")
 test_shader_uniform : UniformsTestShader
@@ -41,8 +43,17 @@ test_render_init :: proc() {
 		{v4={0.5,  0.5,  1,1}},
 	)
 	mesh_builder_add_indices(&mb, 0,1,2, 1,3,2)
-
 	test_mesh = mesh_builder_create(mb)
+
+	mesh_builder_clear(&mb)
+	mesh_builder_add_vertices(&mb,
+		{v4={-1.0, -1.0, 0,0}},
+		{v4={1.0,  -1.0, 1,0}},
+		{v4={-1.0, 1.0,  0,1}},
+	)
+	mesh_builder_add_indices(&mb, 0,1,2)
+	test_mesh_triangle = mesh_builder_create(mb)
+
 	test_shader = shader_load_from_sources(SHADER_SRC_VERT, SHADER_SRC_FRAG)
 	uniform_load(&test_shader_uniform, test_shader)
 }
@@ -55,6 +66,7 @@ test_render :: proc() {
 	dgl.shader_bind(test_shader)
 	dgl.uniform_set(test_shader_uniform.color, Vec4{1,0.2,0.1,1.0})
 	dgl.draw_mesh(test_mesh)
+	dgl.draw_mesh(test_mesh_triangle)
 }
 
 SHADER_SRC_VERT :: `
