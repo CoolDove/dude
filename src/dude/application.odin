@@ -25,12 +25,10 @@ Application :: struct {
 	frame_stopwatch : time.Stopwatch,
 }
 
-app : ^Application
+app : Application
 
 app_init :: proc() {
 	when ODIN_OS == .Windows do win32.SetConsoleOutputCP(65001)
-
-	app = new(Application)
 
 	time.stopwatch_start(&app.stopwatch)
 
@@ -51,7 +49,7 @@ app_init :: proc() {
 }
 
 app_release :: proc() {
-    free(app)
+	sdl.Quit()
 }
 
 app_run :: proc() {
@@ -84,8 +82,6 @@ app_run :: proc() {
 			window.update(&window)
 		}
 	}
-
-	sdl.Quit()
 }
 
 @(private ="file")

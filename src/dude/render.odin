@@ -3,24 +3,49 @@ package dude
 import "dgl"
 
 
-RenderLayer :: struct {
+RenderPass :: struct {
 	target : dgl.FramebufferId,
+	viewport : Vec4,
 	robjs : [dynamic]RenderObject,
 }
 
-render_layer_init :: proc(layer: ^RenderLayer) {
+RenderObject :: union {
+	RObjMesh,
+}
+
+RObjMesh :: struct {
+	shader: dgl.ShaderId,
+	material: dgl.Material,
+	mesh: dgl.Mesh,
+}
+
+
+RenderCameraViewport :: struct {
+	viewport_size : Vec2,
+}
+RenderCameraDefault2D :: struct {
+	position : Vec2,
+}
+
+render_pass_init :: proc(layer: ^RenderPass) {
 	layer.robjs = make([dynamic]RenderObject)
 }
-render_layer_release :: proc(layer: ^RenderLayer) {
+render_pass_release :: proc(layer: ^RenderPass) {
 	delete(layer.robjs)
 	layer.robjs = nil
 }
-
 
 @(private="file")
 test_mesh : dgl.Mesh 
 @(private="file")
 test_mesh_triangle : dgl.Mesh 
+
+
+@(private="file")
+mat_red : dgl.Material
+@(private="file")
+mat_green : dgl.Material
+
 @(private="file")
 test_shader : dgl.ShaderId
 @(private="file")
@@ -56,8 +81,15 @@ test_render_init :: proc() {
 
 	test_shader = shader_load_from_sources(SHADER_SRC_VERT, SHADER_SRC_FRAG)
 	uniform_load(&test_shader_uniform, test_shader)
+
+	material_init(&mat_red, test_shader)
+	material_set(&mat_red, test_shader_uniform.color, Vec4{1,0.05,0.05, 1})
+	material_init(&mat_green, test_shader)
+	material_set(&mat_green, test_shader_uniform.color, Vec4{0.05,1,0.05, 1})
 }
 test_render_release :: proc() {
+	dgl.material_release(&mat_red)
+	dgl.material_release(&mat_green)
 	dgl.mesh_delete(&test_mesh)
 	dgl.shader_destroy(test_shader)
 }
@@ -65,7 +97,9 @@ test_render_release :: proc() {
 test_render :: proc() {
 	dgl.shader_bind(test_shader)
 	dgl.uniform_set(test_shader_uniform.color, Vec4{1,0.2,0.1,1.0})
+	dgl.material_upload(mat_red)
 	dgl.draw_mesh(test_mesh)
+	dgl.material_upload(mat_green)
 	dgl.draw_mesh(test_mesh_triangle)
 }
 
@@ -95,3 +129,4 @@ void main() {
     FragColor = vec4(_uv.x, _uv.y, 0,1) * color;
 }
 `
+

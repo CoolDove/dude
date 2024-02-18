@@ -24,10 +24,10 @@ set_opengl_state_for_draw_geometry :: proc() {
     gl.CullFace(gl.BACK)
 }
 
-RenderObject :: struct {
-    // mesh : ^TriangleMesh,
-    transform_matrix: linalg.Matrix4x4f32,
-}
+// RenderObject :: struct {
+    // // mesh : ^TriangleMesh,
+    // transform_matrix: linalg.Matrix4x4f32,
+// }
 
 RenderEnvironment :: struct {
     camera : ^Camera,
@@ -40,7 +40,7 @@ draw_objects :: proc(objects: []RenderObject, env : ^RenderEnvironment) {
     mat_view_projection := calc_camera_vp(env.camera)
 
     for obj in objects {
-        using obj;
+        // using obj;
 
         // if obj.mesh == nil do continue
 // 

@@ -6,9 +6,10 @@ import gl "vendor:OpenGL"
 import "core:strings"
 
 UniformLoc :: i32
-UniformLocVec2 :: i32
-UniformLocVec4 :: i32
-UniformLocTexture :: i32
+UniformLocF32 :: UniformLoc
+UniformLocVec2 :: UniformLoc
+UniformLocVec4 :: UniformLoc
+UniformLocTexture :: UniformLoc
 
 uniform_load :: proc(data : ^$T, shader: ShaderId) {
     names := reflect.struct_field_names(T)
@@ -26,11 +27,15 @@ uniform_load :: proc(data : ^$T, shader: ShaderId) {
 }
 
 uniform_set :: proc {
+	uniform_set_f32,
     uniform_set_vec2,
     uniform_set_vec4,
     uniform_set_texture,
 }
 
+uniform_set_f32 :: proc(uniform : UniformLocF32, value: f32) {
+	gl.Uniform1f(uniform, value);
+}
 uniform_set_vec2 :: proc(uniform : UniformLocVec2, vec: Vec2) {
     gl.Uniform2f(uniform, vec.x, vec.y)
 }
