@@ -16,8 +16,6 @@ Window :: struct {
 	// so do not use any OpenGL things in `handler`.
 	using vtable : ^Window_VTable,
 	using derive_vtable : ^Window_DeriveVTable,
-	// using window_handler : WindowHandler,
-	// using window_events : WindowEvents,
 	using state : WindowState,
 
 	position, size : IVec2,
@@ -35,6 +33,8 @@ Window :: struct {
 
 	_data_type : typeid,
 	_data : rawptr, // This is invalid before instantiated.
+
+	killed : bool,
 }
 
 WindowState :: struct {

@@ -12,8 +12,11 @@ import win32 "core:sys/windows"
 import sdl  "vendor:sdl2"
 import gl   "vendor:OpenGL"
 
+
+// Forget about multi-window things.
+
 Application :: struct {
-    windows : map[u32]^Window,
+	window : Window,
 
 	duration_total : time.Duration,
 	duration_frame : time.Duration,
@@ -54,41 +57,31 @@ app_release :: proc() {
 app_run :: proc() {
 	using app
 
-	main_window   := create_main_window()
-	helper_window := create_helper_window()
-
-	register_window(&main_window)
-	// register_window(&helper_window)
+	window = create_main_window()
+	window_instantiate(&window)
 
     evt := sdl.Event{}
 
-	for len(windows) > 0 {
+	for !window.killed {
 		app_time_step()
 		
-		if sdl.PollEvent(&evt) {
-			wid := evt.window.windowID
-			if wnd, has := windows[wid]; has && wnd.handler != nil {
-				if evt.window.event == .RESIZED {
-					wnd.size.x = evt.window.data1
-					wnd.size.y = evt.window.data2
-					log.debugf("Window {} resized to {}.", wid, wnd.size)
-				} else if evt.window.event == .CLOSE {
-					if wnd.before_destroy != nil do wnd.before_destroy(wnd)
-					window_destroy(wnd)
-					remove_window(wid)
-				} else {
-					wnd.handler(wnd, evt)
-				}
+		// ## Handle events
+		if sdl.PollEvent(&evt) && window.handler != nil {
+			if evt.window.event == .RESIZED {
+				window.size.x = evt.window.data1
+				window.size.y = evt.window.data2
+			} else if evt.window.event == .CLOSE {
+				if window.before_destroy != nil do window.before_destroy(&window)
+				window_destroy(&window)
+				window.killed = true
+			} else {
+				window.handler(&window, evt)
 			}
 		} 
 
 		// update and render
-		for id, wnd in &windows {
-			if wnd.is_opengl_window {
-				assert(sdl.GL_MakeCurrent(wnd.window, wnd.gl_context) == 0, 
-					fmt.tprintf("Failed to switch gl context, because: {}\n", sdl.GetError()))
-			}
-			if wnd.update != nil do wnd.update(wnd)
+		if !window.killed && window.update != nil {
+			window.update(&window)
 		}
 	}
 
@@ -105,38 +98,4 @@ app_time_step :: proc() {
 	duration_total = duration
 
 	time.stopwatch_start(&frame_stopwatch)
-}
-
-register_window :: proc {
-	register_window_with_data,
-	register_window_without_data,
-}
-
-register_window_with_data :: proc(wnd:^Window, $DataType: typeid) {
-	using app
-	window_instantiate(wnd, DataType)
-	reg_window(wnd)
-}
-register_window_without_data :: proc(wnd:^Window) {
-	using app
-	window_instantiate(wnd)
-	reg_window(wnd)
-}
-
-@(private="file")
-reg_window :: proc(wnd:^Window) {
-	using app
-	id := window_get_id(wnd)
-	has := id in windows
-	if !has do windows[id] = wnd
-	else do fmt.println("window has been registered")
-}
-
-remove_window :: proc(id:u32) {
-	using app
-	if id in windows {
-		wnd := windows[id]
-		log.debugf("window {}: \"{}\" removed, now {} windows left", id, wnd.name, len(windows))
-        delete_key(&windows, id)
-	}
 }

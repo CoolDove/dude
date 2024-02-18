@@ -15,14 +15,14 @@ import imgl "vendor/imgui/impl/opengl"
 import imsdl "vendor/imgui/impl/sdl"
 import "vendor/imgui"
 
+import dgl "dgl"
+
 ImguiState :: struct {
 	sdl_state : imsdl.SDL_State,
 	opengl_state : imgl.OpenGL_State,
 }
 
 imgui_state : ImguiState
-
-import dgl "dgl"
 
 create_main_window :: proc (allocator:=context.allocator, loc := #caller_location) -> Window {
 	wnd := window_get_basic_template(game_config.name)
@@ -101,4 +101,3 @@ imgui_frame_end :: proc() {
 	draw_data := imgui.get_draw_data();
 	imgl.imgui_render(draw_data, imgui_state.opengl_state)
 }
-
