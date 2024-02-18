@@ -14,3 +14,6 @@ dude-test:
 
 clean:
 	rm zeno.exe zeno.pdb
+
+cody:
+	cody -direxclude ./src/dude/vendor

@@ -2,7 +2,6 @@ package dude
 
 import "dgl"
 
-
 RenderPass :: struct {
 	target : dgl.FramebufferId,
 	viewport : Vec4,
@@ -19,7 +18,6 @@ RObjMesh :: struct {
 	mesh: dgl.Mesh,
 }
 
-
 RenderCameraViewport :: struct {
 	viewport_size : Vec2,
 }
@@ -27,12 +25,12 @@ RenderCameraDefault2D :: struct {
 	position : Vec2,
 }
 
-render_pass_init :: proc(layer: ^RenderPass) {
-	layer.robjs = make([dynamic]RenderObject)
+render_pass_init :: proc(pass: ^RenderPass) {
+	pass.robjs = make([dynamic]RenderObject)
 }
-render_pass_release :: proc(layer: ^RenderPass) {
-	delete(layer.robjs)
-	layer.robjs = nil
+render_pass_release :: proc(pass: ^RenderPass) {
+	delete(pass.robjs)
+	pass.robjs = nil
 }
 
 @(private="file")
@@ -129,4 +127,3 @@ void main() {
     FragColor = vec4(_uv.x, _uv.y, 0,1) * color;
 }
 `
-
