@@ -10,6 +10,9 @@ import "../dude/ecs"
 sc := dude.Scene{}
 
 
+pass_main : dude.RenderPass
+pass_test : dude.RenderPass
+
 main :: proc() {
 	dude.init("dude", {_package_game, _test})
 
@@ -18,6 +21,16 @@ main :: proc() {
 
     dude.dude_main()
 }
+
+update :: proc() {
+}
+
+enter_test_scene :: proc() {
+    pass := &dude.game.render_pass
+    clear(pass)
+
+}
+
 
 
 @(private="file")

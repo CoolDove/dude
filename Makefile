@@ -16,4 +16,4 @@ clean:
 	rm zeno.exe zeno.pdb
 
 cody:
-	cody -direxclude ./src/dude/vendor
+	@cody -direxclude ./src/dude/vendor -q

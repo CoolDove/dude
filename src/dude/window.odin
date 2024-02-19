@@ -18,6 +18,8 @@ Window :: struct {
 
 	using state : WindowState,
 
+    imgui_state : ImguiState,
+
 	position, size : IVec2,
 
 	name     : string,
@@ -43,9 +45,6 @@ WindowState :: struct {
 
 Window_VTable :: struct {
 	handler  : proc(wnd:^Window, event:sdl.Event), 
-	update 	 : proc(wnd:^Window),
-	before_destroy : proc(wnd:^Window),
-	after_instantiate : proc(wnd:^Window),
 }
 
 WindowFullscreenMode :: enum {
@@ -68,19 +67,12 @@ window_get_basic_template :: proc(name: string, size : IVec2 = IVec2{800, 600}, 
 }
 
 window_instantiate :: proc(using wnd:^Window) -> bool {
-	create_result := create_window_and_init_opengl(wnd)
-	if after_instantiate != nil do after_instantiate(wnd)
-	return create_result
-}
-
-@(private="file")
-create_window_and_init_opengl :: proc(using wnd: ^Window)  -> bool {
 	window = sdl.CreateWindow(
 	    strings.clone_to_cstring(name, context.temp_allocator),
 	    position.x, position.y, size.x, size.y,
 	    window_flags)
 
-	if !window_is_good(wnd) {
+	if window == nil {
         fmt.println("failed to instantiate window: ", name)
 		return false
 	}
@@ -112,15 +104,6 @@ window_destroy :: proc(using wnd:^Window) {
 	window = nil
     renderer = nil
 }
-
-window_is_good :: proc(using wnd:^Window) -> bool {
-	return window != nil
-}
-
-window_get_id :: proc(using wnd:^Window) -> u32 {
-	return sdl.GetWindowID(window)
-}
-
 
 // FIXME: FullscreenDesktop mode is not correctly working, viewport and resolution broken.
 window_toggle_fullscreen :: proc(using wnd:^Window, mode: WindowFullscreenMode) {

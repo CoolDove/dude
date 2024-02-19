@@ -37,6 +37,10 @@ material_upload :: proc(mat: Material) {
 	}
 }
 
+material_reset :: proc(mat: ^Material, shader: ShaderId) {
+    mat.shader = shader
+    clear(&mat.values)
+}
 
 // This is meant to be used together with uniform.
 material_set :: proc {

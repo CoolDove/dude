@@ -36,7 +36,7 @@ Game :: struct {
     current_scene : ^Scene,
     main_world : ^ecs.World,
 
-	render_layers : [dynamic]RenderPass,
+	render_pass : [dynamic]RenderPass,
 
 }
 

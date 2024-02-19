@@ -22,8 +22,6 @@ ImguiState :: struct {
 	opengl_state : imgl.OpenGL_State,
 }
 
-imgui_state : ImguiState
-
 create_main_window :: proc (allocator:=context.allocator, loc := #caller_location) -> Window {
 	wnd := window_get_basic_template(game_config.name)
 	wnd.vtable = &main_wnd_vtable
@@ -33,18 +31,14 @@ create_main_window :: proc (allocator:=context.allocator, loc := #caller_locatio
 
 @(private="file")
 main_wnd_vtable := Window_VTable {
-	handler,
-	update,
-	before_destroy,
-	after_instantiate,
+	handler=handler,
 }
 
-@(private="file")
-init_imgui :: proc(imgui_state:^ImguiState, wnd: ^sdl.Window) {
+@(private)
+imgui_init :: proc(imgui_state:^ImguiState, wnd: ^sdl.Window) {
 	imgui.create_context()
 	imgui.style_colors_dark()
 
-	// imsdl.setup_state(&imgui_state.sdl_state)
 	imsdl.init(&imgui_state.sdl_state, wnd)
 	imgl.setup_state(&imgui_state.opengl_state)
 
@@ -54,37 +48,12 @@ init_imgui :: proc(imgui_state:^ImguiState, wnd: ^sdl.Window) {
 }
 
 @(private="file")
-after_instantiate :: proc(using wnd: ^Window) {
-	init_imgui(&imgui_state, window)
-
-	log.debugf("window {} instantiated.", name)
-
-	game.window = wnd
-	init_game()
-}
-
-@(private="file")
-before_destroy :: proc(wnd: ^Window) {
-	quit_game()
-	log.debug("Main Window Closed")
-}
-
-@(private="file")
 handler :: proc(using wnd:^Window, event:sdl.Event) {
 	imsdl.process_event(event, &imgui_state.sdl_state)
 
 	input_handle_sdl2(event)
 
 	window_event := event.window
-}
-
-@(private="file")
-update :: proc(using wnd:^Window) {// Game runs in this.
-
-	update_game()
-
-	sdl.GL_SwapWindow(wnd.window)
-	input_after_update_sdl2()
 }
 
 
@@ -99,5 +68,5 @@ imgui_frame_end :: proc() {
 	imgui.end_frame()
 	imgui.render()
 	draw_data := imgui.get_draw_data();
-	imgl.imgui_render(draw_data, imgui_state.opengl_state)
+	imgl.imgui_render(draw_data, app.window.imgui_state.opengl_state)
 }

@@ -58,8 +58,12 @@ app_run :: proc() {
 	window = create_main_window()
 	window_instantiate(&window)
 
-    evt := sdl.Event{}
+	imgui_init(&window.imgui_state, window.window)
+	game.window = &window
 
+	init_game()
+
+    evt : sdl.Event
 	for !window.killed {
 		app_time_step()
 		
@@ -69,7 +73,6 @@ app_run :: proc() {
 				window.size.x = evt.window.data1
 				window.size.y = evt.window.data2
 			} else if evt.window.event == .CLOSE {
-				if window.before_destroy != nil do window.before_destroy(&window)
 				window_destroy(&window)
 				window.killed = true
 			} else {
@@ -78,8 +81,11 @@ app_run :: proc() {
 		} 
 
 		// update and render
-		if !window.killed && window.update != nil {
-			window.update(&window)
+		if !window.killed {
+            update_game()
+
+            sdl.GL_SwapWindow(app.window.window)
+            input_after_update_sdl2()
 		}
 	}
 }

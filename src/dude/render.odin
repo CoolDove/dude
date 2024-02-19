@@ -2,27 +2,43 @@ package dude
 
 import "dgl"
 
+// Draw mesh: Do some basic transform which you can write your own shader to customize.
+// Draw sprite: Draw a unit quad with the same 
+// You can draw meshes, sprites (which actually draws a unit quad with a sprite shader) in a pass
 RenderPass :: struct {
-	target : dgl.FramebufferId,
-	viewport : Vec4,
+	target : dgl.FramebufferId, // 0 means the default framebuffer.
+	camera : RenderCamera,
 	robjs : [dynamic]RenderObject,
+
+    camera_ubo : dgl.UniformBlock,
 }
 
 RenderObject :: union {
-	RObjMesh,
+	RObjMesh, RObjSprite,
 }
 
-RObjMesh :: struct {
-	shader: dgl.ShaderId,
-	material: dgl.Material,
-	mesh: dgl.Mesh,
+RObjMesh :: struct { // Just a mesh in 2D world space, with position-z always 0.
+    // When the shader is default (0), you mean draw the mesh with a builtin mesh shader.
+	material : dgl.Material,
+	mesh : dgl.Mesh,
+}
+RObjSprite :: struct { // A sprite in 2D world space.
+	// When the shader is default (0), you mean draw the sprite with a builtin sprite shader. If you 
+    //  want to use a custom sprite shader, you might have to copy the transforming code in the 
+    //  builtin sprite shader.
+	material : dgl.Material,
+
+	position, size : Vec2,
+	angle : f32,
 }
 
-RenderCameraViewport :: struct {
-	viewport_size : Vec2,
+RenderCamera :: struct {
+    using data : CameraUniformData,
 }
-RenderCameraDefault2D :: struct {
-	position : Vec2,
+CameraUniformData :: struct {
+    viewport_size : Vec2,
+    position : Vec2,
+    angle : f32,
 }
 
 render_pass_init :: proc(pass: ^RenderPass) {
@@ -31,6 +47,17 @@ render_pass_init :: proc(pass: ^RenderPass) {
 render_pass_release :: proc(pass: ^RenderPass) {
 	delete(pass.robjs)
 	pass.robjs = nil
+    if pass.camera_ubo != 0 {
+        dgl.ubo_release(&pass.camera_ubo)
+    }
+}
+
+render_pass_draw :: proc(pass: ^RenderPass) {
+    dgl.framebuffer_bind(pass.target)
+
+    
+    
+    dgl.framebuffer_bind_default()
 }
 
 @(private="file")
