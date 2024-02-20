@@ -54,13 +54,13 @@ init :: proc(name: string, commands: DudeStartupCommands) {
 	game_installed = true
 }
 
-install_scene :: proc(key: string, scene: Scene) {
-	registered_scenes[key] = scene
-}
+// install_scene :: proc(key: string, scene: Scene) {
+	// registered_scenes[key] = scene
+// }
 
-set_default_scene :: proc(key: string) {
-	default_scene = key
-}
+// set_default_scene :: proc(key: string) {
+	// default_scene = key
+// }
 
 DudeStartupCommands :: struct {
 	package_game, test : proc(args: []string),

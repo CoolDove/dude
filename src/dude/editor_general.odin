@@ -60,15 +60,16 @@ gui_settings :: proc() {
     imgui.checkbox("immediate draw wireframe", &game.immediate_draw_wireframe)
 }
 gui_scenes :: proc() {
-    for key, scene in registered_scenes {
-        if imgui.button(key) {
-            switch_scene(key)
-        }
-    }
-    if imgui.button("Unload") {
-        unload_scene()
-        log.debugf("scene unload")
-    }
+    imgui.text("Scene is not available now.")
+    // for key, scene in registered_scenes {
+        // if imgui.button(key) {
+            // switch_scene(key)
+        // }
+    // }
+    // if imgui.button("Unload") {
+        // unload_scene()
+        // log.debugf("scene unload")
+    // }
 }
 gui_resource_viewer :: proc() {
     count := len(resource_manager.resources) 

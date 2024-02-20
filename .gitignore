@@ -1,7 +1,10 @@
 bin/
 .vscode/
+
 *.exe
 *.pdb
+*.raddbg
+
 ols.json
 imgui.ini
 *.blend1

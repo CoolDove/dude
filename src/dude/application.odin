@@ -33,7 +33,8 @@ app_run :: proc() {
     game_init()
 
     evt : sdl.Event
-	for !window.killed {
+    window_closed : bool
+	for !window_closed {
 		app_time_step()
 		
 		// ## Handle events
@@ -42,15 +43,14 @@ app_run :: proc() {
 				window.size.x = evt.window.data1
 				window.size.y = evt.window.data2
 			} else if evt.window.event == .CLOSE {
-				window_destroy(&window)
-				window.killed = true
+                window_closed = true
 			} else {
 				window.handler(&window, evt)
 			}
 		} 
 
 		// update and render
-		if !window.killed {
+		if !window_closed {
             game_update()
 
             sdl.GL_SwapWindow(app.window.window)
@@ -93,6 +93,7 @@ app_init :: proc() {
 }
 @(private="file")
 app_release :: proc() {
+	window_destroy(&app.window)
 	sdl.Quit()
 }
 

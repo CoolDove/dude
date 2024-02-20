@@ -116,6 +116,7 @@ test_render_release :: proc() {
 	dgl.material_release(&mat_red)
 	dgl.material_release(&mat_green)
 	dgl.mesh_delete(&test_mesh)
+	dgl.mesh_delete(&test_mesh_triangle)
 	dgl.shader_destroy(test_shader)
 }
 

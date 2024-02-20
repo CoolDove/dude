@@ -97,8 +97,8 @@ mesh_builder_create :: proc(using builder: MeshBuilder) -> (Mesh, bool) #optiona
 }
 
 mesh_delete :: proc(mesh: ^Mesh) {
-    gl.DeleteVertexArrays(1, &mesh.vao)
     gl.DeleteBuffers(1, &mesh.vertex_buffer)
     gl.DeleteBuffers(1, &mesh.index_buffer)
+    gl.DeleteVertexArrays(1, &mesh.vao)
     mesh^ = {}
 }

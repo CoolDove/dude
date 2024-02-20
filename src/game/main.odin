@@ -7,7 +7,7 @@ import "core:math/linalg"
 import "../dude"
 import "../dude/ecs"
 
-sc := dude.Scene{}
+// sc := dude.Scene{}
 
 
 pass_main : dude.RenderPass
@@ -16,8 +16,8 @@ pass_test : dude.RenderPass
 main :: proc() {
 	dude.init("dude", {_package_game, _test})
 
-    dude.install_scene("Demo", scene_demo)
-    dude.set_default_scene("Demo")
+    // dude.install_scene("Demo", scene_demo)
+    // dude.set_default_scene("Demo")
 
     dude.dude_main()
 }

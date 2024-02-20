@@ -35,8 +35,6 @@ Window :: struct {
 
 	_data_type : typeid,
 	_data : rawptr, // This is invalid before instantiated.
-
-	killed : bool,
 }
 
 WindowState :: struct {
