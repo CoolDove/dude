@@ -27,41 +27,10 @@ Application :: struct {
 
 app : Application
 
-app_init :: proc() {
-	when ODIN_OS == .Windows do win32.SetConsoleOutputCP(65001)
-
-	time.stopwatch_start(&app.stopwatch)
-
-	if sdl.Init({.VIDEO, .EVENTS}) != 0 {
-	    fmt.println("failed to init: ", sdl.GetErrorString())
-		return
-	}
-
-	sdl.GL_SetAttribute(.CONTEXT_MAJOR_VERSION, OPENGL_VERSION_MAJOR)
-	sdl.GL_SetAttribute(.CONTEXT_MINOR_VERSION, OPENGL_VERSION_MINOR)
-	sdl.GL_SetAttribute(sdl.GLattr.CONTEXT_PROFILE_MASK, cast(i32)sdl.GLprofile.CORE)
-	
-	major, minor, profile : c.int
-	sdl.GL_GetAttribute(.CONTEXT_MAJOR_VERSION, &major)
-	sdl.GL_GetAttribute(.CONTEXT_MAJOR_VERSION, &minor)
-	sdl.GL_GetAttribute(.CONTEXT_PROFILE_MASK, &profile)
-	log.infof("OpenGL version: {}.{}, profile: {}", major, minor, cast(sdl.GLprofile)profile)
-}
-
-app_release :: proc() {
-	sdl.Quit()
-}
-
 app_run :: proc() {
 	using app
-
-	window = create_main_window()
-	window_instantiate(&window)
-
-	imgui_init(&window.imgui_state, window.window)
-	game.window = &window
-
-	init_game()
+    app_init()
+    game_init()
 
     evt : sdl.Event
 	for !window.killed {
@@ -82,13 +51,53 @@ app_run :: proc() {
 
 		// update and render
 		if !window.killed {
-            update_game()
+            game_update()
 
             sdl.GL_SwapWindow(app.window.window)
             input_after_update_sdl2()
 		}
 	}
+
+    game_release()
+    app_release()
 }
+
+
+@(private="file")
+app_init :: proc() {
+	using app
+	when ODIN_OS == .Windows do win32.SetConsoleOutputCP(65001)
+
+	time.stopwatch_start(&app.stopwatch)
+
+	if sdl.Init({.VIDEO, .EVENTS}) != 0 {
+	    fmt.println("failed to init: ", sdl.GetErrorString())
+		return
+	}
+
+	sdl.GL_SetAttribute(.CONTEXT_MAJOR_VERSION, OPENGL_VERSION_MAJOR)
+	sdl.GL_SetAttribute(.CONTEXT_MINOR_VERSION, OPENGL_VERSION_MINOR)
+	sdl.GL_SetAttribute(sdl.GLattr.CONTEXT_PROFILE_MASK, cast(i32)sdl.GLprofile.CORE)
+	
+	major, minor, profile : c.int
+	sdl.GL_GetAttribute(.CONTEXT_MAJOR_VERSION, &major)
+	sdl.GL_GetAttribute(.CONTEXT_MAJOR_VERSION, &minor)
+	sdl.GL_GetAttribute(.CONTEXT_PROFILE_MASK, &profile)
+	log.infof("OpenGL version: {}.{}, profile: {}", major, minor, cast(sdl.GLprofile)profile)
+
+	window = create_main_window()
+	window_instantiate(&window)
+
+	imgui_init(&window.imgui_state, window.window)
+	game.window = &window
+}
+@(private="file")
+app_release :: proc() {
+	sdl.Quit()
+}
+
+
+
 
 @(private ="file")
 app_time_step :: proc() {

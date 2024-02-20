@@ -48,7 +48,7 @@ GameSettings :: struct {
 
 game : Game
 
-update_game :: proc() {
+game_update :: proc() {
 	duration := time.stopwatch_duration(game.timer)
 	delta :f32= auto_cast time.duration_seconds(duration)
 	time.stopwatch_start(&game.timer)
@@ -127,7 +127,7 @@ check_scene_switch :: proc() -> bool {
     return true
 }
 
-init_game :: proc() {
+game_init :: proc() {
     using dgl
     allocators_init()
 
@@ -170,7 +170,7 @@ struct_offset_detail :: proc($T:typeid) -> uintptr {
     return offsets[0] if len(offsets) > 0 else 0
 }
 
-quit_game :: proc() {
+game_release :: proc() {
 	test_render_release()
 
 	tweener_release(&game.global_tweener)

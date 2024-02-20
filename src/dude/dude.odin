@@ -31,9 +31,7 @@ dude_main :: proc() {
 	}
 
 	when DUDE_STARTUP_COMMAND == "GAME" {
-		app_init();
-		app_run();
-		app_release();
+		app_run()
 	}
 }
 
