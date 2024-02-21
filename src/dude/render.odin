@@ -360,7 +360,15 @@ test_render :: proc(delta: f32) {
     test_pass.viewport = Vec4i{0,0, viewport.x, viewport.y}
     test_pass.camera.viewport = vec_i2f(viewport)
 
-    test_pass.camera.position.x = math.sin(time*0.8)
-    test_pass.camera.angle = 0.1 * math.sin(time*0.8)
+    // test_pass.camera.position.x = math.sin(time*0.8)
+    test_pass.camera.angle = 0.06 * math.sin(time*0.8)
+
+    camera := &test_pass.camera
+    move_speed :f32= 3.0
+    if get_key(.A) do camera.position.x -= move_speed * delta
+    else if get_key(.D) do camera.position.x += move_speed * delta
+    if get_key(.W) do camera.position.y += move_speed * delta
+    else if get_key(.S) do camera.position.y -= move_speed * delta
+    
     render_pass_draw(&test_pass)
 }
