@@ -82,6 +82,8 @@ game_init :: proc() {
 	
 	time.stopwatch_start(&game.timer)
 
+    render_init()
+
 	test_render_init()
 }
 
@@ -89,6 +91,8 @@ game_release :: proc() {
     log.debug("game release")
 
 	test_render_release()
+
+    render_release()
 
 	tweener_release(&game.global_tweener)
     

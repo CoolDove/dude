@@ -53,8 +53,13 @@ RenderObject :: struct {
 }
 
 UniformTableTransform :: struct {
-    transform_position, transform_scale : dgl.UniformLocVec2,
-    transform_angle : dgl.UniformLocF32,
+    position : dgl.UniformLocVec2 `uniform:"transform_position"`,
+    scale : dgl.UniformLocVec2 `uniform:"transform_scale"`,
+    angle : dgl.UniformLocF32 `uniform:"transform_angle"`,
+}
+UniformTableDefaultMesh :: struct {
+    color : dgl.UniformLocVec4,
+    texture : dgl.UniformLocTexture,
 }
 
 // TODO: Rename RenderTransform to Transform after the old Transform can be removed.
@@ -88,6 +93,59 @@ CameraUniformData :: struct {
     size : f32,
     viewport : Vec2,
 }
+
+RenderSystem :: struct {
+    mesh_unit_quad : dgl.Mesh,
+
+    shader_default_mesh : dgl.ShaderId,
+    utable_default_mesh : UniformTableDefaultMesh,
+    utable_default_mesh_transform : UniformTableTransform,
+    material_default_mesh : dgl.Material,
+
+    shader_default_sprite : dgl.ShaderId,
+    utable_default_sprite_transform : UniformTableTransform,
+    material_default_sprite : dgl.Material,
+
+    temp_mesh_builder : dgl.MeshBuilder,
+}
+
+@(private="file")
+rsys : RenderSystem
+
+render_init :: proc() {
+    using rsys, dgl
+
+    shader_preprocess_add_lib("dude", #load("./resources/dude.glsl"))
+
+    shader_default_mesh = shader_load_from_sources(
+        #load("./resources/default_mesh.vert"), 
+        #load("./resources/default_mesh.frag"), true)
+    dgl.uniform_load(&utable_default_mesh, shader_default_mesh)
+    dgl.uniform_load(&utable_default_mesh_transform, shader_default_mesh)
+    material_init(&material_default_mesh, shader_default_mesh)
+    material_set_vec4(&material_default_mesh, utable_default_mesh.color, {1,1,1,1})
+        
+    shader_default_sprite = shader_load_from_sources(
+        #load("./resources/default_sprite.vert"), 
+        #load("./resources/default_sprite.frag"), true)
+    dgl.uniform_load(&utable_default_sprite_transform, shader_default_sprite)
+    // TODO: sprite utable
+    
+    mesh_builder_init(&temp_mesh_builder, VERTEX_FORMAT_P2U2)
+}
+
+render_release :: proc() {
+    using rsys, dgl
+
+    material_release(&material_default_mesh)
+    shader_destroy(shader_default_mesh)
+
+    material_release(&material_default_sprite)
+    shader_destroy(shader_default_sprite)
+    
+    mesh_builder_release(&temp_mesh_builder)
+}
+
 
 render_pass_init :: proc(pass: ^RenderPass) {
 	pass.robjs = hla.hla_make(RenderObject, 128)// make([dynamic]RenderObject)
@@ -123,18 +181,24 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     // TODO: Sort all the render objects.
     robj_idx : int
     for obj in hla.hla_ite(&pass.robjs, &robj_idx) {
-        if obj._utable_transform.transform_position == 0 && obj._utable_transform.transform_scale == 0 {
-            dgl.uniform_load(&obj._utable_transform, obj.material.shader)
+        material := obj.material
+        if material != nil && obj._utable_transform.position == obj._utable_transform.scale {
+            dgl.uniform_load(&obj._utable_transform, material.shader)
         }
 
-        dgl.material_upload(obj.material^) // This binds the shader.
-
-        utable_transform := obj._utable_transform
-        dgl.uniform_set_vec2(utable_transform.transform_position, obj.position)
-        dgl.uniform_set_vec2(utable_transform.transform_scale, obj.scale)
-        dgl.uniform_set_f32(utable_transform.transform_angle, obj.angle)
-
         if robj_mesh, ok := obj.obj.(RObjMesh); ok {
+            utable_transform : UniformTableTransform 
+            if obj.material != nil {
+                utable_transform = obj._utable_transform
+            } else {
+                material = &rsys.material_default_mesh
+                utable_transform = rsys.utable_default_mesh_transform
+            }
+            dgl.material_upload(material^) // This binds the shader.
+            dgl.uniform_set_vec2(utable_transform.position, obj.position)
+            dgl.uniform_set_vec2(utable_transform.scale, obj.scale)
+            dgl.uniform_set_f32(utable_transform.angle, obj.angle)
+                
             dgl.draw_mesh(robj_mesh.mesh)
         } else {
             log.errorf("Render: Render object type not supported, currently we can only render mesh.")
@@ -165,7 +229,6 @@ test_shader : dgl.ShaderId
 @(private="file")
 test_shader_uniform : UniformsTestShader
 
-
 UniformsTestShader :: struct {
 	color: dgl.UniformLocVec4,
 }
@@ -193,7 +256,7 @@ test_render_init :: proc() {
 	mesh_builder_add_indices(&mb, 0,1,2)
 	test_mesh_triangle = mesh_builder_create(mb)
 
-	test_shader = shader_load_from_sources(SHADER_SRC_VERT, SHADER_SRC_FRAG)
+	test_shader = rsys.shader_default_mesh
 	uniform_load(&test_shader_uniform, test_shader)
 
 	material_init(&mat_red, test_shader)
@@ -210,8 +273,8 @@ test_render_init :: proc() {
     test_pass.clear.color = {.2,.2,.2, 1}
 
     hla.hla_append(&test_pass.robjs, RenderObject{
-        RenderTransform{scale={1,1}, position={5,5}}, 
-        &mat_red,
+        RenderTransform{scale={4,1}, position={5,0}}, 
+        nil,
         RObjMesh{
             mesh = test_mesh,
         },
@@ -219,7 +282,7 @@ test_render_init :: proc() {
     })
 
     hla.hla_append(&test_pass.robjs, RenderObject{
-        RenderTransform{scale={1,1}, position={-5,-5}}, 
+        RenderTransform{scale={1,1}, position={-5,0}}, 
         &mat_green,
         RObjMesh{
             mesh = test_mesh_triangle,
@@ -238,7 +301,6 @@ test_render_release :: proc() {
     render_pass_release(&test_pass)
 }
 
-
 test_render :: proc(delta: f32) {
     @static time : f32 = 0
     time += delta
@@ -252,69 +314,3 @@ test_render :: proc(delta: f32) {
     test_pass.camera.angle = 0.1 * math.sin(time*0.8)
     render_pass_draw(&test_pass)
 }
-
-SHADER_SRC_VERT :: `
-#version 440 core
-
-
-// --- This part should be moved to 'dude' shaderlib.
-layout(std140, binding = 0) uniform Camera {
-    vec2 position;
-    float angle;
-    float size;
-    vec2 viewport;
-} camera;
-
-uniform vec2 transform_position;
-uniform vec2 transform_scale;
-uniform float transform_angle;
-
-vec2 transform_point_local2world(vec2 point, vec2 position, vec2 scale, float angle) {
-    vec2 p = point;
-    p = p * scale;
-    float sa = sin(angle);
-    float ca = cos(angle);
-    p = vec2(p.x * ca + p.y * sa, p.y * ca - p.x * sa);
-    return p + position;
-}
-// This actually transform the point into ndc, this is a 2D game engine, so just be simple to deal
-//  with camera projection things.
-vec2 transform_point_world2camera(vec2 point) {
-    vec2 p = point;
-    p = p - camera.position;
-    float sa = sin(-camera.angle);
-    float ca = cos(-camera.angle);
-    p = vec2(p.x * ca + p.y * sa, p.y * ca - p.x * sa);
-    vec2 scale = vec2(camera.size/camera.viewport.x, camera.size/camera.viewport.y);
-    p = p*scale;
-    return p;
-}
-
-// ---
-
-
-layout (location = 0) in vec2 position;
-layout (location = 1) in vec2 uv;
-
-layout (location = 0) out vec2 _uv;
-
-void main()
-{
-    vec2 pos = transform_point_local2world(position, transform_position, transform_scale, transform_angle);
-    pos = transform_point_world2camera(pos);
-    gl_Position = vec4(pos.x, pos.y, 0.5, 1.0);
-	_uv = uv;
-}
-`
-SHADER_SRC_FRAG :: `
-#version 440 core
-out vec4 FragColor;
-
-layout(location = 0) in vec2 _uv;
-
-uniform vec4 color;
-
-void main() {
-    FragColor = vec4(_uv.x, _uv.y, 0,1) * color;
-}
-`
