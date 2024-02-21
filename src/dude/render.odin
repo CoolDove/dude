@@ -4,6 +4,8 @@ import "core:log"
 import "core:slice"
 import "dgl"
 
+import hla "collections/hollow_array"
+
 // Reserve to 4
 UNIFORM_BLOCK_SLOT_CAMERA :: 0
 
@@ -19,7 +21,7 @@ RenderPass :: struct {
 
     clear : RenderClear,
 
-	robjs : [dynamic]RenderObject,
+	robjs :  hla.HollowArray(RenderObject),
 
     using impl : RenderPassImplData,
 }
@@ -84,16 +86,17 @@ CameraUniformData :: struct {
 }
 
 render_pass_init :: proc(pass: ^RenderPass) {
-	pass.robjs = make([dynamic]RenderObject)
+	pass.robjs = hla.hla_make(RenderObject, 128)// make([dynamic]RenderObject)
 	pass.robjs_sorted = make([dynamic]^RenderObject)
 
     pass.camera_ubo = dgl.ubo_create(size_of(CameraUniformData))
     pass.clear.mask = {.Color,.Depth,.Stencil}
 }
 render_pass_release :: proc(pass: ^RenderPass) {
-	delete(pass.robjs)
+	// delete(pass.robjs)
+    using hla
+    hla_delete(&pass.robjs)
     if len(pass.robjs_sorted) > 0 do delete(pass.robjs_sorted)
-	pass.robjs = nil
 	pass.robjs_sorted = nil
     if pass.camera_ubo != 0 {
         dgl.ubo_release(&pass.camera_ubo)
@@ -114,7 +117,8 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     dgl.ubo_bind(pass.camera_ubo, UNIFORM_BLOCK_SLOT_CAMERA)
 
     // TODO: Sort all the render objects.
-    for obj in &pass.robjs {
+    robj_idx : int
+    for obj in hla.hla_ite(&pass.robjs, &robj_idx) {
         if obj._utable_transform.transform_position == 0 && obj._utable_transform.transform_scale == 0 {
             dgl.uniform_load(&obj._utable_transform, obj.material.shader)
         }
@@ -201,11 +205,20 @@ test_render_init :: proc() {
     test_pass.camera.size = 32
     test_pass.clear.color = {.2,.2,.2, 1}
 
-    append(&test_pass.robjs, RenderObject{
+    hla.hla_append(&test_pass.robjs, RenderObject{
         RenderTransform{scale={1,1}}, 
         &mat_red,
         RObjMesh{
             mesh = test_mesh,
+        },
+        {},
+    })
+
+    hla.hla_append(&test_pass.robjs, RenderObject{
+        RenderTransform{scale={1,1}, position={0,0.6}}, 
+        &mat_green,
+        RObjMesh{
+            mesh = test_mesh_triangle,
         },
         {},
     })
