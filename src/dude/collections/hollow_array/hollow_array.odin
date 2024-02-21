@@ -101,7 +101,6 @@ hla_get_pointer :: proc(using handle: HollowArrayHandle($T)) -> (^T, bool) #opti
     return &v.value, true
 }
 
-// The `index` is in [0,count), alive elem index.
 hla_ite :: proc(using hla: ^HollowArray($T), buffer_index:^int, alive_index:^int=nil) -> (^T, bool) {
     assert(buffer_index!=nil, "HollowArray: Invalid iterator.")
     if count == 0 do return nil, false
@@ -110,8 +109,9 @@ hla_ite :: proc(using hla: ^HollowArray($T), buffer_index:^int, alive_index:^int
 
     for i in buffer_index^..<len(hla.buffer) {
         v := &hla.buffer[i]
+        // TODO: Check if this buffer_index is correct.
+        buffer_index^ += 1
         if v.id < 0 do continue
-        buffer_index^= i+1
         if alive_index != nil do alive_index^ += 1
         return &v.value, true
     }

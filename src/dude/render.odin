@@ -1,6 +1,7 @@
 package dude
 
 import "core:log"
+import "core:math"
 import "core:slice"
 import "dgl"
 
@@ -45,7 +46,7 @@ RenderObject :: struct {
     using transform : RenderTransform,
     material : ^dgl.Material,
 	obj : union {
-        RObjMesh, RObjSprite,
+        RObjMesh, RObjSprite, RObjHandle,
     },
     // impl
     _utable_transform : UniformTableTransform,
@@ -67,6 +68,9 @@ RenderTransform :: struct {
 RObjMesh :: struct { // Just a mesh in 2D world space, with position-z always 0.
     // When the shader is nil, you mean draw the mesh with a builtin mesh shader.
 	mesh : dgl.Mesh,
+}
+RObjHandle :: struct {
+    handle : hla.HollowArrayHandle(RenderObject),
 }
 RObjSprite :: struct { // A sprite in 2D world space.
 	// When the shader is nil, you mean draw the sprite with a builtin sprite shader. If you 
@@ -206,7 +210,7 @@ test_render_init :: proc() {
     test_pass.clear.color = {.2,.2,.2, 1}
 
     hla.hla_append(&test_pass.robjs, RenderObject{
-        RenderTransform{scale={1,1}}, 
+        RenderTransform{scale={1,1}, position={5,5}}, 
         &mat_red,
         RObjMesh{
             mesh = test_mesh,
@@ -215,7 +219,7 @@ test_render_init :: proc() {
     })
 
     hla.hla_append(&test_pass.robjs, RenderObject{
-        RenderTransform{scale={1,1}, position={0,0.6}}, 
+        RenderTransform{scale={1,1}, position={-5,-5}}, 
         &mat_green,
         RObjMesh{
             mesh = test_mesh_triangle,
@@ -234,7 +238,12 @@ test_render_release :: proc() {
     render_pass_release(&test_pass)
 }
 
-test_render :: proc() {
+
+test_render :: proc(delta: f32) {
+    @static time : f32 = 0
+    time += delta
+    test_pass.camera.position.x = math.sin(time*0.8)
+    test_pass.camera.angle = 0.1 * math.sin(time*0.8)
     render_pass_draw(&test_pass)
 }
 
@@ -254,13 +263,25 @@ uniform vec2 transform_position;
 uniform vec2 transform_scale;
 uniform float transform_angle;
 
-vec2 transform_point(vec2 point, vec2 position, vec2 scale, float angle) {
+vec2 transform_point_local2world(vec2 point, vec2 position, vec2 scale, float angle) {
     vec2 p = point;
     p = p * scale;
     float sa = sin(angle);
     float ca = cos(angle);
     p = vec2(p.x * ca + p.y * sa, p.y * ca - p.x * sa);
     return p + position;
+}
+// This actually transform the point into ndc, this is a 2D game engine, so just be simple to deal
+//  with camera projection things.
+vec2 transform_point_world2camera(vec2 point) {
+    vec2 p = point;
+    p = p - camera.position;
+    float sa = sin(-camera.angle);
+    float ca = cos(-camera.angle);
+    p = vec2(p.x * ca + p.y * sa, p.y * ca - p.x * sa);
+    vec2 scale = vec2(camera.size/camera.viewport.x, camera.size/camera.viewport.y);
+    p = p*scale;
+    return p;
 }
 
 // ---
@@ -273,7 +294,8 @@ layout (location = 0) out vec2 _uv;
 
 void main()
 {
-    vec2 pos = transform_point(position, transform_position, transform_scale, transform_angle);
+    vec2 pos = transform_point_local2world(position, transform_position, transform_scale, transform_angle);
+    pos = transform_point_world2camera(pos);
     gl_Position = vec4(pos.x, pos.y, 0.5, 1.0);
 	_uv = uv;
 }

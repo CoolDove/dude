@@ -28,7 +28,6 @@ Game :: struct {
 
 	timer : time.Stopwatch,
 
-    // current_scene : ^Scene,
     main_world : ^ecs.World,
 
 	render_pass : [dynamic]RenderPass,
@@ -43,16 +42,16 @@ GameSettings :: struct {
 game : Game
 
 game_update :: proc() {
-	duration := time.stopwatch_duration(game.timer)
-	delta :f32= auto_cast time.duration_seconds(duration)
-	time.stopwatch_start(&game.timer)
-
+	// duration := time.stopwatch_duration(game.timer)
+	total_time :f32= auto_cast time.duration_seconds(app.duration_total)
+	delta :f32= auto_cast time.duration_seconds(app.duration_frame)
+	// time.stopwatch_start(&game.timer)
 
 	tweener_update(&game.global_tweener, delta)
     // tween_update()
 
     
-	test_render()
+	test_render(delta)
     // draw_no_scene_logo(game.window) // This uses immediate_draw system, which is broken now.
 
     // Game builtin draw.
