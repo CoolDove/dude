@@ -242,6 +242,12 @@ test_render_release :: proc() {
 test_render :: proc(delta: f32) {
     @static time : f32 = 0
     time += delta
+
+    viewport := app.window.size
+
+    test_pass.viewport = Vec4i{0,0, viewport.x, viewport.y}
+    test_pass.camera.viewport = vec_i2f(viewport)
+
     test_pass.camera.position.x = math.sin(time*0.8)
     test_pass.camera.angle = 0.1 * math.sin(time*0.8)
     render_pass_draw(&test_pass)

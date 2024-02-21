@@ -20,7 +20,7 @@ Window :: struct {
 
     imgui_state : ImguiState,
 
-	position, size : IVec2,
+	position, size : Vec2i,
 
 	name     : string,
 
@@ -49,9 +49,7 @@ WindowFullscreenMode :: enum {
 	Fullscreen, Windowed, FullscreenDesktop,
 }
 
-IVec2 :: [2]i32
-
-window_get_basic_template :: proc(name: string, size : IVec2 = IVec2{800, 600}, is_opengl_window : bool = true) -> Window {
+window_get_basic_template :: proc(name: string, size : Vec2i = Vec2i{800, 600}, is_opengl_window : bool = true) -> Window {
 	wnd : Window
 	wnd.name = name
 
