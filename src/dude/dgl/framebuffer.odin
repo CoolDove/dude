@@ -16,6 +16,8 @@ framebuffer_destroy :: proc(fbo : FramebufferId) {
     gl.DeleteFramebuffers(1, auto_cast &fbo)
 }
 
+
+
 framebuffer_current :: proc() -> FramebufferId {
     current : i32
     gl.GetIntegerv(gl.DRAW_FRAMEBUFFER_BINDING, &current)
@@ -61,4 +63,28 @@ framebuffer_attach_depth_stencil :: proc(texture: u32) {
 }
 framebuffer_dettach_color :: proc(attach_point: u32) {
     gl.FramebufferTexture2D(gl.FRAMEBUFFER, cast(u32)(gl.COLOR_ATTACHMENT0 + attach_point), gl.TEXTURE_2D, 0, 0)
+}
+
+
+ClearMasks :: bit_set[ClearMask]
+ClearMask :: enum u32 {
+    Color = 1,
+    Depth = 1<<2,
+    Stencil = 1<<3,
+}
+framebuffer_clear :: proc(mask: ClearMasks, color: Vec4={}, depth: f64=0, stencil: i32=0) {
+    clear_bit : u32
+    if .Color in mask {
+        clear_bit |= gl.COLOR_BUFFER_BIT
+        gl.ClearColor(color.r,color.g,color.b,color.a)
+    }
+    if .Depth in mask {
+        clear_bit |= gl.DEPTH_BUFFER_BIT
+        gl.ClearDepth(depth)
+    } 
+    if .Stencil in mask {
+        clear_bit |= gl.STENCIL_BUFFER_BIT
+        gl.ClearStencil(stencil)
+    } 
+    gl.Clear(clear_bit)
 }

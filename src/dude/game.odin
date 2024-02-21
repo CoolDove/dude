@@ -48,14 +48,12 @@ game_update :: proc() {
 	time.stopwatch_start(&game.timer)
 
 
-	gl.Clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT)
-
-	test_render()
-
-    draw_no_scene_logo(game.window)
-
 	tweener_update(&game.global_tweener, delta)
     // tween_update()
+
+    
+	test_render()
+    // draw_no_scene_logo(game.window) // This uses immediate_draw system, which is broken now.
 
     // Game builtin draw.
     if game.settings.status_window_alpha > 0 do draw_status()

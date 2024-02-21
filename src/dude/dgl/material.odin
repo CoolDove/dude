@@ -8,7 +8,7 @@ Material :: struct {
 MaterialValue :: union {
 	f32, Vec2, Vec4, MaterialValueTexture,
 }
-MaterialValueTexture :: distinct Vec2i
+MaterialValueTexture :: distinct u32
 
 material_init :: proc(mat: ^Material, shader: ShaderId) {
 	mat.values = make([dynamic]MaterialValue)
@@ -20,6 +20,7 @@ material_release :: proc(using mat: ^Material) {
 
 material_upload :: proc(mat: Material) {
 	shader_bind(mat.shader)
+    texture_slot :u32= 0
 	for value, idx in mat.values {
 		loc :i32= auto_cast idx
 		if value != nil {
@@ -31,7 +32,8 @@ material_upload :: proc(mat: Material) {
 			case Vec4:
 				uniform_set_vec4(loc, v)
 			case MaterialValueTexture:
-				uniform_set_texture(loc, cast(u32)v.x, cast(u32)v.y)
+				uniform_set_texture(loc, cast(u32)v, texture_slot)
+                texture_slot += 1
 			}
 		}
 	}
@@ -56,9 +58,9 @@ material_set_vec4 :: proc(mat: ^Material, loc: UniformLocVec4, value: Vec4) {
 	_material_capacity_ensure(mat, loc)
 	mat.values[loc] = value
 }
-material_set_texture :: proc(mat: ^Material, loc: UniformLocTexture, texture, slot: u32) {
+material_set_texture :: proc(mat: ^Material, loc: UniformLocTexture, texture: u32) {
 	_material_capacity_ensure(mat, loc)
-	mat.values[loc] = MaterialValueTexture{auto_cast texture, auto_cast slot}
+	mat.values[loc] = cast(MaterialValueTexture)texture
 }
 
 @(private="file")
