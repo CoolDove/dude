@@ -7,6 +7,8 @@ import "dgl"
 
 import hla "collections/hollow_array"
 
+import gl "vendor:OpenGL"
+
 // Reserve to 4
 UNIFORM_BLOCK_SLOT_CAMERA :: 0
 
@@ -46,7 +48,7 @@ RenderObject :: struct {
     using transform : RenderTransform,
     material : ^dgl.Material,
 	obj : union {
-        RObjMesh, RObjSprite, RObjHandle,
+        RObjMesh, RObjSprite, RObjHandle, RObjCustom,
     },
     // impl
     _utable_transform : UniformTableTransform,
@@ -83,6 +85,7 @@ RObjSprite :: struct { // A sprite in 2D world space.
     //  builtin sprite shader.
     texture : u32,
 }
+RObjCustom :: #type proc()
 
 RenderCamera :: struct {
     using data : CameraUniformData,
@@ -200,6 +203,9 @@ render_pass_draw :: proc(pass: ^RenderPass) {
             dgl.uniform_set_f32(utable_transform.angle, obj.angle)
                 
             dgl.draw_mesh(robj_mesh.mesh)
+        } else if robj_custom, ok := obj.obj.(RObjCustom); ok {
+            // TODO: Write a better one.
+            if robj_custom != nil do robj_custom()
         } else {
             log.errorf("Render: Render object type not supported, currently we can only render mesh.")
         }
@@ -272,8 +278,10 @@ test_render_init :: proc() {
     test_pass.camera.size = 32
     test_pass.clear.color = {.2,.2,.2, 1}
 
+    hla.hla_append(&test_pass.robjs, RenderObject{ obj = cast(RObjCustom)robj_grid })
+
     hla.hla_append(&test_pass.robjs, RenderObject{
-        RenderTransform{scale={4,1}, position={5,0}}, 
+        RenderTransform{scale={1,1}, position={0,0}}, 
         nil,
         RObjMesh{
             mesh = test_mesh,
@@ -289,6 +297,48 @@ test_render_init :: proc() {
         },
         {},
     })
+
+    robj_grid :: proc() {// Temporary: This is bad.
+        mb := &rsys.temp_mesh_builder
+        dgl.mesh_builder_clear(mb)
+        mb.vertex_format = dgl.VERTEX_FORMAT_P2U2
+
+        half_size :int= 20
+        unit :f32= 1.0
+        size := 2 * half_size
+
+        min := -cast(f32)half_size * unit;
+        max := cast(f32)half_size * unit;
+
+        for i in 0..=size {
+            x := min + cast(f32)i * unit
+            dgl.mesh_builder_add_vertices(mb, {v2={x,min}})
+            dgl.mesh_builder_add_vertices(mb, {v2={x,max}})
+        }
+        for i in 0..=size {
+            y := min + cast(f32)i * unit
+            dgl.mesh_builder_add_vertices(mb, {v2={min,y}})
+            dgl.mesh_builder_add_vertices(mb, {v2={max,y}})
+        }
+        vao : u32
+        vbo : u32
+        mesh := dgl.mesh_builder_create(mb^, true); defer dgl.mesh_delete(&mesh)
+        gl.BindVertexArray(mesh.vao)
+	    set_vertex_format(mb.vertex_format)
+
+        dgl.material_upload(rsys.material_default_mesh)
+        dgl.uniform_set(rsys.utable_default_mesh_transform.position, Vec2{})
+        dgl.uniform_set(rsys.utable_default_mesh_transform.scale, Vec2{1,1})
+        dgl.uniform_set(rsys.utable_default_mesh_transform.angle, 0)
+
+        dgl.uniform_set(rsys.utable_default_mesh.color, Vec4{.1,.1,.1, 1.0})
+
+        polygon_mode_stash : u32
+        gl.GetIntegerv(gl.POLYGON_MODE, cast(^i32)&polygon_mode_stash)
+        gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+        gl.DrawArrays(gl.LINES, 0, cast(i32)len(mb.vertices) * 2)
+        gl.PolygonMode(gl.FRONT_AND_BACK, polygon_mode_stash)
+    }
 }
 
 test_render_release :: proc() {

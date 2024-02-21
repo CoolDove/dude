@@ -72,7 +72,7 @@ mesh_builder_clear :: proc(builder: ^MeshBuilder) {
     clear(&builder.vertices)
     clear(&builder.indices)
 }
-mesh_builder_create :: proc(using builder: MeshBuilder) -> (Mesh, bool) #optional_ok {
+mesh_builder_create :: proc(using builder: MeshBuilder, no_indices:=false) -> (Mesh, bool) #optional_ok {
     context.allocator = runtime.default_allocator()
     mesh : Mesh
     
@@ -83,12 +83,15 @@ mesh_builder_create :: proc(using builder: MeshBuilder) -> (Mesh, bool) #optiona
     gl.BindBuffer(gl.ARRAY_BUFFER, mesh.vertex_buffer)
     gl.BufferData(gl.ARRAY_BUFFER, len(vertices) * size_of(f32), raw_data(vertices), gl.STATIC_DRAW)
 
-    gl.GenBuffers(1, &mesh.index_buffer)
-    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.index_buffer)
-    gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices) * size_of(u32), raw_data(indices), gl.STATIC_DRAW)
-
     mesh.vertex_count = auto_cast len(builder.vertices) / cast(i32)builder.stride
-    mesh.index_count = auto_cast len(builder.indices)
+
+    if !no_indices {
+        gl.GenBuffers(1, &mesh.index_buffer)
+        gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.index_buffer)
+        gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices) * size_of(u32), raw_data(indices), gl.STATIC_DRAW)
+        mesh.index_count = auto_cast len(builder.indices)
+    }
+
 	set_vertex_format(builder.vertex_format)
 
 	gl.BindVertexArray(0) // Make sure everything bound to the vao is safe.
