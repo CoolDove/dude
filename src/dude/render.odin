@@ -7,14 +7,10 @@ import "dgl"
 
 import hla "collections/hollow_array"
 
-
 // Reserved up to 8, when you want to make your own custom uniform block, the slot should be greater 
 //  than 8.
 UNIFORM_BLOCK_SLOT_CAMERA :: 0
 
-// Draw mesh: Do some basic transform which you can write your own shader to customize.
-// Draw sprite: Draw a unit quad with the same 
-// You can draw meshes, sprites (which actually draws a unit quad with a sprite shader) in a pass
 RenderPass :: struct {
     // Differs from the viewport in camera, which is for transform calculation. This one defines how
     //  you output to the framebuffer. (This is what passed into gl.Viewport(...) before rendering)
