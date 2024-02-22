@@ -52,6 +52,7 @@ material_reset :: proc(mat: ^Material, shader: ShaderId) {
 // This is meant to be used together with uniform.
 
 material_set :: proc {
+    material_set_f32,
 	material_set_vec2,
 	material_set_vec4,
 	material_set_texture,
@@ -59,6 +60,10 @@ material_set :: proc {
 MaterialLocValuePair :: struct($T:typeid) {
     loc : UniformLoc,
     value : T,
+}
+material_set_f32 :: proc(mat: ^Material, loc: UniformLocVec2, value: f32) {
+	_material_capacity_ensure(mat, loc)
+	if loc >= 0 do mat.values[loc] = value
 }
 material_set_vec2 :: proc(mat: ^Material, loc: UniformLocVec2, value: Vec2) {
 	_material_capacity_ensure(mat, loc)
