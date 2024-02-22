@@ -8,6 +8,14 @@ draw_mesh :: proc(mesh : Mesh) {
 	gl.BindVertexArray(0)
 }
 
+draw_lines :: proc(mesh: Mesh) {
+    polygon_mode_stash : u32
+    gl.GetIntegerv(gl.POLYGON_MODE, cast(^i32)&polygon_mode_stash)
+    gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+    gl.DrawArrays(gl.LINES, 0, mesh.vertex_count)
+    gl.PolygonMode(gl.FRONT_AND_BACK, polygon_mode_stash)
+}
+
 draw_mesh_material :: proc(mesh : Mesh, material: Material) {
     material_upload(material)
 	gl.BindVertexArray(mesh.vao)

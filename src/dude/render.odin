@@ -7,7 +7,6 @@ import "dgl"
 
 import hla "collections/hollow_array"
 
-import gl "vendor:OpenGL"
 
 // Reserve to 4
 UNIFORM_BLOCK_SLOT_CAMERA :: 0
@@ -80,10 +79,10 @@ RObjHandle :: struct {
     handle : hla.HollowArrayHandle(RenderObject),
 }
 RObjSprite :: struct { // A sprite in 2D world space.
-	// When the shader is nil, you mean draw the sprite with a builtin sprite shader. If you 
-    //  want to use a custom sprite shader, you might have to copy the transforming code in the 
-    //  builtin sprite shader.
+	// When the shader is nil, you mean draw the sprite with a builtin sprite shader.
     texture : u32,
+    anchor : Vec2, // [0,1]
+    size : Vec2, // This differs from scale in transform.
 }
 RObjCustom :: #type proc()
 
@@ -135,10 +134,21 @@ render_init :: proc() {
     // TODO: sprite utable
     
     mesh_builder_init(&temp_mesh_builder, VERTEX_FORMAT_P2U2)
+    mesh_builder_add_vertices(&temp_mesh_builder, 
+		{v4={0,0,  0,0}},
+		{v4={1,0,  1,0}},
+		{v4={0,1,  0,1}},
+		{v4={1,1,  1,1}},
+    )
+	mesh_builder_add_indices(&temp_mesh_builder, 0,1,2, 1,3,2)
+    mesh_unit_quad = mesh_builder_create(temp_mesh_builder)
+    
 }
 
 render_release :: proc() {
     using rsys, dgl
+
+    mesh_delete(&mesh_unit_quad)
 
     material_release(&material_default_mesh)
     shader_destroy(shader_default_mesh)
@@ -300,8 +310,7 @@ test_render_init :: proc() {
 
     robj_grid :: proc() {// Temporary: This is bad.
         mb := &rsys.temp_mesh_builder
-        dgl.mesh_builder_clear(mb)
-        mb.vertex_format = dgl.VERTEX_FORMAT_P2U2
+        dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2)
 
         half_size :int= 20
         unit :f32= 1.0
@@ -323,8 +332,7 @@ test_render_init :: proc() {
         vao : u32
         vbo : u32
         mesh := dgl.mesh_builder_create(mb^, true); defer dgl.mesh_delete(&mesh)
-        gl.BindVertexArray(mesh.vao)
-	    set_vertex_format(mb.vertex_format)
+        dgl.mesh_bind(&mesh)
 
         dgl.material_upload(rsys.material_default_mesh)
         dgl.uniform_set(rsys.utable_default_mesh_transform.position, Vec2{})
@@ -334,10 +342,7 @@ test_render_init :: proc() {
         dgl.uniform_set(rsys.utable_default_mesh.color, Vec4{.1,.1,.1, 1.0})
 
         polygon_mode_stash : u32
-        gl.GetIntegerv(gl.POLYGON_MODE, cast(^i32)&polygon_mode_stash)
-        gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-        gl.DrawArrays(gl.LINES, 0, cast(i32)len(mb.vertices) * 2)
-        gl.PolygonMode(gl.FRONT_AND_BACK, polygon_mode_stash)
+        dgl.draw_lines(mesh)
     }
 }
 

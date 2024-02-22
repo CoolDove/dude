@@ -19,15 +19,21 @@ Mesh :: struct {
 	vertex_format : VertexFormat,
 }
 
+
+VERTEX_FORMAT_MAX_ATTRIBUTE :: 16
 Vertex :: struct #raw_union {
+	vfull:VertexMax,
 	v16:Vertex16,
+	v12:Vertex12,
 	v10:Vertex10,
 	v8:Vertex8,
 	v6:Vertex6,
 	v4:Vertex4,
 	v2:Vertex2,
 }
+VertexMax :: distinct [VERTEX_FORMAT_MAX_ATTRIBUTE]f32
 Vertex16 :: distinct [16]f32
+Vertex12 :: distinct [12]f32
 Vertex10 :: distinct [10]f32
 Vertex8 :: distinct [8]f32
 Vertex6 :: distinct [6]f32
@@ -53,11 +59,11 @@ mesh_builder_add_indices :: proc(builder: ^MeshBuilder, indices: ..u32) {
     append_elems(&builder.indices, ..indices)
 }
 
-mesh_builder_init :: proc(builder: ^MeshBuilder, vertex_format: VertexFormat, allocator:= context.allocator) {
+mesh_builder_init :: proc(builder: ^MeshBuilder, vertex_format: VertexFormat, reserve_vertices:i32=0, reserve_indices:i32=0, allocator:= context.allocator) {
     context.allocator = allocator
 	builder.vertex_format = vertex_format
-    builder.vertices = make([dynamic]f32)
-    builder.indices = make([dynamic]u32)
+    builder.vertices = make_dynamic_array_len_cap([dynamic]f32, 0, reserve_vertices)
+    builder.indices = make_dynamic_array_len_cap([dynamic]u32, 0, reserve_indices)
 	stride :u32= 0
 	for i in vertex_format do stride += cast(u32)i
 	builder.stride = stride
@@ -68,14 +74,19 @@ mesh_builder_release :: proc(builder: ^MeshBuilder) {
     builder^ = {}
 }
 
+mesh_builder_reset :: proc(builder: ^MeshBuilder, vertex_format: VertexFormat) {
+    clear(&builder.vertices)
+    clear(&builder.indices)
+    builder.vertex_format = vertex_format
+}
 mesh_builder_clear :: proc(builder: ^MeshBuilder) {
     clear(&builder.vertices)
     clear(&builder.indices)
 }
+
 mesh_builder_create :: proc(using builder: MeshBuilder, no_indices:=false) -> (Mesh, bool) #optional_ok {
     context.allocator = runtime.default_allocator()
     mesh : Mesh
-    
     gl.GenVertexArrays(1, auto_cast &mesh.vao)
     gl.BindVertexArray(mesh.vao)
 
@@ -104,4 +115,8 @@ mesh_delete :: proc(mesh: ^Mesh) {
     gl.DeleteBuffers(1, &mesh.index_buffer)
     gl.DeleteVertexArrays(1, &mesh.vao)
     mesh^ = {}
+}
+
+mesh_bind :: proc(using mesh: ^Mesh) {
+    gl.BindVertexArray(vao)
 }
