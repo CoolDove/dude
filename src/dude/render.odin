@@ -67,7 +67,11 @@ RObj :: union {
 
 RObjMesh :: struct {
     mesh : dgl.Mesh,
+    mode : MeshMode,
     utable : UniformTableGeneral,
+}
+MeshMode :: enum {
+    Triangle, Lines, LineStrip,
 }
 RObjHandle :: hla.HollowArrayHandle(RenderObject) 
 RObjSprite :: struct { // A sprite in 2D world space.
@@ -230,7 +234,16 @@ render_pass_draw :: proc(pass: ^RenderPass) {
             dgl.material_upload(material.mat)
             uniform_transform(shader.utable_transform, obj.position, obj.scale, obj.angle)
                 
-            dgl.draw_mesh(robj_mesh.mesh)
+            switch robj_mesh.mode {
+            case .Triangle:
+                dgl.draw_mesh(robj_mesh.mesh)
+            case .Lines:
+                dgl.mesh_bind(&robj_mesh.mesh)
+                dgl.draw_lines(robj_mesh.mesh.vertex_count)
+            case .LineStrip:
+                dgl.mesh_bind(&robj_mesh.mesh)
+                dgl.draw_linestrip(robj_mesh.mesh.vertex_count)
+            }
         } else if robj_sprite, ok := obj.obj.(RObjSprite); ok {
             material := obj.material if (obj.material != nil) else &rsys.material_default_sprite
             shader := material.shader
@@ -264,11 +277,16 @@ test_pass : RenderPass
 @(private="file")
 test_mesh_triangle : dgl.Mesh 
 
+@(private="file")
+test_mesh_grid : dgl.Mesh 
+
 
 @(private="file")
 mat_red : Material
 @(private="file")
 mat_green : Material
+@(private="file")
+mat_grid : Material
 
 @(private="file")
 test_texture : dgl.Texture
@@ -280,7 +298,7 @@ UniformsTestShader :: struct {
 }
 
 test_render_init :: proc() {
-    {
+    {// ** Build meshes.
         using dgl
         mb : MeshBuilder
         mesh_builder_init(&mb, VERTEX_FORMAT_P2U2); defer mesh_builder_release(&mb)
@@ -302,6 +320,29 @@ test_render_init :: proc() {
         mesh_builder_add_indices(&mb, 0,1,2)
         test_mesh_triangle = mesh_builder_create(mb)
 
+        {// ** Make a grid.
+            dgl.mesh_builder_reset(&mb, dgl.VERTEX_FORMAT_P2U2)
+
+            half_size :int= 20
+            unit :f32= 1.0
+            size := 2 * half_size
+
+            min := -cast(f32)half_size * unit;
+            max := cast(f32)half_size * unit;
+
+            for i in 0..=size {
+                x := min + cast(f32)i * unit
+                dgl.mesh_builder_add_vertices(&mb, {v2={x,min}})
+                dgl.mesh_builder_add_vertices(&mb, {v2={x,max}})
+            }
+            for i in 0..=size {
+                y := min + cast(f32)i * unit
+                dgl.mesh_builder_add_vertices(&mb, {v2={min,y}})
+                dgl.mesh_builder_add_vertices(&mb, {v2={max,y}})
+            }
+            test_mesh_grid = dgl.mesh_builder_create(mb)
+        }
+
         test_texture = texture_load_from_mem(#load("./resources/dude.png"))
     }
 
@@ -309,9 +350,14 @@ test_render_init :: proc() {
 	material_init(&mat_red, &rsys.shader_default_mesh)
 	material_set(&mat_red, utable_general.color, Vec4{1,0.6,0.8, 1})
 	material_set(&mat_red, utable_general.texture, test_texture.id)
+
 	material_init(&mat_green, &rsys.shader_default_mesh)
 	material_set(&mat_green, utable_general.color, Vec4{0.8,1,0.6, 1})
 	material_set(&mat_green, utable_general.texture, test_texture.id)
+
+	material_init(&mat_grid, &rsys.shader_default_mesh)
+	material_set(&mat_grid, utable_general.color, Vec4{0.1,0.12,0.09, 1})
+	material_set(&mat_grid, utable_general.texture, rsys.texture_default_white)
 
     // Pass initialization
     render_pass_init(&test_pass, {0,0, 320, 320})
@@ -321,47 +367,15 @@ test_render_init :: proc() {
     test_pass.camera.size = 32
     test_pass.clear.color = {.2,.2,.2, 1}
 
-    render_pass_add_object(&test_pass, cast(RObjCustom)robj_grid, order=-999)
-    render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red)
-    render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1,1})
-    render_pass_add_object(&test_pass, RObjMesh{mesh=test_mesh_triangle}, &mat_green, position={0,0})
+    render_pass_add_object(&test_pass, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-999)
+
+    render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
+    render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
+    render_pass_add_object(&test_pass, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
 
     player = render_pass_add_object(&test_pass, 
         RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={8,8}, anchor={0.5,0.5}})
 
-    robj_grid :: proc() {// Temporary: This is bad.
-        mb := &rsys.temp_mesh_builder
-        dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2)
-
-        half_size :int= 20
-        unit :f32= 1.0
-        size := 2 * half_size
-
-        min := -cast(f32)half_size * unit;
-        max := cast(f32)half_size * unit;
-
-        for i in 0..=size {
-            x := min + cast(f32)i * unit
-            dgl.mesh_builder_add_vertices(mb, {v2={x,min}})
-            dgl.mesh_builder_add_vertices(mb, {v2={x,max}})
-        }
-        for i in 0..=size {
-            y := min + cast(f32)i * unit
-            dgl.mesh_builder_add_vertices(mb, {v2={min,y}})
-            dgl.mesh_builder_add_vertices(mb, {v2={max,y}})
-        }
-        mesh := dgl.mesh_builder_create(mb^, true); defer dgl.mesh_delete(&mesh)
-        dgl.mesh_bind(&mesh)
-
-        dgl.material_upload(rsys.material_default_mesh.mat)
-
-        shader := rsys.material_default_mesh.shader
-        uniform_transform(shader.utable_transform, Vec2{}, Vec2{1,1}, 0)
-        dgl.uniform_set(shader.utable_general.color, Vec4{.1,.1,.1, 1.0})
-
-        polygon_mode_stash : u32
-        dgl.draw_lines(mesh.vertex_count)
-    }
 }
 
 test_render_release :: proc() {
@@ -384,6 +398,7 @@ test_render :: proc(delta: f32) {
     test_pass.camera.viewport = vec_i2f(viewport)
 
     test_pass.camera.angle = 0.06 * math.sin(time*0.8)
+    test_pass.camera.size = 64 + 6 * math.sin(time*1.2)
 
     camera := &test_pass.camera
     t := hla.hla_get_pointer(player)
