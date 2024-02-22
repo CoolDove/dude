@@ -73,6 +73,7 @@ texture_load_from_mem :: proc(data: []byte, gen_mipmap := false) -> Texture {
 
     gl.TexImage2D(target, 0, gl.RGBA, img.size.x, img.size.y, 0, gl.RGBA, gl.UNSIGNED_BYTE, img.data)
     if gen_mipmap do gl.GenerateMipmap(target)
+    gl.BindTexture(gl.TEXTURE_2D, 0)
     return Texture{img.size, tex}
 }
 
@@ -151,4 +152,8 @@ texture_create_with_buffer :: proc(width, height : int, buffer : []u8, gen_mipma
     gl.TexImage2D(target, 0, 4, cast(i32)width, cast(i32)height, 0, gl.RGBA, gl.UNSIGNED_BYTE, raw_data(buffer))
     if gen_mipmap do gl.GenerateMipmap(target)
     return tex
+}
+
+texture_delete :: proc(id: ^u32) {
+    gl.DeleteTextures(1, id)
 }

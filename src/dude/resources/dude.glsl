@@ -12,6 +12,7 @@ uniform float transform_angle;
 vec2 transform_point_local2world(vec2 point, vec2 position, vec2 scale, float angle) {
     vec2 p = point;
     p = p * scale;
+    p.y *= -1;
     float sa = sin(angle);
     float ca = cos(angle);
     p = vec2(p.x * ca + p.y * sa, p.y * ca - p.x * sa);

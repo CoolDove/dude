@@ -57,8 +57,8 @@ UniformTableTransform :: struct {
     angle : dgl.UniformLocF32 `uniform:"transform_angle"`,
 }
 UniformTableDefaultMesh :: struct {
-    color : dgl.UniformLocVec4,
-    texture : dgl.UniformLocTexture,
+    color : dgl.UniformLocVec4 `uniform:"mesh_color"`,
+    texture : dgl.UniformLocTexture `uniform:"mesh_texture"`,
 }
 
 // TODO: Rename RenderTransform to Transform after the old Transform can be removed.
@@ -94,6 +94,9 @@ CameraUniformData :: struct {
 }
 
 RenderSystem :: struct {
+    temp_mesh_builder : dgl.MeshBuilder,
+
+    // Builtin resources
     mesh_unit_quad : dgl.Mesh,
 
     shader_default_mesh : dgl.ShaderId,
@@ -105,7 +108,8 @@ RenderSystem :: struct {
     utable_default_sprite_transform : UniformTableTransform,
     material_default_sprite : dgl.Material,
 
-    temp_mesh_builder : dgl.MeshBuilder,
+    texture_default_white : dgl.TextureId,
+    texture_default_black : dgl.TextureId,
 }
 
 @(private="file")
@@ -114,6 +118,11 @@ rsys : RenderSystem
 render_init :: proc() {
     using rsys, dgl
 
+    // Textures
+    texture_default_white = dgl.texture_create_with_color(4,4, {255,255,255,255})
+    texture_default_black = dgl.texture_create_with_color(4,4, {0,0,0,255})
+
+    // Shaders & Materials
     shader_preprocess_add_lib("dude", #load("./resources/dude.glsl"))
 
     shader_default_mesh = shader_load_from_sources(
@@ -123,13 +132,15 @@ render_init :: proc() {
     dgl.uniform_load(&utable_default_mesh_transform, shader_default_mesh)
     material_init(&material_default_mesh, shader_default_mesh)
     material_set_vec4(&material_default_mesh, utable_default_mesh.color, {1,1,1,1})
-        
+    material_set_texture(&material_default_mesh, utable_default_mesh.texture, rsys.texture_default_white)
+    
     shader_default_sprite = shader_load_from_sources(
         #load("./resources/default_sprite.vert"), 
         #load("./resources/default_sprite.frag"), true)
     dgl.uniform_load(&utable_default_sprite_transform, shader_default_sprite)
     // TODO: sprite utable
-    
+
+    // Meshes
     mesh_builder_init(&temp_mesh_builder, VERTEX_FORMAT_P2U2)
     mesh_builder_add_vertices(&temp_mesh_builder, 
 		{v4={0,0,  0,0}},
@@ -139,6 +150,7 @@ render_init :: proc() {
     )
 	mesh_builder_add_indices(&temp_mesh_builder, 0,1,2, 1,3,2)
     mesh_unit_quad = mesh_builder_create(temp_mesh_builder)
+
     
 }
 
@@ -157,12 +169,16 @@ render_release :: proc() {
 }
 
 
-render_pass_init :: proc(pass: ^RenderPass) {
+render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i) {
 	pass.robjs = hla.hla_make(RenderObject, 128)// make([dynamic]RenderObject)
 	pass.robjs_sorted = make([dynamic]^RenderObject)
 
     pass.camera_ubo = dgl.ubo_create(size_of(CameraUniformData))
     pass.clear.mask = {.Color,.Depth,.Stencil}
+
+    pass.camera.viewport = vec_i2f(Vec2i{viewport.z, viewport.w})
+    pass.camera.size = 32
+    pass.viewport = viewport
 }
 render_pass_release :: proc(pass: ^RenderPass) {
 	// delete(pass.robjs)
@@ -254,9 +270,7 @@ mat_red : dgl.Material
 mat_green : dgl.Material
 
 @(private="file")
-test_shader : dgl.ShaderId
-@(private="file")
-test_shader_uniform : UniformsTestShader
+test_texture : dgl.Texture
 
 UniformsTestShader :: struct {
 	color: dgl.UniformLocVec4,
@@ -274,7 +288,6 @@ test_render_init :: proc() {
 		{v4={0.5,  0.5,  1,1}},
 	)
 	mesh_builder_add_indices(&mb, 0,1,2, 1,3,2)
-	// test_mesh = mesh_builder_create(mb)
 
 	mesh_builder_clear(&mb)
 	mesh_builder_add_vertices(&mb,
@@ -285,16 +298,17 @@ test_render_init :: proc() {
 	mesh_builder_add_indices(&mb, 0,1,2)
 	test_mesh_triangle = mesh_builder_create(mb)
 
-	test_shader = rsys.shader_default_mesh
-	uniform_load(&test_shader_uniform, test_shader)
+    test_texture = texture_load_from_mem(#load("./resources/dude.png"))
 
-	material_init(&mat_red, test_shader)
-	material_set(&mat_red, test_shader_uniform.color, Vec4{1,0.25,0.3, 1})
-	material_init(&mat_green, test_shader)
-	material_set(&mat_green, test_shader_uniform.color, Vec4{0.05,1,0.05, 1})
+	material_init(&mat_red, rsys.shader_default_mesh)
+	material_set(&mat_red, rsys.utable_default_mesh.color, Vec4{1,0.6,0.8, 1})
+	material_set(&mat_red, rsys.utable_default_mesh.texture, test_texture.id)
+	material_init(&mat_green, rsys.shader_default_mesh)
+	material_set(&mat_green, rsys.utable_default_mesh.color, Vec4{0.8,1,0.6, 1})
+	material_set(&mat_green, rsys.utable_default_mesh.texture, test_texture.id)
 
     // Pass initialization
-    render_pass_init(&test_pass)
+    render_pass_init(&test_pass, {0,0, 320, 320})
 
     test_pass.viewport = {0,0,320,320}
     test_pass.camera.viewport = {320,320}
@@ -302,9 +316,9 @@ test_render_init :: proc() {
     test_pass.clear.color = {.2,.2,.2, 1}
 
     render_pass_add_object(&test_pass, cast(RObjCustom)robj_grid, nil, order=-999)
-    render_pass_add_object(&test_pass, rsys.mesh_unit_quad, nil)
+    render_pass_add_object(&test_pass, rsys.mesh_unit_quad, &mat_red)
     render_pass_add_object(&test_pass, rsys.mesh_unit_quad, nil, position={1,1})
-    render_pass_add_object(&test_pass, test_mesh_triangle, &mat_green, position={-5,0})
+    render_pass_add_object(&test_pass, test_mesh_triangle, &mat_green, position={0,0})
 
     robj_grid :: proc() {// Temporary: This is bad.
         mb := &rsys.temp_mesh_builder
@@ -343,11 +357,11 @@ test_render_init :: proc() {
 }
 
 test_render_release :: proc() {
+    dgl.texture_delete(&test_texture.id)
+    
 	dgl.material_release(&mat_red)
 	dgl.material_release(&mat_green)
-	// dgl.mesh_delete(&test_mesh)
 	dgl.mesh_delete(&test_mesh_triangle)
-	dgl.shader_destroy(test_shader)
 
     render_pass_release(&test_pass)
 }
@@ -361,7 +375,6 @@ test_render :: proc(delta: f32) {
     test_pass.viewport = Vec4i{0,0, viewport.x, viewport.y}
     test_pass.camera.viewport = vec_i2f(viewport)
 
-    // test_pass.camera.position.x = math.sin(time*0.8)
     test_pass.camera.angle = 0.06 * math.sin(time*0.8)
 
     camera := &test_pass.camera

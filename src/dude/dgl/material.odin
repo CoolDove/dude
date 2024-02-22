@@ -1,6 +1,11 @@
 package dgl
 
 
+import "core:log"
+
+// This material system assumes that uniform locations in your shader are almost continuous. If the 
+//  locations are too isolated, a material for that shader might be slow (not that slow).
+
 Material :: struct {
 	shader: ShaderId,
 	values: [dynamic]MaterialValue,
@@ -45,22 +50,27 @@ material_reset :: proc(mat: ^Material, shader: ShaderId) {
 }
 
 // This is meant to be used together with uniform.
+
 material_set :: proc {
 	material_set_vec2,
 	material_set_vec4,
 	material_set_texture,
 }
+MaterialLocValuePair :: struct($T:typeid) {
+    loc : UniformLoc,
+    value : T,
+}
 material_set_vec2 :: proc(mat: ^Material, loc: UniformLocVec2, value: Vec2) {
 	_material_capacity_ensure(mat, loc)
-	mat.values[loc] = value
+	if loc >= 0 do mat.values[loc] = value
 }
 material_set_vec4 :: proc(mat: ^Material, loc: UniformLocVec4, value: Vec4) {
 	_material_capacity_ensure(mat, loc)
-	mat.values[loc] = value
+    if loc >= 0 do mat.values[loc] = value
 }
 material_set_texture :: proc(mat: ^Material, loc: UniformLocTexture, texture: u32) {
 	_material_capacity_ensure(mat, loc)
-	mat.values[loc] = cast(MaterialValueTexture)texture
+	if loc >= 0 do mat.values[loc] = cast(MaterialValueTexture)texture
 }
 
 @(private="file")
