@@ -49,8 +49,8 @@ UniformTableGeneral :: struct {
     texture : dgl.UniformLocTexture `uniform:"main_texture"`,
 }
 UniformTableSprite :: struct {
-    anchor : dgl.UniformLocVec4,
-    size : dgl.UniformLocVec4,
+    anchor : dgl.UniformLocVec2,
+    size : dgl.UniformLocVec2,
 }
 
 // TODO: Rename RenderTransform to Transform after the old Transform can be removed.
@@ -71,12 +71,10 @@ RObjMesh :: struct {
 }
 RObjHandle :: hla.HollowArrayHandle(RenderObject) 
 RObjSprite :: struct { // A sprite in 2D world space.
-	// When the shader is nil, you mean draw the sprite with a builtin sprite shader.
+	color : Color,
     texture : u32,
     anchor : Vec2, // [0,1]
     size : Vec2, // This differs from scale in transform.
-
-    utable : UniformTableSprite,
 }
 RObjCustom :: #type proc()
 
@@ -186,7 +184,7 @@ render_pass_release :: proc(pass: ^RenderPass) {
     }
 }
 
-render_pass_add_object :: proc(pass: ^RenderPass, obj: RObj, material: ^Material,
+render_pass_add_object :: proc(pass: ^RenderPass, obj: RObj, material: ^Material=nil,
 order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0) -> RObjHandle {
     return hla.hla_append(&test_pass.robjs, 
         RenderObject{ 
@@ -228,10 +226,23 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     for obj in hla.hla_ite(&pass.robjs, &robj_idx) {
         if robj_mesh, ok := obj.obj.(RObjMesh); ok {
             material := obj.material if (obj.material != nil) else &rsys.material_default_mesh
+            shader := material.shader
             dgl.material_upload(material.mat)
-            uniform_transform(material.shader.utable_transform, obj.position, obj.scale, obj.angle)
+            uniform_transform(shader.utable_transform, obj.position, obj.scale, obj.angle)
                 
             dgl.draw_mesh(robj_mesh.mesh)
+        } else if robj_sprite, ok := obj.obj.(RObjSprite); ok {
+            material := obj.material if (obj.material != nil) else &rsys.material_default_sprite
+            shader := material.shader
+            dgl.material_upload(material.mat)
+            uniform_transform(material.shader.utable_transform, obj.position, obj.scale, obj.angle)
+            // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
+            dgl.uniform_set_texture(shader.utable_general.texture, robj_sprite.texture, 16)
+            dgl.uniform_set(shader.utable_sprite.anchor, robj_sprite.anchor)
+            dgl.uniform_set(shader.utable_sprite.size, robj_sprite.size)
+            dgl.uniform_set(shader.utable_general.color, robj_sprite.color)
+
+            dgl.draw_mesh(rsys.mesh_unit_quad)
         } else if robj_custom, ok := obj.obj.(RObjCustom); ok {
             // TODO: Write a better one.
             if robj_custom != nil do robj_custom()
@@ -262,7 +273,7 @@ mat_green : Material
 @(private="file")
 test_texture : dgl.Texture
 
-triangle : RObjHandle
+player : RObjHandle
 
 UniformsTestShader :: struct {
 	color: dgl.UniformLocVec4,
@@ -310,10 +321,13 @@ test_render_init :: proc() {
     test_pass.camera.size = 32
     test_pass.clear.color = {.2,.2,.2, 1}
 
-    render_pass_add_object(&test_pass, cast(RObjCustom)robj_grid, nil, order=-999)
+    render_pass_add_object(&test_pass, cast(RObjCustom)robj_grid, order=-999)
     render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red)
-    render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, nil, position={1,1})
-    triangle = render_pass_add_object(&test_pass, RObjMesh{mesh=test_mesh_triangle}, &mat_green, position={0,0})
+    render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1,1})
+    render_pass_add_object(&test_pass, RObjMesh{mesh=test_mesh_triangle}, &mat_green, position={0,0})
+
+    player = render_pass_add_object(&test_pass, 
+        RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={8,8}, anchor={0.5,0.5}})
 
     robj_grid :: proc() {// Temporary: This is bad.
         mb := &rsys.temp_mesh_builder
@@ -372,7 +386,8 @@ test_render :: proc(delta: f32) {
     test_pass.camera.angle = 0.06 * math.sin(time*0.8)
 
     camera := &test_pass.camera
-    t := hla.hla_get_pointer(triangle)
+    t := hla.hla_get_pointer(player)
+    t.angle += delta * 0.6
     move_speed :f32= 3.0
     if get_key(.A) do t.position.x -= move_speed * delta
     else if get_key(.D) do t.position.x += move_speed * delta

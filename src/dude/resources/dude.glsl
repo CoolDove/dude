@@ -31,3 +31,7 @@ vec2 transform_point_world2camera(vec2 point) {
     p = p*scale;
     return p;
 }
+
+vec2 transform_unit_quad_as_sprite(vec2 point, vec2 anchor, vec2 size) {
+    return (point - anchor) * size;
+}
