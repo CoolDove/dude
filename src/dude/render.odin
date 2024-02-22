@@ -222,7 +222,7 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     robj_idx : int
     for obj in hla.hla_ite(&pass.robjs, &robj_idx) {
         material := obj.material
-        if material != nil && obj._utable_transform.position == obj._utable_transform.scale {
+        if material != nil && !dgl.uniform_table_is_loaded(&obj._utable_transform) {
             dgl.uniform_load(&obj._utable_transform, material.shader)
         }
 
