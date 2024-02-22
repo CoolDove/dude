@@ -178,7 +178,7 @@ render_release :: proc() {
 
 
 render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i) {
-	pass.robjs = hla.hla_make(RenderObject, 128)// make([dynamic]RenderObject)
+	pass.robjs = hla.hla_make(RenderObject, 128)
 	pass.robjs_sorted = make([dynamic]^RenderObject)
 
     pass.camera_ubo = dgl.ubo_create(size_of(CameraUniformData))
@@ -189,9 +189,7 @@ render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i) {
     pass.viewport = viewport
 }
 render_pass_release :: proc(pass: ^RenderPass) {
-	// delete(pass.robjs)
-    using hla
-    hla_delete(&pass.robjs)
+    hla.hla_delete(&pass.robjs)
     if len(pass.robjs_sorted) > 0 do delete(pass.robjs_sorted)
 	pass.robjs_sorted = nil
     if pass.camera_ubo != 0 {
@@ -224,6 +222,8 @@ RenderClear :: struct {
 render_pass_draw :: proc(pass: ^RenderPass) {
     dgl.framebuffer_bind(pass.target)
     dgl.state_set_viewport(pass.viewport)
+    blend_before := dgl.state_get_blend_simple(); defer dgl.state_set_blend(blend_before)
+    dgl.state_set_blend(dgl.GlStateBlendSimp{true, .FUNC_ADD, .SRC_ALPHA, .ONE_MINUS_SRC_ALPHA})
 
     {// ** Clear
         using pass.clear
