@@ -279,6 +279,8 @@ test_mesh_triangle : dgl.Mesh
 
 @(private="file")
 test_mesh_grid : dgl.Mesh 
+@(private="file")
+test_mesh_grid2 : dgl.Mesh 
 
 
 @(private="file")
@@ -287,6 +289,8 @@ mat_red : Material
 mat_green : Material
 @(private="file")
 mat_grid : Material
+@(private="file")
+mat_grid2 : Material
 
 @(private="file")
 test_texture : dgl.Texture
@@ -320,28 +324,28 @@ test_render_init :: proc() {
         mesh_builder_add_indices(&mb, 0,1,2)
         test_mesh_triangle = mesh_builder_create(mb)
 
-        {// ** Make a grid.
-            dgl.mesh_builder_reset(&mb, dgl.VERTEX_FORMAT_P2U2)
-
-            half_size :int= 20
-            unit :f32= 1.0
+        make_grid :: proc(mb: ^dgl.MeshBuilder, half_size:int, unit: f32) -> dgl.Mesh {
             size := 2 * half_size
-
             min := -cast(f32)half_size * unit;
             max := cast(f32)half_size * unit;
 
             for i in 0..=size {
                 x := min + cast(f32)i * unit
-                dgl.mesh_builder_add_vertices(&mb, {v2={x,min}})
-                dgl.mesh_builder_add_vertices(&mb, {v2={x,max}})
+                dgl.mesh_builder_add_vertices(mb, {v2={x,min}})
+                dgl.mesh_builder_add_vertices(mb, {v2={x,max}})
             }
             for i in 0..=size {
                 y := min + cast(f32)i * unit
-                dgl.mesh_builder_add_vertices(&mb, {v2={min,y}})
-                dgl.mesh_builder_add_vertices(&mb, {v2={max,y}})
+                dgl.mesh_builder_add_vertices(mb, {v2={min,y}})
+                dgl.mesh_builder_add_vertices(mb, {v2={max,y}})
             }
-            test_mesh_grid = dgl.mesh_builder_create(mb)
+            return dgl.mesh_builder_create(mb^)
         }
+
+        dgl.mesh_builder_reset(&mb, dgl.VERTEX_FORMAT_P2U2)
+        test_mesh_grid = make_grid(&mb, 20, 1.0)
+        dgl.mesh_builder_reset(&mb, dgl.VERTEX_FORMAT_P2U2)
+        test_mesh_grid2 = make_grid(&mb, 4, 5.0)
 
         test_texture = texture_load_from_mem(#load("./resources/dude.png"))
     }
@@ -356,8 +360,12 @@ test_render_init :: proc() {
 	material_set(&mat_green, utable_general.texture, test_texture.id)
 
 	material_init(&mat_grid, &rsys.shader_default_mesh)
-	material_set(&mat_grid, utable_general.color, Vec4{0.1,0.12,0.09, 1})
+	material_set(&mat_grid, utable_general.color, Vec4{0.18,0.17,0.17, 1})
 	material_set(&mat_grid, utable_general.texture, rsys.texture_default_white)
+
+	material_init(&mat_grid2, &rsys.shader_default_mesh)
+	material_set(&mat_grid2, utable_general.color, Vec4{0.1,0.12,0.09, 1})
+	material_set(&mat_grid2, utable_general.texture, rsys.texture_default_white)
 
     // Pass initialization
     render_pass_init(&test_pass, {0,0, 320, 320})
@@ -368,6 +376,7 @@ test_render_init :: proc() {
     test_pass.clear.color = {.2,.2,.2, 1}
 
     render_pass_add_object(&test_pass, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-999)
+    render_pass_add_object(&test_pass, RObjMesh{mesh=test_mesh_grid2, mode=.Lines}, &mat_grid2, order=-998)
 
     render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
     render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
@@ -383,7 +392,10 @@ test_render_release :: proc() {
     
 	material_release(&mat_red)
 	material_release(&mat_green)
+
 	dgl.mesh_delete(&test_mesh_triangle)
+	dgl.mesh_delete(&test_mesh_grid)
+	dgl.mesh_delete(&test_mesh_grid2)
 
     render_pass_release(&test_pass)
 }

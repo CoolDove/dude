@@ -50,8 +50,12 @@ game_update :: proc() {
 	tweener_update(&game.global_tweener, delta)
     // tween_update()
 
-    
+    for pass in &game.render_pass {
+        render_pass_draw(&pass)
+    }
+
 	test_render(delta)
+
     // draw_no_scene_logo(game.window) // This uses immediate_draw system, which is broken now.
 
     // Game builtin draw.
