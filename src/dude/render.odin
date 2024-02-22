@@ -36,16 +36,11 @@ RenderPassImplData :: struct {
     camera_ubo : dgl.UniformBlockId,
 }
 
+// RenderObject doesn't allocate anything.
 RenderObject :: struct {
     using transform : RenderTransform,
     material : ^Material,
 	obj : RObj,
-
-    // ** Implementations
-    _utable_transform : UniformTableTransform,
-    // When the utable is updated, this is set to mark which shader you loaded into the utables. 
-    // Whenever you want to draw a render object, you should check if this matches current shader.
-    // If does not match, the utables (those in `obj` are also included) should be reloaded.
 }
 
 UniformTableTransform :: struct {
@@ -53,15 +48,13 @@ UniformTableTransform :: struct {
     scale : dgl.UniformLocVec2 `uniform:"transform_scale"`,
     angle : dgl.UniformLocF32 `uniform:"transform_angle"`,
 }
-UniformTableMesh :: struct {
-    color : dgl.UniformLocVec4 `uniform:"mesh_color"`,
-    texture : dgl.UniformLocTexture `uniform:"mesh_texture"`,
+UniformTableGeneral :: struct {
+    color : dgl.UniformLocVec4 `uniform:"color"`,
+    texture : dgl.UniformLocTexture `uniform:"main_texture"`,
 }
 UniformTableSprite :: struct {
-    anchor : dgl.UniformLocVec4 `uniform:"sprite_anchor"`,
-    size : dgl.UniformLocVec4 `uniform:"sprite_size"`,
-    color : dgl.UniformLocVec4 `uniform:"sprite_color"`,
-    texture : dgl.UniformLocTexture `uniform:"sprite_texture"`,
+    anchor : dgl.UniformLocVec4,
+    size : dgl.UniformLocVec4,
 }
 
 // TODO: Rename RenderTransform to Transform after the old Transform can be removed.
@@ -78,7 +71,7 @@ RObj :: union {
 
 RObjMesh :: struct {
     mesh : dgl.Mesh,
-    utable : UniformTableMesh,
+    utable : UniformTableGeneral,
 }
 RObjHandle :: hla.HollowArrayHandle(RenderObject) 
 RObjSprite :: struct { // A sprite in 2D world space.
@@ -135,8 +128,8 @@ render_init :: proc() {
             #load("./resources/default_mesh.vert"),
             #load("./resources/default_mesh.frag"))
         material_init(&material_default_mesh, &shader_default_mesh)
-        material_set_vec4(&material_default_mesh,  utable_mesh.color, {1,1,1,1})
-        material_set_texture(&material_default_mesh, utable_mesh.texture, rsys.texture_default_white)
+        material_set_vec4(&material_default_mesh,  utable_general.color, {1,1,1,1})
+        material_set_texture(&material_default_mesh, utable_general.texture, rsys.texture_default_white)
     }
     
     {using shader_default_sprite
@@ -144,8 +137,8 @@ render_init :: proc() {
             #load("./resources/default_sprite.vert"),
             #load("./resources/default_sprite.frag"))
         material_init(&material_default_sprite, &shader_default_sprite)
-        material_set_vec4(&material_default_sprite,  utable_sprite.color, {1,1,1,1})
-        material_set_texture(&material_default_sprite, utable_sprite.texture, rsys.texture_default_white)
+        material_set_vec4(&material_default_sprite,  utable_general.color, {1,1,1,1})
+        material_set_texture(&material_default_sprite, utable_general.texture, rsys.texture_default_white)
     }
 
     // Meshes
@@ -305,13 +298,13 @@ test_render_init :: proc() {
         test_texture = texture_load_from_mem(#load("./resources/dude.png"))
     }
 
-    utable_mesh := rsys.shader_default_mesh.utable_mesh
+    utable_general := rsys.shader_default_mesh.utable_general
 	material_init(&mat_red, &rsys.shader_default_mesh)
-	material_set(&mat_red, utable_mesh.color, Vec4{1,0.6,0.8, 1})
-	material_set(&mat_red, utable_mesh.texture, test_texture.id)
+	material_set(&mat_red, utable_general.color, Vec4{1,0.6,0.8, 1})
+	material_set(&mat_red, utable_general.texture, test_texture.id)
 	material_init(&mat_green, &rsys.shader_default_mesh)
-	material_set(&mat_green, utable_mesh.color, Vec4{0.8,1,0.6, 1})
-	material_set(&mat_green, utable_mesh.texture, test_texture.id)
+	material_set(&mat_green, utable_general.color, Vec4{0.8,1,0.6, 1})
+	material_set(&mat_green, utable_general.texture, test_texture.id)
 
     // Pass initialization
     render_pass_init(&test_pass, {0,0, 320, 320})
@@ -354,7 +347,7 @@ test_render_init :: proc() {
 
         shader := rsys.material_default_mesh.shader
         uniform_transform(shader.utable_transform, Vec2{}, Vec2{1,1}, 0)
-        dgl.uniform_set(shader.utable_mesh.color, Vec4{.1,.1,.1, 1.0})
+        dgl.uniform_set(shader.utable_general.color, Vec4{.1,.1,.1, 1.0})
 
         polygon_mode_stash : u32
         dgl.draw_lines(mesh.vertex_count)

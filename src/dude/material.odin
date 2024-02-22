@@ -7,7 +7,7 @@ Shader :: struct {
     shader_id : dgl.ShaderId,
 
     utable_transform : UniformTableTransform,
-    utable_mesh : UniformTableMesh,
+    utable_general : UniformTableGeneral,
     utable_sprite : UniformTableSprite,
 }
 
@@ -19,7 +19,7 @@ shader_init :: proc(using shader: ^Shader, vert_src, frag_src : string, preproce
     using dgl
     shader_id = dgl.shader_load_from_sources(vert_src, frag_src, preprocess)
     uniform_load(&utable_transform, shader_id)
-    uniform_load(&utable_mesh, shader_id)
+    uniform_load(&utable_general, shader_id)
     uniform_load(&utable_sprite, shader_id)
 }
 shader_release :: proc(shader: ^Shader) {
