@@ -329,8 +329,6 @@ test_render_init :: proc() {
             dgl.mesh_builder_add_vertices(mb, {v2={min,y}})
             dgl.mesh_builder_add_vertices(mb, {v2={max,y}})
         }
-        vao : u32
-        vbo : u32
         mesh := dgl.mesh_builder_create(mb^, true); defer dgl.mesh_delete(&mesh)
         dgl.mesh_bind(&mesh)
 
@@ -342,7 +340,7 @@ test_render_init :: proc() {
         dgl.uniform_set(rsys.utable_default_mesh.color, Vec4{.1,.1,.1, 1.0})
 
         polygon_mode_stash : u32
-        dgl.draw_lines(mesh)
+        dgl.draw_lines(mesh.vertex_count)
     }
 }
 

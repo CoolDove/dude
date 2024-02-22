@@ -8,11 +8,11 @@ draw_mesh :: proc(mesh : Mesh) {
 	gl.BindVertexArray(0)
 }
 
-draw_lines :: proc(mesh: Mesh) {
+draw_lines :: proc(count: i32) {
     polygon_mode_stash : u32
     gl.GetIntegerv(gl.POLYGON_MODE, cast(^i32)&polygon_mode_stash)
     gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-    gl.DrawArrays(gl.LINES, 0, mesh.vertex_count)
+    gl.DrawArrays(gl.LINES, 0, count)
     gl.PolygonMode(gl.FRONT_AND_BACK, polygon_mode_stash)
 }
 
