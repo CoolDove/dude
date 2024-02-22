@@ -46,9 +46,7 @@ RenderPassImplData :: struct {
 RenderObject :: struct {
     using transform : RenderTransform,
     material : ^dgl.Material,
-	obj : union {
-        RObjMesh, RObjSprite, RObjHandle, RObjCustom,
-    },
+	obj : RObj,
     // impl
     _utable_transform : UniformTableTransform,
 }
@@ -71,13 +69,12 @@ RenderTransform :: struct {
     order : i32, // Objects with smaller order would be drawn earlier.
 }
 
-RObjMesh :: struct { // Just a mesh in 2D world space, with position-z always 0.
-    // When the shader is nil, you mean draw the mesh with a builtin mesh shader.
-	mesh : dgl.Mesh,
+RObj :: union {
+    RObjMesh, RObjSprite, RObjHandle, RObjCustom,
 }
-RObjHandle :: struct {
-    handle : hla.HollowArrayHandle(RenderObject),
-}
+
+RObjMesh :: #type dgl.Mesh
+RObjHandle :: hla.HollowArrayHandle(RenderObject) 
 RObjSprite :: struct { // A sprite in 2D world space.
 	// When the shader is nil, you mean draw the sprite with a builtin sprite shader.
     texture : u32,
@@ -178,6 +175,20 @@ render_pass_release :: proc(pass: ^RenderPass) {
     }
 }
 
+render_pass_add_object :: proc(pass: ^RenderPass, obj: RObj, material: ^dgl.Material,
+order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0) -> RObjHandle {
+    return hla.hla_append(&test_pass.robjs, 
+        RenderObject{ 
+            obj = obj, 
+            material = material,
+            transform = {
+                position=position,
+                scale=scale,
+                angle=angle,
+                order=order },
+    })
+}
+
 render_pass_draw :: proc(pass: ^RenderPass) {
     dgl.framebuffer_bind(pass.target)
     dgl.state_set_viewport(pass.viewport)
@@ -212,7 +223,7 @@ render_pass_draw :: proc(pass: ^RenderPass) {
             dgl.uniform_set_vec2(utable_transform.scale, obj.scale)
             dgl.uniform_set_f32(utable_transform.angle, obj.angle)
                 
-            dgl.draw_mesh(robj_mesh.mesh)
+            dgl.draw_mesh(robj_mesh)
         } else if robj_custom, ok := obj.obj.(RObjCustom); ok {
             // TODO: Write a better one.
             if robj_custom != nil do robj_custom()
@@ -221,6 +232,8 @@ render_pass_draw :: proc(pass: ^RenderPass) {
         }
     }
     // ## Sort all render objects.
+    // ...
+    
     dgl.framebuffer_bind_default()
 }
 
@@ -229,8 +242,8 @@ render_pass_draw :: proc(pass: ^RenderPass) {
 @(private="file")
 test_pass : RenderPass
 
-@(private="file")
-test_mesh : dgl.Mesh 
+// @(private="file")
+// test_mesh : dgl.Mesh 
 @(private="file")
 test_mesh_triangle : dgl.Mesh 
 
@@ -261,7 +274,7 @@ test_render_init :: proc() {
 		{v4={0.5,  0.5,  1,1}},
 	)
 	mesh_builder_add_indices(&mb, 0,1,2, 1,3,2)
-	test_mesh = mesh_builder_create(mb)
+	// test_mesh = mesh_builder_create(mb)
 
 	mesh_builder_clear(&mb)
 	mesh_builder_add_vertices(&mb,
@@ -288,25 +301,10 @@ test_render_init :: proc() {
     test_pass.camera.size = 32
     test_pass.clear.color = {.2,.2,.2, 1}
 
-    hla.hla_append(&test_pass.robjs, RenderObject{ obj = cast(RObjCustom)robj_grid })
-
-    hla.hla_append(&test_pass.robjs, RenderObject{
-        RenderTransform{scale={1,1}, position={0,0}}, 
-        nil,
-        RObjMesh{
-            mesh = test_mesh,
-        },
-        {},
-    })
-
-    hla.hla_append(&test_pass.robjs, RenderObject{
-        RenderTransform{scale={1,1}, position={-5,0}}, 
-        &mat_green,
-        RObjMesh{
-            mesh = test_mesh_triangle,
-        },
-        {},
-    })
+    render_pass_add_object(&test_pass, cast(RObjCustom)robj_grid, nil, order=-999)
+    render_pass_add_object(&test_pass, rsys.mesh_unit_quad, nil)
+    render_pass_add_object(&test_pass, rsys.mesh_unit_quad, nil, position={1,1})
+    render_pass_add_object(&test_pass, test_mesh_triangle, &mat_green, position={-5,0})
 
     robj_grid :: proc() {// Temporary: This is bad.
         mb := &rsys.temp_mesh_builder
@@ -347,7 +345,7 @@ test_render_init :: proc() {
 test_render_release :: proc() {
 	dgl.material_release(&mat_red)
 	dgl.material_release(&mat_green)
-	dgl.mesh_delete(&test_mesh)
+	// dgl.mesh_delete(&test_mesh)
 	dgl.mesh_delete(&test_mesh_triangle)
 	dgl.shader_destroy(test_shader)
 
