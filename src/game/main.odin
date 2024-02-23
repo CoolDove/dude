@@ -125,11 +125,8 @@ init :: proc(game: ^dude.Game) {
 
     // Pass initialization
     render_pass_init(&pass_main, {0,0, 320, 320})
-
-    pass_main.viewport = {0,0,320,320}
-    pass_main.camera.viewport = {320,320}
-    pass_main.camera.size = 32
     pass_main.clear.color = {.2,.2,.2, 1}
+    pass_main.clear.mask = {.Color,.Depth,.Stencil}
 
     render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
     render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
