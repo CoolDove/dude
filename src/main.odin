@@ -5,9 +5,9 @@ import "core:log"
 import "core:math/linalg"
 import "core:math"
 
-import "../dude"
-import "../dude/dgl"
-import hla "../dude/collections/hollow_array"
+import "dude"
+import "dude/dgl"
+import hla "dude/collections/hollow_array"
 
 pass_main : dude.RenderPass
 
@@ -24,7 +24,7 @@ DemoGame :: struct {
 demo_game : DemoGame
 
 main :: proc() {
-	dude.init("dude", {_package_game, _test})
+	dude.init("dude game demo", {_package_game, _test})
     dude.dude_main(update, init, release, nil)
 }
 
@@ -61,7 +61,7 @@ init :: proc(game: ^dude.Game) {
         using dgl
         mb := &dude.rsys.temp_mesh_builder
 
-        dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2)
+        mesh_builder_reset(mb, VERTEX_FORMAT_P2U2)
         mesh_builder_add_vertices(mb,
             {v4={-1.0, -1.0, 0,0}},
             {v4={1.0,  -1.0, 1,0}},
@@ -70,15 +70,15 @@ init :: proc(game: ^dude.Game) {
         mesh_builder_add_indices(mb, 0,1,2)
         test_mesh_triangle = mesh_builder_create(mb^)
 
-        dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2)
+        mesh_builder_reset(mb, VERTEX_FORMAT_P2U2)
         dude.mesher_line_grid(mb, 20, 1.0)
-        test_mesh_grid = dgl.mesh_builder_create(mb^)
+        test_mesh_grid = mesh_builder_create(mb^)
 
-        dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2)
+        mesh_builder_reset(mb, VERTEX_FORMAT_P2U2)
         dude.mesher_line_grid(mb, 4, 5.0)
-        test_mesh_grid2 = dgl.mesh_builder_create(mb^)
+        test_mesh_grid2 = mesh_builder_create(mb^)
 
-        test_texture = texture_load_from_mem(#load("../../res/texture/dude.png"))
+        test_texture = texture_load_from_mem(#load("../res/texture/dude.png"))
     }
 
     using dude
@@ -107,6 +107,7 @@ init :: proc(game: ^dude.Game) {
     render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
     render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
+    render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, test_texture.id, {1,1}, {0.5,0.5}}, order=101)
 
     player = render_pass_add_object(&pass_main, 
         RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={4,4}, anchor={0.5,0.5}}, order=100)
