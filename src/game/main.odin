@@ -102,7 +102,7 @@ init :: proc(game: ^dude.Game) {
         dgl.mesh_builder_reset(&mb, dgl.VERTEX_FORMAT_P2U2)
         test_mesh_grid2 = make_grid(&mb, 4, 5.0)
 
-        test_texture = texture_load_from_mem(#load("../../res/texture/box.png"))
+        test_texture = texture_load_from_mem(#load("../../res/texture/dude.png"))
     }
 
     using dude
@@ -131,16 +131,15 @@ init :: proc(game: ^dude.Game) {
     pass_main.camera.size = 32
     pass_main.clear.color = {.2,.2,.2, 1}
 
-    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-999)
-    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid2, mode=.Lines}, &mat_grid2, order=-998)
-
     render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
     render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
 
     player = render_pass_add_object(&pass_main, 
-        RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={8,8}, anchor={0.5,0.5}})
+        RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={8,8}, anchor={0.5,0.5}}, order=100)
 
+    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid2, mode=.Lines}, &mat_grid2, order=-99999)
+    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-99998)
 }
 @(private="file")
 release :: proc(game: ^dude.Game) {

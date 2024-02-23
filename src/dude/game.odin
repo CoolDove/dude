@@ -49,13 +49,8 @@ game_update :: proc() {
         render_pass_draw(pass)
     }
 
-    // draw_no_scene_logo(game.window) // This uses immediate_draw system, which is broken now.
-
     // Game builtin draw.
     if game.settings.status_window_alpha > 0 do draw_status()
-
-    // ## RENDERING
-    // immediate_end(game.immediate_draw_wireframe)
 
     // ## DEBUG IMGUI
 	imgui_frame_begin()

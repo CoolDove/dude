@@ -62,7 +62,7 @@ RenderTransform :: struct {
 }
 
 RObj :: union {
-    RObjMesh, RObjSprite, RObjHandle, RObjCustom,
+    RObjMesh, RObjSprite, RObjHandle, RObjCustom, RObjCommand,
 }
 
 RObjMesh :: struct {
@@ -201,6 +201,10 @@ order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0) -> RObjHandle 
     })
 }
 
+render_pass_remove_object :: proc(obj: RObjHandle) {
+    hla.hla_remove_handle(obj)
+}
+
 RenderClear :: struct {
     color : Vec4,
     depth : f64,
@@ -224,9 +228,17 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     dgl.ubo_update_with_object(pass.camera_ubo, &pass.camera.data)
     dgl.ubo_bind(pass.camera_ubo, UNIFORM_BLOCK_SLOT_CAMERA)
 
-    // TODO: Sort all the render objects.
+    // ** Sort all the render objects.
     robj_idx : int
+    clear(&pass.robjs_sorted)
     for obj in hla.hla_ite(&pass.robjs, &robj_idx) {
+        append(&pass.robjs_sorted, obj)
+    }
+    slice.sort_by(pass.robjs_sorted[:], proc(i,j : ^RenderObject) -> bool {
+        return i.order < j.order
+    })
+
+    for obj in pass.robjs_sorted {
         if robj_mesh, ok := obj.obj.(RObjMesh); ok {
             material := obj.material if (obj.material != nil) else &rsys.material_default_mesh
             shader := material.shader
@@ -255,6 +267,8 @@ render_pass_draw :: proc(pass: ^RenderPass) {
             dgl.uniform_set(shader.utable_general.color, robj_sprite.color)
 
             dgl.draw_mesh(rsys.mesh_unit_quad)
+        } else if robj_cmd, ok := obj.obj.(RObjCommand); ok {
+            execute_render_command(robj_cmd)
         } else if robj_custom, ok := obj.obj.(RObjCustom); ok {
             // TODO: Write a better one.
             if robj_custom != nil do robj_custom()
@@ -265,4 +279,31 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     
     dgl.framebuffer_bind_default()
     
+}
+
+RObjCommand :: union {
+    dgl.GlStateBlend, RObjCmdRenderTarget,
+}
+RObjCmdRenderTarget :: struct {
+    texture : u32,
+    attach_point: u32,
+}
+
+// ** Render object commands
+robjcmd_set_blend :: proc(blend: dgl.GlStateBlend) -> RObjCommand {
+    return blend
+}
+robjcmd_attach_render_texture :: proc(texture: u32, attach_point: u32) -> RObjCommand {
+    return RObjCmdRenderTarget{texture, attach_point}
+}
+
+@(private="file")
+execute_render_command :: proc(cmd: RObjCommand) {
+    switch cmd in cmd {
+    case dgl.GlStateBlend:
+        dgl.state_set_blend(cmd)
+    case RObjCmdRenderTarget:
+        assert(false, "RenderObject: Command RenderTarget is not supported now.")
+        // dgl.framebuffer_attach_color(cmd.attach_point, cmd.texture)
+    }
 }
