@@ -23,14 +23,8 @@ import "dpac"
 Game :: struct {
     using settings : ^GameSettings,
     window : ^Window,
-
 	global_tweener : Tweener,
-
-	timer : time.Stopwatch,
-
-    main_world : ^ecs.World,
-
-	render_pass : [dynamic]RenderPass,
+	render_pass : [dynamic]^RenderPass,
 }
 
 GameSettings :: struct {
@@ -42,19 +36,18 @@ GameSettings :: struct {
 game : Game
 
 game_update :: proc() {
-	// duration := time.stopwatch_duration(game.timer)
 	total_time :f32= auto_cast time.duration_seconds(app.duration_total)
 	delta :f32= auto_cast time.duration_seconds(app.duration_frame)
-	// time.stopwatch_start(&game.timer)
 
 	tweener_update(&game.global_tweener, delta)
-    // tween_update()
+
+    if _callback_update == nil {
+        log.errorf("Dude: You should set a valid `update` for me.")
+    } else do _callback_update(&game, delta)
 
     for pass in &game.render_pass {
-        render_pass_draw(&pass)
+        render_pass_draw(pass)
     }
-
-	test_render(delta)
 
     // draw_no_scene_logo(game.window) // This uses immediate_draw system, which is broken now.
 
@@ -66,6 +59,7 @@ game_update :: proc() {
 
     // ## DEBUG IMGUI
 	imgui_frame_begin()
+    if _callback_gui != nil do _callback_gui()
 	dude_imgui_basic_settings()
 	imgui_frame_end()
 
@@ -84,17 +78,16 @@ game_init :: proc() {
 
 	tweener_init(&game.global_tweener, 16)
 	
-	time.stopwatch_start(&game.timer)
+	// time.stopwatch_start(&game.timer)
 
     render_init()
 
-	test_render_init()
+    if _callback_init != nil do _callback_init(&game)
 }
 
 game_release :: proc() {
     log.debug("game release")
-
-	test_render_release()
+    if _callback_release != nil do _callback_release(&game)
 
     render_release()
 

@@ -8,7 +8,17 @@ import "core:log"
 DUDE_STARTUP_COMMAND :string: #config(DUDE_STARTUP_COMMAND, "GAME")
 DUDE_GAME :: DUDE_STARTUP_COMMAND == "GAME"
 
-dude_main :: proc() {
+
+@(private)
+_callback_update : proc(game: ^Game, delta:f32)
+@(private)
+_callback_init : proc(game: ^Game)
+@(private)
+_callback_release : proc(game: ^Game)
+@(private)
+_callback_gui : proc()
+
+dude_main :: proc(update: proc(game: ^Game, delta:f32), init, release: proc(game: ^Game), gui : proc()) {
 	when ODIN_DEBUG {
 		logger := log.create_console_logger(.Debug, {.Level, .Short_File_Path, .Line, .Terminal_Color})
 		context.logger = logger
@@ -29,6 +39,11 @@ dude_main :: proc() {
 		fmt.printf("unrecognized command: {}", DUDE_STARTUP_COMMAND)
 		return
 	}
+
+    _callback_update = update
+    _callback_init = init
+    _callback_release = release
+    _callback_gui = gui
 
 	when DUDE_STARTUP_COMMAND == "GAME" {
 		app_run()

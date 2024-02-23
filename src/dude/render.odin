@@ -108,7 +108,6 @@ RenderSystem :: struct {
     texture_default_black : dgl.TextureId,
 }
 
-@(private="file")
 rsys : RenderSystem
 
 render_init :: proc() {
@@ -190,7 +189,7 @@ render_pass_release :: proc(pass: ^RenderPass) {
 
 render_pass_add_object :: proc(pass: ^RenderPass, obj: RObj, material: ^Material=nil,
 order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0) -> RObjHandle {
-    return hla.hla_append(&test_pass.robjs, 
+    return hla.hla_append(&pass.robjs, 
         RenderObject{ 
             obj = obj, 
             material = material,
@@ -266,160 +265,4 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     
     dgl.framebuffer_bind_default()
     
-}
-
-
-
-// ** Test rendering.
-@(private="file")
-test_pass : RenderPass
-
-@(private="file")
-test_mesh_triangle : dgl.Mesh 
-
-@(private="file")
-test_mesh_grid : dgl.Mesh 
-@(private="file")
-test_mesh_grid2 : dgl.Mesh 
-
-
-@(private="file")
-mat_red : Material
-@(private="file")
-mat_green : Material
-@(private="file")
-mat_grid : Material
-@(private="file")
-mat_grid2 : Material
-
-@(private="file")
-test_texture : dgl.Texture
-
-player : RObjHandle
-
-UniformsTestShader :: struct {
-	color: dgl.UniformLocVec4,
-}
-
-test_render_init :: proc() {
-    {// ** Build meshes.
-        using dgl
-        mb : MeshBuilder
-        mesh_builder_init(&mb, VERTEX_FORMAT_P2U2); defer mesh_builder_release(&mb)
-
-        mesh_builder_add_vertices(&mb,
-            {v4={-0.5, -0.5, 0,0}},
-            {v4={0.5,  -0.5, 1,0}},
-            {v4={-0.5, 0.5,  0,1}},
-            {v4={0.5,  0.5,  1,1}},
-        )
-        mesh_builder_add_indices(&mb, 0,1,2, 1,3,2)
-
-        mesh_builder_clear(&mb)
-        mesh_builder_add_vertices(&mb,
-            {v4={-1.0, -1.0, 0,0}},
-            {v4={1.0,  -1.0, 1,0}},
-            {v4={-1.0, 1.0,  0,1}},
-        )
-        mesh_builder_add_indices(&mb, 0,1,2)
-        test_mesh_triangle = mesh_builder_create(mb)
-
-        make_grid :: proc(mb: ^dgl.MeshBuilder, half_size:int, unit: f32) -> dgl.Mesh {
-            size := 2 * half_size
-            min := -cast(f32)half_size * unit;
-            max := cast(f32)half_size * unit;
-
-            for i in 0..=size {
-                x := min + cast(f32)i * unit
-                dgl.mesh_builder_add_vertices(mb, {v2={x,min}})
-                dgl.mesh_builder_add_vertices(mb, {v2={x,max}})
-            }
-            for i in 0..=size {
-                y := min + cast(f32)i * unit
-                dgl.mesh_builder_add_vertices(mb, {v2={min,y}})
-                dgl.mesh_builder_add_vertices(mb, {v2={max,y}})
-            }
-            return dgl.mesh_builder_create(mb^)
-        }
-
-        dgl.mesh_builder_reset(&mb, dgl.VERTEX_FORMAT_P2U2)
-        test_mesh_grid = make_grid(&mb, 20, 1.0)
-        dgl.mesh_builder_reset(&mb, dgl.VERTEX_FORMAT_P2U2)
-        test_mesh_grid2 = make_grid(&mb, 4, 5.0)
-
-        test_texture = texture_load_from_mem(#load("./resources/dude.png"))
-    }
-
-    utable_general := rsys.shader_default_mesh.utable_general
-	material_init(&mat_red, &rsys.shader_default_mesh)
-	material_set(&mat_red, utable_general.color, Vec4{1,0.6,0.8, 1})
-	material_set(&mat_red, utable_general.texture, test_texture.id)
-
-	material_init(&mat_green, &rsys.shader_default_mesh)
-	material_set(&mat_green, utable_general.color, Vec4{0.8,1,0.6, 1})
-	material_set(&mat_green, utable_general.texture, test_texture.id)
-
-	material_init(&mat_grid, &rsys.shader_default_mesh)
-	material_set(&mat_grid, utable_general.color, Vec4{0.18,0.17,0.17, 1})
-	material_set(&mat_grid, utable_general.texture, rsys.texture_default_white)
-
-	material_init(&mat_grid2, &rsys.shader_default_mesh)
-	material_set(&mat_grid2, utable_general.color, Vec4{0.1,0.12,0.09, 1})
-	material_set(&mat_grid2, utable_general.texture, rsys.texture_default_white)
-
-    // Pass initialization
-    render_pass_init(&test_pass, {0,0, 320, 320})
-
-    test_pass.viewport = {0,0,320,320}
-    test_pass.camera.viewport = {320,320}
-    test_pass.camera.size = 32
-    test_pass.clear.color = {.2,.2,.2, 1}
-
-    render_pass_add_object(&test_pass, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-999)
-    render_pass_add_object(&test_pass, RObjMesh{mesh=test_mesh_grid2, mode=.Lines}, &mat_grid2, order=-998)
-
-    render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
-    render_pass_add_object(&test_pass, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
-    render_pass_add_object(&test_pass, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
-
-    player = render_pass_add_object(&test_pass, 
-        RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={8,8}, anchor={0.5,0.5}})
-
-}
-
-test_render_release :: proc() {
-    dgl.texture_delete(&test_texture.id)
-    
-	material_release(&mat_red)
-	material_release(&mat_green)
-
-	dgl.mesh_delete(&test_mesh_triangle)
-	dgl.mesh_delete(&test_mesh_grid)
-	dgl.mesh_delete(&test_mesh_grid2)
-
-    render_pass_release(&test_pass)
-}
-
-test_render :: proc(delta: f32) {
-    @static time : f32 = 0
-    time += delta
-
-    viewport := app.window.size
-
-    test_pass.viewport = Vec4i{0,0, viewport.x, viewport.y}
-    test_pass.camera.viewport = vec_i2f(viewport)
-
-    test_pass.camera.angle = 0.06 * math.sin(time*0.8)
-    test_pass.camera.size = 64 + 6 * math.sin(time*1.2)
-
-    camera := &test_pass.camera
-    t := hla.hla_get_pointer(player)
-    t.angle += delta * 0.6
-    move_speed :f32= 3.0
-    if get_key(.A) do t.position.x -= move_speed * delta
-    else if get_key(.D) do t.position.x += move_speed * delta
-    if get_key(.W) do t.position.y += move_speed * delta
-    else if get_key(.S) do t.position.y -= move_speed * delta
-    
-    render_pass_draw(&test_pass)
 }
