@@ -9,26 +9,15 @@ import "../dude"
 import "../dude/dgl"
 import hla "../dude/collections/hollow_array"
 
-// sc := dude.Scene{}
-
-
 pass_main : dude.RenderPass
-
-
-@(private="file")
-test_mesh_triangle : dgl.Mesh 
-
-@(private="file")
-test_mesh_grid : dgl.Mesh 
-@(private="file")
-test_mesh_grid2 : dgl.Mesh 
-
 
 DemoGame :: struct {
     mat_red, mat_green : dude.Material,
     mat_grid, mat_grid2 : dude.Material,
     test_texture : dgl.Texture,
     player : dude.RObjHandle,
+
+    test_mesh_triangle, test_mesh_grid, test_mesh_grid2 : dgl.Mesh,
 }
 
 @(private="file")
