@@ -116,11 +116,11 @@ init :: proc(game: ^dude.Game) {
 	material_set(&mat_green, utable_general.texture, test_texture.id)
 
 	material_init(&mat_grid, &rsys.shader_default_mesh)
-	material_set(&mat_grid, utable_general.color, Vec4{0.18,0.17,0.17, 1})
+	material_set(&mat_grid, utable_general.color, Vec4{0.18,0.14,0.13, 1})
 	material_set(&mat_grid, utable_general.texture, rsys.texture_default_white)
 
 	material_init(&mat_grid2, &rsys.shader_default_mesh)
-	material_set(&mat_grid2, utable_general.color, Vec4{0.1,0.12,0.09, 1})
+	material_set(&mat_grid2, utable_general.color, Vec4{0.1,0.04,0.09, 1})
 	material_set(&mat_grid2, utable_general.texture, rsys.texture_default_white)
 
     // Pass initialization
@@ -136,10 +136,10 @@ init :: proc(game: ^dude.Game) {
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
 
     player = render_pass_add_object(&pass_main, 
-        RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={8,8}, anchor={0.5,0.5}}, order=100)
+        RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={4,4}, anchor={0.5,0.5}}, order=100)
 
-    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid2, mode=.Lines}, &mat_grid2, order=-99999)
-    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-99998)
+    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid2, mode=.Lines}, &mat_grid2, order=-9998)
+    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-9999)
 }
 @(private="file")
 release :: proc(game: ^dude.Game) {
@@ -154,11 +154,6 @@ release :: proc(game: ^dude.Game) {
 	dgl.mesh_delete(&test_mesh_grid2)
 
     render_pass_release(&pass_main)
-}
-
-enter_test_scene :: proc() {
-    pass := &dude.game.render_pass
-    clear(pass)
 }
 
 @(private="file")
