@@ -141,13 +141,7 @@ render_init :: proc() {
     // Meshes
     {using dgl
         mesh_builder_init(&temp_mesh_builder, VERTEX_FORMAT_P2U2)
-        mesh_builder_add_vertices(&temp_mesh_builder, 
-            {v4={0,0,  0,0}},
-            {v4={1,0,  1,0}},
-            {v4={0,1,  0,1}},
-            {v4={1,1,  1,1}},
-        )
-        mesh_builder_add_indices(&temp_mesh_builder, 0,1,2, 1,3,2)
+        mesher_quad(&temp_mesh_builder, {1,1}, {0,0})
         mesh_unit_quad = mesh_builder_create(temp_mesh_builder)
     }
 }

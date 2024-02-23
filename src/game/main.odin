@@ -59,48 +59,24 @@ init :: proc(game: ^dude.Game) {
 
     {// ** Build meshes.
         using dgl
-        mb : MeshBuilder
-        mesh_builder_init(&mb, VERTEX_FORMAT_P2U2); defer mesh_builder_release(&mb)
+        mb := &dude.rsys.temp_mesh_builder
 
-        mesh_builder_add_vertices(&mb,
-            {v4={-0.5, -0.5, 0,0}},
-            {v4={0.5,  -0.5, 1,0}},
-            {v4={-0.5, 0.5,  0,1}},
-            {v4={0.5,  0.5,  1,1}},
-        )
-        mesh_builder_add_indices(&mb, 0,1,2, 1,3,2)
-
-        mesh_builder_clear(&mb)
-        mesh_builder_add_vertices(&mb,
+        dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2)
+        mesh_builder_add_vertices(mb,
             {v4={-1.0, -1.0, 0,0}},
             {v4={1.0,  -1.0, 1,0}},
             {v4={-1.0, 1.0,  0,1}},
         )
-        mesh_builder_add_indices(&mb, 0,1,2)
-        test_mesh_triangle = mesh_builder_create(mb)
+        mesh_builder_add_indices(mb, 0,1,2)
+        test_mesh_triangle = mesh_builder_create(mb^)
 
-        make_grid :: proc(mb: ^dgl.MeshBuilder, half_size:int, unit: f32) -> dgl.Mesh {
-            size := 2 * half_size
-            min := -cast(f32)half_size * unit;
-            max := cast(f32)half_size * unit;
+        dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2)
+        dude.mesher_line_grid(mb, 20, 1.0)
+        test_mesh_grid = dgl.mesh_builder_create(mb^)
 
-            for i in 0..=size {
-                x := min + cast(f32)i * unit
-                dgl.mesh_builder_add_vertices(mb, {v2={x,min}})
-                dgl.mesh_builder_add_vertices(mb, {v2={x,max}})
-            }
-            for i in 0..=size {
-                y := min + cast(f32)i * unit
-                dgl.mesh_builder_add_vertices(mb, {v2={min,y}})
-                dgl.mesh_builder_add_vertices(mb, {v2={max,y}})
-            }
-            return dgl.mesh_builder_create(mb^)
-        }
-
-        dgl.mesh_builder_reset(&mb, dgl.VERTEX_FORMAT_P2U2)
-        test_mesh_grid = make_grid(&mb, 20, 1.0)
-        dgl.mesh_builder_reset(&mb, dgl.VERTEX_FORMAT_P2U2)
-        test_mesh_grid2 = make_grid(&mb, 4, 5.0)
+        dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2)
+        dude.mesher_line_grid(mb, 4, 5.0)
+        test_mesh_grid2 = dgl.mesh_builder_create(mb^)
 
         test_texture = texture_load_from_mem(#load("../../res/texture/dude.png"))
     }
