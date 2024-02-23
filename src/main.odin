@@ -7,6 +7,7 @@ import "core:math"
 
 import "dude"
 import "dude/dgl"
+import "dude/vendor/imgui"
 import hla "dude/collections/hollow_array"
 
 pass_main : dude.RenderPass
@@ -25,7 +26,7 @@ demo_game : DemoGame
 
 main :: proc() {
 	dude.init("dude game demo", {_package_game, _test})
-    dude.dude_main(update, init, release, nil)
+    dude.dude_main(update, init, release, on_gui)
 }
 
 @(private="file")
@@ -128,6 +129,16 @@ release :: proc(game: ^dude.Game) {
 	dgl.mesh_delete(&test_mesh_grid2)
 
     render_pass_release(&pass_main)
+}
+
+@(private="file")
+on_gui :: proc() {
+    using demo_game, imgui
+    set_next_window_pos({10,10})
+    begin("DemoGame", nil)
+    p : ^dude.RenderObject = hla.hla_get_pointer(player)
+    slider_float2("position", &p.position, -10, 10)
+    end()
 }
 
 @(private="file")
