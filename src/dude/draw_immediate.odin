@@ -6,8 +6,81 @@ import "core:strings"
 
 import "dgl"
 
+ImmediateDrawContext :: struct {
+    immediate_robjs : [dynamic]RenderObject,
+    meshes : [dynamic]dgl.Mesh,
 
-// @(private="file")
+    // buffered things
+    buffered_type : ImmediateElemType,
+    mesh_builder : dgl.MeshBuilder,
+    color : Color32,
+    texture : u32,
+    order : i32,
+}
+
+ImmediateElemType :: enum {
+    ScreenQuad, Line
+}
+
+immediate_init :: proc(using ctx: ^ImmediateDrawContext) {
+    dgl.mesh_builder_init(&mesh_builder, dgl.VERTEX_FORMAT_P2U2, 64, 64)
+    immediate_robjs = make([dynamic]RenderObject)
+    meshes = make([dynamic]dgl.Mesh)
+}
+immediate_release :: proc(using ctx: ^ImmediateDrawContext) {
+    dgl.mesh_builder_release(&mesh_builder)
+    delete(immediate_robjs)
+    delete(meshes)
+}
+
+// You should call this when you start to draw immediate objects to prevent that there's no elems in
+//  the immediate buffer.
+immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
+    if len(mesh_builder.vertices) <= 0 do return
+    if buffered_type == .ScreenQuad {
+        mesh := dgl.mesh_builder_create(mesh_builder)
+        append(&meshes, mesh)
+        append(&immediate_robjs, 
+            RenderObject{ 
+                obj = RObjImmediateScreenMesh{mesh=mesh, mode=.Triangle, color=col_u2f(color), texture=texture},
+                order = order,
+        })
+    } else if buffered_type == .Line {
+        mesh := dgl.mesh_builder_create(mesh_builder, true)
+        append(&meshes, mesh)
+        append(&immediate_robjs, 
+            RenderObject{ 
+                obj = RObjImmediateScreenMesh{mesh=mesh, mode=.Lines, color=col_u2f(color), texture=texture},
+                order=order,
+        })
+    }
+}
+immediate_clear :: proc(using ctx: ^ImmediateDrawContext) {
+    for &mesh in meshes {
+        dgl.mesh_delete(&mesh)
+    }
+    clear(&meshes)
+    dgl.mesh_builder_clear(&mesh_builder)
+    clear(&immediate_robjs)
+}
+
+immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0) {
+    ctx := &pass.impl.immediate_draw_ctx
+    using ctx
+    if ctx.buffered_type != .ScreenQuad || ctx.texture != texture || ctx.color != color || ctx.order != order {
+        immediate_confirm(ctx)
+    }
+    ctx.buffered_type = .ScreenQuad
+    ctx.color = color
+    ctx.texture = texture if texture > 0 else rsys.texture_default_white
+    ctx.order = order
+    dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
+    mesher_quad(&ctx.mesh_builder, size, {0,0}, corner)
+}
+
+// immediate_line :: proc(using ctx: ^ImmediateDrawContext, corner, size: Vec2) {
+// }
+
 // ImmediateDrawElement :: struct {
     // shader : u32,
     // start, count : u32,

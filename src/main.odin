@@ -51,6 +51,8 @@ update :: proc(game: ^dude.Game, delta: f32) {
     else if get_key(.D) do t.position.x += move_speed * delta
     if get_key(.W) do t.position.y += move_speed * delta
     else if get_key(.S) do t.position.y -= move_speed * delta
+
+    dude.immediate_screen_quad(&pass_main, get_mouse_position(), {128,256})
 }
 
 @(private="file")
@@ -73,6 +75,7 @@ init :: proc(game: ^dude.Game) {
 
         mesh_builder_reset(mb, VERTEX_FORMAT_P2U2)
         dude.mesher_line_grid(mb, 20, 1.0)
+        // TODO: Test not create indices buffer here.
         test_mesh_grid = mesh_builder_create(mb^)
 
         mesh_builder_reset(mb, VERTEX_FORMAT_P2U2)
@@ -107,10 +110,10 @@ init :: proc(game: ^dude.Game) {
     blend := &pass_main.blend.(dgl.GlStateBlendSimp)
     blend.enable = true
 
-    render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
-    render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
-    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
-    render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, test_texture.id, {0.5,0.5}, {1,1}}, order=101)
+    // render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
+    // render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
+    // render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
+    // render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, test_texture.id, {0.5,0.5}, {1,1}}, order=101)
 
     player = render_pass_add_object(&pass_main, 
         RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={4,4}, anchor={0.5,0.5}}, order=100)
@@ -118,7 +121,7 @@ init :: proc(game: ^dude.Game) {
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid2, mode=.Lines}, &mat_grid2, order=-9998)
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-9999)
 
-    render_pass_add_object(&pass_main, RObjSpriteScreen{{1,0,0,0.2}, test_texture.id, {.5,.5}, {320,320}}, position={1,0}, order=999)
+    // render_pass_add_object(&pass_main, RObjSpriteScreen{{1,0,0,0.2}, test_texture.id, {.5,.5}, {320,320}}, position={1,0}, order=999)
 }
 @(private="file")
 release :: proc(game: ^dude.Game) {

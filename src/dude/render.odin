@@ -35,6 +35,9 @@ RenderDataDude :: struct {
 // Implementation necessary data, which you cannot access from outside.
 @(private="file")
 RenderPassImplData :: struct {
+    // Immediate draw
+    immediate_draw_ctx : ImmediateDrawContext,
+
     robjs_sorted : [dynamic]^RenderObject, // This shall be sorted everytime you draw the pass.
     camera_ubo : dgl.UniformBlockId,
 }
@@ -44,6 +47,7 @@ RenderObject :: struct {
     using transform : RenderTransform, // Transform is not used for screen space render objects (mesh and sprite) for now.
     material : ^Material,
 	obj : RObj,
+    order : i32, // Objects with smaller order would be drawn earlier.
 }
 
 UniformTableTransform :: struct {
@@ -65,19 +69,25 @@ RenderTransform :: struct {
     position : Vec2,
     scale : Vec2, // For sprite this is size.
     angle : f32,
-    order : i32, // Objects with smaller order would be drawn earlier.
 }
 
 RObj :: union {
     RObjMesh, RObjMeshScreen, RObjSprite, RObjSpriteScreen, RObjHandle, RObjCustom, RObjCommand,
+    RObjImmediateScreenMesh,
 }
 
 RObjMesh :: struct {
     mesh : dgl.Mesh,
     mode : MeshMode,
-    utable : UniformTableGeneral,
+}
+RObjImmediateScreenMesh :: struct {
+    mesh : dgl.Mesh,
+    mode : MeshMode,
+	color : Color,
+    texture : u32,
 }
 RObjMeshScreen :: distinct RObjMesh
+// NOTE: When you create a `Lines` mode mesh, the indices buffer is not used.
 MeshMode :: enum {
     Triangle, Lines, LineStrip,
 }
@@ -211,7 +221,6 @@ render_update :: proc(time_total : f32) {
     dgl.ubo_update_with_object(rsys.render_data_dude_ubo, &rsys.render_data_dude)
 }
 
-
 render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i) {
 	pass.robjs = hla.hla_make(RenderObject, 128)
 	pass.robjs_sorted = make([dynamic]^RenderObject)
@@ -224,11 +233,18 @@ render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i) {
     pass.viewport = viewport
 
     pass.blend = dgl.GlStateBlendSimp{false, .FUNC_ADD, .SRC_ALPHA, .ONE_MINUS_SRC_ALPHA}
+
+    immediate_init(&pass.immediate_draw_ctx)
 }
 render_pass_release :: proc(pass: ^RenderPass) {
+    immediate_release(&pass.immediate_draw_ctx)
+
     hla.hla_delete(&pass.robjs)
-    if len(pass.robjs_sorted) > 0 do delete(pass.robjs_sorted)
-	pass.robjs_sorted = nil
+    if len(pass.robjs_sorted) > 0 {
+        delete(pass.robjs_sorted)
+	    pass.robjs_sorted = nil
+    }
+
     if pass.camera_ubo != 0 {
         dgl.ubo_release(&pass.camera_ubo)
     }
@@ -240,12 +256,13 @@ order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0) -> RObjHandle 
         RenderObject{ 
             obj = obj, 
             material = material,
+            order = order,
             transform = {
                 position=position,
                 scale=scale,
                 angle=angle,
-                order=order },
-    })
+            },
+        })
 }
 
 render_pass_remove_object :: proc(obj: RObjHandle) {
@@ -281,12 +298,20 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     for obj in hla.hla_ite(&pass.robjs, &robj_idx) {
         append(&pass.robjs_sorted, obj)
     }
+
+    immediate_confirm(&pass.immediate_draw_ctx); defer immediate_clear(&pass.immediate_draw_ctx)
+    for &obj in pass.immediate_draw_ctx.immediate_robjs {
+        append(&pass.robjs_sorted, &obj)
+    }
+
     slice.sort_by(pass.robjs_sorted[:], proc(i,j : ^RenderObject) -> bool {
         return i.order < j.order
     })
 
     for obj in pass.robjs_sorted {
         switch &robj in obj.obj {
+        case RObjImmediateScreenMesh: 
+            _draw_immediate_screen_mesh(&robj)
         case RObjMeshScreen: 
             _draw_mesh(transmute(^RObjMesh)&robj, obj, &rsys.material_default_screen_mesh)
         case RObjMesh:
@@ -305,6 +330,28 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     }
     
     dgl.framebuffer_bind_default()
+}
+
+@(private="file")
+_draw_immediate_screen_mesh :: #force_inline proc(robj: ^RObjImmediateScreenMesh) {
+    material := &rsys.material_default_screen_mesh
+    shader := material.shader
+    dgl.material_upload(material.mat)
+    uniform_transform(shader.utable_transform, {0,0}, {1,1}, 0,)
+    dgl.uniform_set(shader.utable_general.color, Vec4{1,1,1,1})
+    // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
+    dgl.uniform_set_texture(shader.utable_general.texture, rsys.texture_default_white, 16)
+        
+    switch robj.mode {
+    case .Triangle:
+        dgl.draw_mesh(robj.mesh)
+    case .Lines:
+        dgl.mesh_bind(&robj.mesh)
+        dgl.draw_lines(robj.mesh.vertex_count)
+    case .LineStrip:
+        dgl.mesh_bind(&robj.mesh)
+        dgl.draw_linestrip(robj.mesh.vertex_count)
+    }
 }
 
 @(private="file")
@@ -332,11 +379,11 @@ _draw_sprite :: #force_inline proc(robj: ^RObjSprite, obj: ^RenderObject, defaul
     shader := material.shader
     dgl.material_upload(material.mat)
     uniform_transform(material.shader.utable_transform, obj.position, obj.scale, obj.angle)
-    // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
-    dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, 16)
     dgl.uniform_set(shader.utable_sprite.anchor, robj.anchor)
     dgl.uniform_set(shader.utable_sprite.size, robj.size)
     dgl.uniform_set(shader.utable_general.color, robj.color)
+    // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
+    dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, 16)
 
     dgl.draw_mesh(rsys.mesh_unit_quad)
 }
