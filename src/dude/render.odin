@@ -19,6 +19,7 @@ RenderPass :: struct {
 	camera : RenderCamera,
 
     clear : RenderClear,
+    blend : dgl.GlStateBlend,
 
 	robjs :  hla.HollowArray(RenderObject),
 
@@ -171,6 +172,8 @@ render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i) {
     pass.camera.viewport = vec_i2f(Vec2i{viewport.z, viewport.w})
     pass.camera.size = 32
     pass.viewport = viewport
+
+    pass.blend = dgl.GlStateBlendSimp{false, .FUNC_ADD, .SRC_ALPHA, .ONE_MINUS_SRC_ALPHA}
 }
 render_pass_release :: proc(pass: ^RenderPass) {
     hla.hla_delete(&pass.robjs)
@@ -211,7 +214,7 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     dgl.framebuffer_bind(pass.target)
     dgl.state_set_viewport(pass.viewport)
     blend_before := dgl.state_get_blend_simple(); defer dgl.state_set_blend(blend_before)
-    dgl.state_set_blend(dgl.GlStateBlendSimp{true, .FUNC_ADD, .SRC_ALPHA, .ONE_MINUS_SRC_ALPHA})
+    dgl.state_set_blend(pass.blend)
 
     {// ** Clear
         using pass.clear
