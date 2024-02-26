@@ -1,5 +1,6 @@
 ﻿package main
 
+import "core:time"
 import "core:fmt"
 import "core:log"
 import "core:math/linalg"
@@ -52,7 +53,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     if get_key(.W) do t.position.y += move_speed * delta
     else if get_key(.S) do t.position.y -= move_speed * delta
 
-    dude.immediate_screen_quad(&pass_main, get_mouse_position(), {128,256})
+    dude.immediate_screen_quad(&pass_main, get_mouse_position()-{32,32}, {64,64}, color={255,64,64, 128})
 }
 
 @(private="file")
@@ -143,6 +144,7 @@ on_gui :: proc() {
     using demo_game, imgui
     set_next_window_pos({10,10})
     begin("DemoGame", nil)
+    text("Frame time: %f", time.duration_seconds(dude.app.duration_frame))
     p : ^dude.RenderObject = hla.hla_get_pointer(player)
     slider_float2("position", &p.position, -10, 10)
     end()

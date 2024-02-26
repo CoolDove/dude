@@ -42,5 +42,5 @@ vec2 transform_unit_quad_as_sprite(vec2 point, vec2 anchor, vec2 size) {
 }
 
 vec2 transform_viewport2ndc(vec2 point) {
-    return (point/camera.viewport) - vec2(0.5, 0.5);
+    return (2 * (point/camera.viewport) - vec2(1,1)) * vec2(1,-1);
 }

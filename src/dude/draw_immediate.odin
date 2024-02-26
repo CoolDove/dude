@@ -19,7 +19,7 @@ ImmediateDrawContext :: struct {
 }
 
 ImmediateElemType :: enum {
-    ScreenQuad, Line
+    ScreenQuad, Line,
 }
 
 immediate_init :: proc(using ctx: ^ImmediateDrawContext) {
@@ -64,9 +64,15 @@ immediate_clear :: proc(using ctx: ^ImmediateDrawContext) {
     clear(&immediate_robjs)
 }
 
+
+/*
+*------------*(w,h)
+|  viewport  |
+|            |
+*(0,0)-------*
+*/
 immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
-    using ctx
     if ctx.buffered_type != .ScreenQuad || ctx.texture != texture || ctx.color != color || ctx.order != order {
         immediate_confirm(ctx)
     }
