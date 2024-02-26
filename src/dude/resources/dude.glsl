@@ -5,6 +5,11 @@ layout(std140, binding = 0) uniform Camera {
     vec2 viewport;
 } camera;
 
+layout(std140, binding = 1) uniform Dude {
+    float time_total;
+    float padding;
+} dude;
+
 uniform vec2 transform_position;
 uniform vec2 transform_scale;
 uniform float transform_angle;

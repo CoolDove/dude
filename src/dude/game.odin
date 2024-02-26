@@ -45,6 +45,7 @@ game_update :: proc() {
         log.errorf("Dude: You should set a valid `update` for me.")
     } else do _callback_update(&game, delta)
 
+    render_update(total_time)
     for pass in &game.render_pass {
         render_pass_draw(pass)
     }

@@ -10,6 +10,7 @@ import hla "collections/hollow_array"
 // Reserved up to 8, when you want to make your own custom uniform block, the slot should be greater 
 //  than 8.
 UNIFORM_BLOCK_SLOT_CAMERA :: 0
+UNIFORM_BLOCK_SLOT_DUDE :: 1
 
 RenderPass :: struct {
     // Differs from the viewport in camera, which is for transform calculation. This one defines how
@@ -26,6 +27,11 @@ RenderPass :: struct {
     using impl : RenderPassImplData,
 }
 
+RenderDataDude :: struct {
+    time_total : f32,
+    padding : f32,
+}
+
 // Implementation necessary data, which you cannot access from outside.
 @(private="file")
 RenderPassImplData :: struct {
@@ -35,7 +41,7 @@ RenderPassImplData :: struct {
 
 // RenderObject doesn't allocate anything.
 RenderObject :: struct {
-    using transform : RenderTransform,
+    using transform : RenderTransform, // Transform is not used for screen space render objects (mesh and sprite) for now.
     material : ^Material,
 	obj : RObj,
 }
@@ -115,6 +121,9 @@ RenderSystem :: struct {
 
     texture_default_white : dgl.TextureId,
     texture_default_black : dgl.TextureId,
+
+    render_data_dude : RenderDataDude,
+    render_data_dude_ubo : dgl.UniformBlockId,
 }
 
 rsys : RenderSystem
@@ -125,6 +134,9 @@ render_init :: proc() {
     // Textures
     texture_default_white = dgl.texture_create_with_color(4,4, {255,255,255,255})
     texture_default_black = dgl.texture_create_with_color(4,4, {0,0,0,255})
+
+    render_data_dude_ubo = dgl.ubo_create(size_of(render_data_dude))
+    dgl.ubo_bind(render_data_dude_ubo, UNIFORM_BLOCK_SLOT_DUDE)
 
     // Shaders & Materials
     shader_register_lib("dude", #load("./resources/dude.glsl"))
@@ -191,6 +203,12 @@ render_release :: proc() {
     shader_release(&shader_default_screen_sprite)
     
     dgl.mesh_builder_release(&temp_mesh_builder)
+    dgl.ubo_release(&render_data_dude_ubo)
+}
+
+render_update :: proc(time_total : f32) {
+    rsys.render_data_dude.time_total = time_total
+    dgl.ubo_update_with_object(rsys.render_data_dude_ubo, &rsys.render_data_dude)
 }
 
 

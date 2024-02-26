@@ -1,6 +1,8 @@
 #version 440 core
 out vec4 FragColor;
 
+#include "dude"
+
 layout(location = 0) in vec2 _uv;
 
 uniform vec4 color;
