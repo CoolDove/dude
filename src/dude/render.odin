@@ -63,7 +63,7 @@ RenderTransform :: struct {
 }
 
 RObj :: union {
-    RObjMesh, RObjSprite, RObjHandle, RObjCustom, RObjCommand,
+    RObjMesh, RObjMeshScreen, RObjSprite, RObjSpriteScreen, RObjHandle, RObjCustom, RObjCommand,
 }
 
 RObjMesh :: struct {
@@ -71,6 +71,7 @@ RObjMesh :: struct {
     mode : MeshMode,
     utable : UniformTableGeneral,
 }
+RObjMeshScreen :: distinct RObjMesh
 MeshMode :: enum {
     Triangle, Lines, LineStrip,
 }
@@ -81,6 +82,7 @@ RObjSprite :: struct { // A sprite in 2D world space.
     anchor : Vec2, // [0,1]
     size : Vec2, // This differs from scale in transform.
 }
+RObjSpriteScreen :: distinct RObjSprite
 RObjCustom :: #type proc()
 
 RenderCamera :: struct {
@@ -104,6 +106,12 @@ RenderSystem :: struct {
 
     shader_default_sprite : Shader,
     material_default_sprite : Material,
+
+    shader_default_screen_mesh : Shader,
+    material_default_screen_mesh : Material,
+
+    shader_default_screen_sprite : Shader,
+    material_default_screen_sprite : Material,
 
     texture_default_white : dgl.TextureId,
     texture_default_black : dgl.TextureId,
@@ -139,6 +147,24 @@ render_init :: proc() {
         material_set_texture(&material_default_sprite, utable_general.texture, rsys.texture_default_white)
     }
 
+    {using shader_default_screen_mesh
+        shader_init(&shader_default_screen_mesh, 
+            #load("./resources/default_screen_mesh.vert"),
+            #load("./resources/default_mesh.frag"))
+        material_init(&material_default_screen_mesh, &shader_default_screen_mesh)
+        material_set_vec4(&material_default_screen_mesh,  utable_general.color, {1,1,1,1})
+        material_set_texture(&material_default_screen_mesh, utable_general.texture, rsys.texture_default_white)
+    }
+
+    {using shader_default_screen_sprite
+        shader_init(&shader_default_screen_sprite, 
+            #load("./resources/default_screen_sprite.vert"),
+            #load("./resources/default_sprite.frag"))
+        material_init(&material_default_screen_sprite, &shader_default_screen_sprite)
+        material_set_vec4(&material_default_screen_sprite,  utable_general.color, {1,1,1,1})
+        material_set_texture(&material_default_screen_sprite, utable_general.texture, rsys.texture_default_white)
+    }
+
     // Meshes
     {using dgl
         mesh_builder_init(&temp_mesh_builder, VERTEX_FORMAT_P2U2)
@@ -157,6 +183,12 @@ render_release :: proc() {
 
     material_release(&material_default_sprite)
     shader_release(&shader_default_sprite)
+
+    material_release(&material_default_screen_mesh)
+    shader_release(&shader_default_screen_mesh)
+
+    material_release(&material_default_screen_sprite)
+    shader_release(&shader_default_screen_sprite)
     
     dgl.mesh_builder_release(&temp_mesh_builder)
 }
@@ -236,46 +268,59 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     })
 
     for obj in pass.robjs_sorted {
-        if robj_mesh, ok := obj.obj.(RObjMesh); ok {
-            material := obj.material if (obj.material != nil) else &rsys.material_default_mesh
-            shader := material.shader
-            dgl.material_upload(material.mat)
-            uniform_transform(shader.utable_transform, obj.position, obj.scale, obj.angle)
-                
-            switch robj_mesh.mode {
-            case .Triangle:
-                dgl.draw_mesh(robj_mesh.mesh)
-            case .Lines:
-                dgl.mesh_bind(&robj_mesh.mesh)
-                dgl.draw_lines(robj_mesh.mesh.vertex_count)
-            case .LineStrip:
-                dgl.mesh_bind(&robj_mesh.mesh)
-                dgl.draw_linestrip(robj_mesh.mesh.vertex_count)
-            }
-        } else if robj_sprite, ok := obj.obj.(RObjSprite); ok {
-            material := obj.material if (obj.material != nil) else &rsys.material_default_sprite
-            shader := material.shader
-            dgl.material_upload(material.mat)
-            uniform_transform(material.shader.utable_transform, obj.position, obj.scale, obj.angle)
-            // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
-            dgl.uniform_set_texture(shader.utable_general.texture, robj_sprite.texture, 16)
-            dgl.uniform_set(shader.utable_sprite.anchor, robj_sprite.anchor)
-            dgl.uniform_set(shader.utable_sprite.size, robj_sprite.size)
-            dgl.uniform_set(shader.utable_general.color, robj_sprite.color)
-
-            dgl.draw_mesh(rsys.mesh_unit_quad)
-        } else if robj_cmd, ok := obj.obj.(RObjCommand); ok {
-            execute_render_command(robj_cmd)
-        } else if robj_custom, ok := obj.obj.(RObjCustom); ok {
-            // TODO: Write a better one.
-            if robj_custom != nil do robj_custom()
-        } else {
-            log.errorf("Render: Render object type not supported, currently we can only render mesh.")
+        switch &robj in obj.obj {
+        case RObjMeshScreen: 
+            _draw_mesh(transmute(^RObjMesh)&robj, obj, &rsys.material_default_screen_mesh)
+        case RObjMesh:
+            _draw_mesh(&robj, obj, &rsys.material_default_mesh)
+        case RObjSpriteScreen: 
+            _draw_sprite(transmute(^RObjSprite)&robj, obj, &rsys.material_default_screen_sprite)
+        case RObjSprite:
+            _draw_sprite(&robj, obj, &rsys.material_default_sprite)
+        case RObjHandle:
+            log.errorf("Render: Render object type not supported.")
+        case RObjCommand:
+            execute_render_command(robj)
+        case RObjCustom:
+            if robj != nil do robj()
         }
     }
     
     dgl.framebuffer_bind_default()
-    
+}
+
+@(private="file")
+_draw_mesh :: #force_inline proc(robj: ^RObjMesh, obj: ^RenderObject, default_material : ^Material) {
+    material := obj.material if (obj.material != nil) else default_material
+    shader := material.shader
+    dgl.material_upload(material.mat)
+    uniform_transform(shader.utable_transform, obj.position, obj.scale, obj.angle)
+        
+    switch robj.mode {
+    case .Triangle:
+        dgl.draw_mesh(robj.mesh)
+    case .Lines:
+        dgl.mesh_bind(&robj.mesh)
+        dgl.draw_lines(robj.mesh.vertex_count)
+    case .LineStrip:
+        dgl.mesh_bind(&robj.mesh)
+        dgl.draw_linestrip(robj.mesh.vertex_count)
+    }
+}
+
+@(private="file")
+_draw_sprite :: #force_inline proc(robj: ^RObjSprite, obj: ^RenderObject, default_material: ^Material) {
+    material := obj.material if (obj.material != nil) else default_material
+    shader := material.shader
+    dgl.material_upload(material.mat)
+    uniform_transform(material.shader.utable_transform, obj.position, obj.scale, obj.angle)
+    // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
+    dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, 16)
+    dgl.uniform_set(shader.utable_sprite.anchor, robj.anchor)
+    dgl.uniform_set(shader.utable_sprite.size, robj.size)
+    dgl.uniform_set(shader.utable_general.color, robj.color)
+
+    dgl.draw_mesh(rsys.mesh_unit_quad)
 }
 
 RObjCommand :: union {

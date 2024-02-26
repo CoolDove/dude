@@ -1,10 +1,10 @@
 debug:
-	odin build ./src -resource:app.rc -out:game.exe -debug
+	odin build ./src -debug -out:game.exe 
 release:
 	odin build ./src -resource:app.rc -out:game.exe -subsystem:windows
 
 clean:
-	rm zeno.exe zeno.pdb
+	rm game.exe game.pdb
 
 cody:
 	@cody -direxclude ./src/dude/vendor -q

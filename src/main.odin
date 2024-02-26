@@ -101,7 +101,7 @@ init :: proc(game: ^dude.Game) {
 	material_set(&mat_grid2, utable_general.texture, rsys.texture_default_white)
 
     // Pass initialization
-    render_pass_init(&pass_main, {0,0, 320, 320})
+    render_pass_init(&pass_main, {0,0, app.window.size.x, app.window.size.y})
     pass_main.clear.color = {.2,.2,.2, 1}
     pass_main.clear.mask = {.Color,.Depth,.Stencil}
     blend := &pass_main.blend.(dgl.GlStateBlendSimp)
@@ -110,13 +110,15 @@ init :: proc(game: ^dude.Game) {
     render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
     render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
-    render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, test_texture.id, {1,1}, {0.5,0.5}}, order=101)
+    render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, test_texture.id, {0.5,0.5}, {1,1}}, order=101)
 
     player = render_pass_add_object(&pass_main, 
         RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={4,4}, anchor={0.5,0.5}}, order=100)
 
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid2, mode=.Lines}, &mat_grid2, order=-9998)
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-9999)
+
+    render_pass_add_object(&pass_main, RObjSpriteScreen{{1,0,0,0.2}, test_texture.id, {.5,.5}, {320,320}}, position={1,0}, order=999)
 }
 @(private="file")
 release :: proc(game: ^dude.Game) {
