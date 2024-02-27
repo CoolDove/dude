@@ -53,7 +53,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     if get_key(.W) do t.position.y += move_speed * delta
     else if get_key(.S) do t.position.y -= move_speed * delta
 
-    dude.immediate_screen_quad(&pass_main, get_mouse_position()-{32,32}, {64,64}, color={255,64,64, 128})
+    dude.immediate_screen_quad(&pass_main, get_mouse_position()-{32,32}, {64,64}, color={255,64,64, 128}, texture=test_texture.id)
 }
 
 @(private="file")

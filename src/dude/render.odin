@@ -340,7 +340,7 @@ _draw_immediate_screen_mesh :: #force_inline proc(robj: ^RObjImmediateScreenMesh
     uniform_transform(shader.utable_transform, {0,0}, {1,1}, 0,)
     dgl.uniform_set(shader.utable_general.color, robj.color)
     // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
-    dgl.uniform_set_texture(shader.utable_general.texture, rsys.texture_default_white, 16)
+    dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, 16)
         
     switch robj.mode {
     case .Triangle:
