@@ -6,11 +6,16 @@ import "core:slice"
 import "dgl"
 
 import hla "collections/hollow_array"
+import "vendor/fontstash"
 
 // Reserved up to 8, when you want to make your own custom uniform block, the slot should be greater 
 //  than 8.
 UNIFORM_BLOCK_SLOT_CAMERA :: 0
 UNIFORM_BLOCK_SLOT_DUDE :: 1
+
+// You cannot use more than 16 textures in a material. Cuz dude's render system may want to set the 
+//  texture after a material is applied, it'll use a texture slot began from 16.
+MAX_TEXTURES_FOR_MATERIAL :: 16
 
 RenderPass :: struct {
     // Differs from the viewport in camera, which is for transform calculation. This one defines how
@@ -340,7 +345,7 @@ _draw_immediate_screen_mesh :: #force_inline proc(robj: ^RObjImmediateScreenMesh
     uniform_transform(shader.utable_transform, {0,0}, {1,1}, 0,)
     dgl.uniform_set(shader.utable_general.color, robj.color)
     // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
-    dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, 16)
+    dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, MAX_TEXTURES_FOR_MATERIAL)
         
     switch robj.mode {
     case .Triangle:
@@ -382,8 +387,7 @@ _draw_sprite :: #force_inline proc(robj: ^RObjSprite, obj: ^RenderObject, defaul
     dgl.uniform_set(shader.utable_sprite.anchor, robj.anchor)
     dgl.uniform_set(shader.utable_sprite.size, robj.size)
     dgl.uniform_set(shader.utable_general.color, robj.color)
-    // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
-    dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, 16)
+    dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, MAX_TEXTURES_FOR_MATERIAL)
 
     dgl.draw_mesh(rsys.mesh_unit_quad)
 }

@@ -5,6 +5,7 @@ import "core:log"
 import "core:strings"
 
 import "dgl"
+import "vendor/fontstash"
 
 ImmediateDrawContext :: struct {
     immediate_robjs : [dynamic]RenderObject,
