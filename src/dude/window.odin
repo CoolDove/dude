@@ -84,6 +84,7 @@ window_instantiate :: proc(using wnd:^Window) -> bool {
 
 		sdl.GL_MakeCurrent(window, gl_context)
 		gl.load_up_to(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR, sdl.gl_set_proc_address)
+        sdl.GL_SetSwapInterval(1)
 	} else {
 		renderer = sdl.CreateRenderer(window, -1, renderer_flags)
 		assert(renderer != nil, fmt.tprintf("Failed to create renderer for window: {}, because: {}.\n", name, sdl.GetError()))

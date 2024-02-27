@@ -38,7 +38,7 @@ app_run :: proc() {
 		app_time_step()
 		
 		// ## Handle events
-		if sdl.PollEvent(&evt) && window.handler != nil {
+		for sdl.PollEvent(&evt) && window.handler != nil {
 			if evt.window.event == .RESIZED {
 				window.size.x = evt.window.data1
 				window.size.y = evt.window.data2
