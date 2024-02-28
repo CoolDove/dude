@@ -155,7 +155,7 @@ texture_create_with_buffer :: proc(width, height : int, buffer : []u8, gen_mipma
 }
 
 TextureType :: enum {
-    RGBA, Red
+    RGBA, Red,
 }
 
 texture_update :: proc(texture : TextureId, w,h : i32, buffer: []u8, type: TextureType=.RGBA) {

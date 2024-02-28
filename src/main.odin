@@ -1,8 +1,11 @@
 ﻿package main
 
 import "core:time"
+import "core:os"
 import "core:fmt"
+import "core:unicode/utf8"
 import "core:log"
+import "core:strings"
 import "core:math/linalg"
 import "core:math"
 
@@ -23,6 +26,12 @@ DemoGame :: struct {
     test_mesh_triangle, test_mesh_grid, test_mesh_grid2 : dgl.Mesh,
 
     tm_test : dgl.Mesh,
+
+    robj_message : dude.RObjHandle,
+    message_color : dude.Color,
+
+    book : []rune,
+    book_ptr : int,
 }
 
 @(private="file")
@@ -55,6 +64,15 @@ update :: proc(game: ^dude.Game, delta: f32) {
     else if get_key(.D) do t.position.x += move_speed * delta
     if get_key(.W) do t.position.y += move_speed * delta
     else if get_key(.S) do t.position.y -= move_speed * delta
+
+    if get_key(.F) {
+        _flip_page()
+    }
+
+    {
+        msg := hla.hla_get_pointer(robj_message)
+        msg.position.x = -5
+    }
 
     dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_test.id)
 
@@ -139,11 +157,45 @@ init :: proc(game: ^dude.Game) {
 
     tm_test = dude.mesher_text(&rsys.fontstash_context, "Hello, Dove.\n中文也OK。", 32)
 
-    render_pass_add_object(&pass_main, RObjTextMesh{text_mesh=tm_test, color={.8,.6,0,1}}, scale={0.05,0.05}, order=999)
-    
+    robj_message = render_pass_add_object(&pass_main, RObjTextMesh{text_mesh=tm_test, color={.8,.6,0,1}}, scale={0.05,0.05}, order=999)
+
+    if book_data, ok := os.read_entire_file("./res/The Secret of Psalm 46.md"); ok {
+        book = utf8.string_to_runes(string(book_data))
+        delete(book_data)
+    }
 }
+
+@(private="file")
+_flip_page :: proc() {
+    if demo_game.book_ptr >= len(demo_game.book) do return
+    
+    dude.render_pass_remove_object(demo_game.robj_message)
+    dgl.mesh_delete(&demo_game.tm_test)
+    line : []rune
+    pick := 20
+
+    for i in 0..<math.min(pick, len(demo_game.book)) {
+        if demo_game.book[i] == '\n' {
+            line = demo_game.book[:i]
+            demo_game.book = demo_game.book[i+1:]
+            break
+        }
+    }
+    if len(line) == 0 && demo_game.book_ptr != len(demo_game.book)-1 {
+        cut := math.min(pick, len(demo_game.book)-1)
+        line = demo_game.book[:cut]
+        demo_game.book = demo_game.book[cut+1:]
+    }
+
+    using demo_game
+    line_str := utf8.runes_to_string(line, context.temp_allocator)
+    tm_test = dude.mesher_text(&dude.rsys.fontstash_context, line_str, 32)
+    robj_message = dude.render_pass_add_object(&pass_main, dude.RObjTextMesh{text_mesh=tm_test, color={.8,.6,0,1}}, scale={0.05,0.05}, order=999)
+}
+
 @(private="file")
 release :: proc(game: ^dude.Game) {
+    delete(demo_game.book)
     dgl.mesh_delete(&demo_game.tm_test)
 
     using dude, demo_game
@@ -168,8 +220,12 @@ on_gui :: proc() {
     slider_float2("position", &p.position, -10, 10)
     img := imgui.Texture_ID(uintptr(dude.rsys.fontstash_data.atlas))
     @static scale :f32= 1.0
+    text(fmt.tprintf("current atlas size: ({}, {})", dude.rsys.fontstash_context.width, dude.rsys.fontstash_context.height))
     slider_float("atlas scale", &scale, 0.001, 1.0)
     image(img, scale * Vec2{512,512}, border_col={1,1,0,1})
+    message := hla.hla_get_pointer(robj_message)
+    tm := &message.obj.(dude.RObjTextMesh)
+    color_picker4("Text Color", cast(^Vec4)&tm.color)
     end()
 }
 

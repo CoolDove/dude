@@ -481,6 +481,8 @@ execute_render_command :: proc(cmd: RObjCommand) {
 _fontstash_callback_resize :: proc(data: rawptr, w, h: int) {
     dgl.texture_delete(&rsys.fontstash_data.atlas)
     fst := &rsys.fontstash_context
+    // FIXME: Should create a single channel texture,
+    //  otherwise the buffer size wont match the texture type.
     rsys.fontstash_data.atlas = dgl.texture_create_with_buffer(w, h, fst.textureData)
 }
 @(private="file")
