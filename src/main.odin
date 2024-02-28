@@ -22,7 +22,7 @@ DemoGame :: struct {
     texture_9slice : dgl.Texture,
     player : dude.RObjHandle,
 
-    test_mesh_triangle, mesh_grid : dgl.Mesh,
+    test_mesh_triangle, mesh_grid, mesh_arrow : dgl.Mesh,
 
     tm_test : dgl.Mesh,
 
@@ -121,6 +121,10 @@ init :: proc(game: ^dude.Game) {
         test_mesh_triangle = mesh_builder_create(mb^)
 
         mesh_builder_reset(mb, VERTEX_FORMAT_P2U2C4)
+        dude.mesher_arrow_p2u2c4(mb, {0,0}, {5,6}, 0.6, {.6,.8,.2, 1.0})
+        mesh_arrow = mesh_builder_create(mb^)
+
+        mesh_builder_reset(mb, VERTEX_FORMAT_P2U2C4)
         dude.mesher_line_grid(mb, 20, 1.0, {0.18,0.14,0.13, 1}, 5, {0.1,0.04,0.09, 1})
         mesh_grid = mesh_builder_create(mb^, true) // Because the mesh is a lines mesh.
 
@@ -148,6 +152,7 @@ init :: proc(game: ^dude.Game) {
         RObjSprite{color={1,1,1,1}, texture=texture_test.id, size={4,4}, anchor={0.5,0.5}}, order=100)
 
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_grid, mode=.Lines}, order=-9999, vertex_color_on=true)
+    render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_arrow}, vertex_color_on=true)
 
     tm_test = dude.mesher_text(&rsys.fontstash_context, "Hello, Dove.\n中文也OK。", 32)
 
