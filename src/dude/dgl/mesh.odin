@@ -11,6 +11,7 @@ VertexFormat :: distinct [VERTEX_MAX_CHANNEL]u8
 VERTEX_MAX_CHANNEL :: 8
 
 VERTEX_FORMAT_P2U2 :: VertexFormat{ 2,2, 0,0,0,0,0,0 } // 4
+VERTEX_FORMAT_P2U2C4 :: VertexFormat{ 2,2,4, 0,0,0,0,0 } // 8
 VERTEX_FORMAT_P3U2N3 :: VertexFormat{ 3,2,3, 0,0,0,0,0 } // 8
 
 Mesh :: struct {
@@ -47,6 +48,7 @@ MeshBuilder :: struct {
     indices : [dynamic]u32,
 }
 mesh_builder_add_vertices :: proc(builder: ^MeshBuilder, vertices: ..Vertex) {
+    _mesh_builder_update_stride(builder)
 	for v in vertices {
 		vertex :[16]f32= transmute([16]f32)v
 		for i in 0..<builder.stride {
@@ -64,9 +66,7 @@ mesh_builder_init :: proc(builder: ^MeshBuilder, vertex_format: VertexFormat, re
 	builder.vertex_format = vertex_format
     builder.vertices = make_dynamic_array_len_cap([dynamic]f32, 0, reserve_vertices)
     builder.indices = make_dynamic_array_len_cap([dynamic]u32, 0, reserve_indices)
-	stride :u32= 0
-	for i in vertex_format do stride += cast(u32)i
-	builder.stride = stride
+    _mesh_builder_update_stride(builder)
 }
 mesh_builder_release :: proc(builder: ^MeshBuilder) {
     delete(builder.vertices)
@@ -108,6 +108,13 @@ mesh_builder_create :: proc(using builder: MeshBuilder, no_indices:=false) -> (M
 	gl.BindVertexArray(0) // Make sure everything bound to the vao is safe.
 	
     return mesh, true
+}
+
+@(private="file")
+_mesh_builder_update_stride :: #force_inline proc(mb: ^MeshBuilder) {
+	stride :u32= 0
+	for i in mb.vertex_format do stride += cast(u32)i
+	mb.stride = stride
 }
 
 mesh_delete :: proc(mesh: ^Mesh) {

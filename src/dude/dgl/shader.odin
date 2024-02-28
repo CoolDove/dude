@@ -122,8 +122,19 @@ shader_load_from_sources :: proc(vertex_source, fragment_source : string, prepro
         delete(vert); delete(frag)
     }
 	shader_comp_vertex := shader_create_component(.VERTEX_SHADER, vert)
+    if shader_comp_vertex.id <= 0 {
+        log.errorf("DGL shader: failed to compile vertex shader:\n{}", vertex_source)
+        return 0
+    }
 	shader_comp_fragment := shader_create_component(.FRAGMENT_SHADER, frag)
+    if shader_comp_fragment.id <= 0 {
+        log.errorf("DGL shader: failed to compile fragment shader:\n{}", fragment_source)
+        return 0
+    }
 	shader := shader_create(&shader_comp_vertex, &shader_comp_fragment)
+    if shader <= 0 {
+        log.errorf("DGL shader: failed to load shader:\n{}\n{}", vertex_source, fragment_source)
+    }
 	shader_destroy_components(&shader_comp_vertex, &shader_comp_fragment)
 	return shader
 }

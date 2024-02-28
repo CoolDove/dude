@@ -60,15 +60,19 @@ uniform_set :: proc {
 }
 
 uniform_set_f32 :: proc(uniform : UniformLocF32, value: f32) {
+    if uniform == -1 do return
 	gl.Uniform1f(uniform, value);
 }
 uniform_set_vec2 :: proc(uniform : UniformLocVec2, vec: Vec2) {
+    if uniform == -1 do return
     gl.Uniform2f(uniform, vec.x, vec.y)
 }
 uniform_set_vec4 :: proc(uniform : UniformLocVec4, vec: Vec4) {
+    if uniform == -1 do return
     gl.Uniform4f(uniform, vec.x, vec.y, vec.z, vec.w)
 }
 uniform_set_texture :: proc(uniform : UniformLocTexture, texture, slot: u32) {
+    if uniform == -1 do return
     gl.ActiveTexture(gl.TEXTURE0+slot)
     gl.BindTexture(gl.TEXTURE_2D, texture)
     gl.Uniform1i(uniform, cast(i32)slot)

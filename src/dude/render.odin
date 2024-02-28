@@ -53,6 +53,13 @@ RenderObject :: struct {
     material : ^Material,
 	obj : RObj,
     order : i32, // Objects with smaller order would be drawn earlier.
+    ex : RenderObjectEx, // x: vertex color factor.
+}
+RenderObjectEx :: struct {
+    vertex_color_on : f32,
+    screen_space : f32,
+    padding1 : f32,
+    padding2 : f32,
 }
 
 UniformTableTransform :: struct {
@@ -63,6 +70,7 @@ UniformTableTransform :: struct {
 UniformTableGeneral :: struct {
     color : dgl.UniformLocVec4 `uniform:"color"`,
     texture : dgl.UniformLocTexture `uniform:"main_texture"`,
+    ex : dgl.UniformLocVec4,
 }
 UniformTableSprite :: struct {
     anchor : dgl.UniformLocVec2,
@@ -86,6 +94,7 @@ RObj :: union {
 
 RObjMesh :: struct {
     mesh : dgl.Mesh,
+    ex : Vec4, // 0 means no vertex color used, 1 means full.
     mode : MeshMode,
 }
 RObjImmediateScreenMesh :: struct {
@@ -299,12 +308,13 @@ render_pass_release :: proc(pass: ^RenderPass) {
 }
 
 render_pass_add_object :: proc(pass: ^RenderPass, obj: RObj, material: ^Material=nil,
-order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0) -> RObjHandle {
+order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0, vertex_color_on:=false) -> RObjHandle {
     return hla.hla_append(&pass.robjs, 
         RenderObject{ 
             obj = obj, 
             material = material,
             order = order,
+            ex = {1,0,0,0},
             transform = {
                 position=position,
                 scale=scale,
@@ -359,7 +369,7 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     for obj in pass.robjs_sorted {
         switch &robj in obj.obj {
         case RObjImmediateScreenMesh: 
-            _draw_immediate_screen_mesh(&robj)
+            _draw_immediate_screen_mesh(&robj, obj)
         case RObjMeshScreen: 
             _draw_mesh(transmute(^RObjMesh)&robj, obj, &rsys.material_default_screen_mesh)
         case RObjMesh:
@@ -383,11 +393,13 @@ render_pass_draw :: proc(pass: ^RenderPass) {
 }
 
 @(private="file")
-_draw_immediate_screen_mesh :: #force_inline proc(robj: ^RObjImmediateScreenMesh) {
+_draw_immediate_screen_mesh :: #force_inline proc(robj: ^RObjImmediateScreenMesh, obj: ^RenderObject) {
     material := &rsys.material_default_screen_mesh
     shader := material.shader
     dgl.material_upload(material.mat)
     uniform_transform(shader.utable_transform, {0,0}, {1,1}, 0,)
+    dgl.uniform_set_vec4(shader.utable_general.ex, transmute(Vec4)obj.ex)
+
     dgl.uniform_set(shader.utable_general.color, robj.color)
     // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
     dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, MAX_TEXTURES_FOR_MATERIAL)
@@ -410,6 +422,7 @@ _draw_mesh :: #force_inline proc(robj: ^RObjMesh, obj: ^RenderObject, default_ma
     shader := material.shader
     dgl.material_upload(material.mat)
     uniform_transform(shader.utable_transform, obj.position, obj.scale, obj.angle)
+    dgl.uniform_set_vec4(shader.utable_general.ex, transmute(Vec4)obj.ex)
         
     switch robj.mode {
     case .Triangle:
@@ -429,6 +442,8 @@ _draw_sprite :: #force_inline proc(robj: ^RObjSprite, obj: ^RenderObject, defaul
     shader := material.shader
     dgl.material_upload(material.mat)
     uniform_transform(material.shader.utable_transform, obj.position, obj.scale, obj.angle)
+    dgl.uniform_set_vec4(shader.utable_general.ex, transmute(Vec4)obj.ex)
+
     dgl.uniform_set(shader.utable_sprite.anchor, robj.anchor)
     dgl.uniform_set(shader.utable_sprite.size, robj.size)
     dgl.uniform_set(shader.utable_general.color, robj.color)
@@ -443,6 +458,8 @@ _draw_text :: #force_inline proc(robj: ^RObjTextMesh, obj: ^RenderObject) {
     shader := material.shader
     dgl.material_upload(material.mat)
     uniform_transform(shader.utable_transform, obj.position, obj.scale, obj.angle)
+    dgl.uniform_set_vec4(shader.utable_general.ex, transmute(Vec4)obj.ex)
+
     dgl.uniform_set(shader.utable_general.color, robj.color)
     dgl.uniform_set_texture(shader.utable_general.texture, rsys.fontstash_data.atlas, MAX_TEXTURES_FOR_MATERIAL)
         

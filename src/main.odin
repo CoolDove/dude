@@ -17,13 +17,12 @@ import hla "dude/collections/hollow_array"
 pass_main : dude.RenderPass
 
 DemoGame :: struct {
-    mat_red, mat_green : dude.Material,
-    mat_grid, mat_grid2 : dude.Material,
+    // mat_grid, mat_grid2 : dude.Material,
     texture_test : dgl.Texture,
     texture_9slice : dgl.Texture,
     player : dude.RObjHandle,
 
-    test_mesh_triangle, test_mesh_grid, test_mesh_grid2 : dgl.Mesh,
+    test_mesh_triangle, mesh_grid : dgl.Mesh,
 
     tm_test : dgl.Mesh,
 
@@ -107,14 +106,9 @@ init :: proc(game: ^dude.Game) {
         mesh_builder_add_indices(mb, 0,1,2)
         test_mesh_triangle = mesh_builder_create(mb^)
 
-        mesh_builder_reset(mb, VERTEX_FORMAT_P2U2)
-        dude.mesher_line_grid(mb, 20, 1.0)
-        // TODO: Test not create indices buffer here.
-        test_mesh_grid = mesh_builder_create(mb^)
-
-        mesh_builder_reset(mb, VERTEX_FORMAT_P2U2)
-        dude.mesher_line_grid(mb, 4, 5.0)
-        test_mesh_grid2 = mesh_builder_create(mb^)
+        mesh_builder_reset(mb, VERTEX_FORMAT_P2U2C4)
+        dude.mesher_line_grid(mb, 20, 1.0, {0.18,0.14,0.13, 1}, 5, {0.1,0.04,0.09, 1})
+        mesh_grid = mesh_builder_create(mb^, true) // Because the mesh is a lines mesh.
 
         texture_test = texture_load_from_mem(#load("../res/texture/dude.png"))
         texture_9slice = texture_load_from_mem(#load("../res/texture/default_ui_background_9slice.png"))
@@ -123,21 +117,6 @@ init :: proc(game: ^dude.Game) {
 
     using dude
     utable_general := rsys.shader_default_mesh.utable_general
-	material_init(&mat_red, &rsys.shader_default_mesh)
-	material_set(&mat_red, utable_general.color, Vec4{1,0.6,0.8, 1})
-	material_set(&mat_red, utable_general.texture, texture_test.id)
-
-	material_init(&mat_green, &rsys.shader_default_mesh)
-	material_set(&mat_green, utable_general.color, Vec4{0.8,1,0.6, 1})
-	material_set(&mat_green, utable_general.texture, texture_test.id)
-
-	material_init(&mat_grid, &rsys.shader_default_mesh)
-	material_set(&mat_grid, utable_general.color, Vec4{0.18,0.14,0.13, 1})
-	material_set(&mat_grid, utable_general.texture, rsys.texture_default_white)
-
-	material_init(&mat_grid2, &rsys.shader_default_mesh)
-	material_set(&mat_grid2, utable_general.color, Vec4{0.1,0.04,0.09, 1})
-	material_set(&mat_grid2, utable_general.texture, rsys.texture_default_white)
 
     // Pass initialization
     render_pass_init(&pass_main, {0,0, app.window.size.x, app.window.size.y})
@@ -154,10 +133,7 @@ init :: proc(game: ^dude.Game) {
     player = render_pass_add_object(&pass_main, 
         RObjSprite{color={1,1,1,1}, texture=texture_test.id, size={4,4}, anchor={0.5,0.5}}, order=100)
 
-    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid2, mode=.Lines}, &mat_grid2, order=-9998)
-    render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-9999)
-
-    // render_pass_add_object(&pass_main, RObjSpriteScreen{{1,0,0,0.2}, texture_test.id, {.5,.5}, {320,320}}, position={1,0}, order=999)
+    render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_grid, mode=.Lines}, order=-9999, vertex_color_on=true)
 
     tm_test = dude.mesher_text(&rsys.fontstash_context, "Hello, Dove.\n中文也OK。", 32)
 
@@ -205,12 +181,8 @@ release :: proc(game: ^dude.Game) {
     using dude, demo_game
     dgl.texture_delete(&texture_test.id)
     
-	material_release(&mat_red)
-	material_release(&mat_green)
-
 	dgl.mesh_delete(&test_mesh_triangle)
-	dgl.mesh_delete(&test_mesh_grid)
-	dgl.mesh_delete(&test_mesh_grid2)
+	dgl.mesh_delete(&mesh_grid)
 
     render_pass_release(&pass_main)
 }
