@@ -25,6 +25,8 @@ Game :: struct {
     window : ^Window,
 	global_tweener : Tweener,
 	render_pass : [dynamic]^RenderPass,
+
+    time_total, time_delta : f64,
 }
 
 GameSettings :: struct {
@@ -36,8 +38,10 @@ GameSettings :: struct {
 game : Game
 
 game_update :: proc() {
-	total_time :f32= auto_cast time.duration_seconds(app.duration_total)
-	delta :f32= auto_cast time.duration_seconds(app.duration_frame)
+    game.time_total = time.duration_seconds(app.duration_total)
+    game.time_delta = time.duration_seconds(app.duration_frame)
+	total_time :f32= auto_cast game.time_total
+	delta :f32= auto_cast game.time_delta
 
 	tweener_update(&game.global_tweener, delta)
 

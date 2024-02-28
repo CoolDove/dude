@@ -158,6 +158,32 @@ TextureType :: enum {
     RGBA, Red,
 }
 
+TextureWrapMode :: enum i32 {
+    ClampToEdge = gl.CLAMP_TO_EDGE,
+    ClampToBorder = gl.CLAMP_TO_BORDER,
+    MirroredRepeat = gl.MIRRORED_REPEAT,
+    Repeat = gl.REPEAT,
+    MirrorClampToEdge = gl.MIRROR_CLAMP_TO_EDGE,
+}
+TextureFilterMode :: enum i32 {
+    Nearest = gl.NEAREST,
+    Linear = gl.LINEAR,
+    NearestMipmapNearest = gl.NEAREST_MIPMAP_NEAREST,
+    LinearMipmapNearest = gl.LINEAR_MIPMAP_NEAREST,
+    NearestMipmapLinear = gl.NEAREST_MIPMAP_LINEAR,
+    LinearMipmapLinear = gl.LINEAR_MIPMAP_LINEAR,
+}
+texture_set_wrap :: proc(texture: TextureId, wrap: TextureWrapMode) {
+    gl.BindTexture(gl.TEXTURE_2D, texture)
+    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, transmute(i32)wrap)
+    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, transmute(i32)wrap)
+}
+texture_set_filter :: proc(texture: TextureId, min, mag: TextureFilterMode) {
+    gl.BindTexture(gl.TEXTURE_2D, texture)
+    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, transmute(i32)min)
+    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, transmute(i32)mag)
+}
+
 texture_update :: proc(texture : TextureId, w,h : i32, buffer: []u8, type: TextureType=.RGBA) {
     gl.BindTexture(gl.TEXTURE_2D, texture)
     if type == .RGBA {

@@ -80,7 +80,10 @@ update :: proc(game: ^dude.Game, delta: f32) {
 }
 
 dialogue :: proc(anchor, size: dude.Vec2) {
-    dude.immediate_screen_quad_9slice(&pass_main, anchor+{4,4}, size, size-{64,64}, {0.5,0.5}, 
+    t := cast(f32)dude.game.time_total
+    t = (math.sin(t * 2) + 1) * 0.5
+    t = t * 0.8 + 0.2
+    dude.immediate_screen_quad_9slice(&pass_main, anchor+{4-2*t,4-2*t}, size, size-{64,64}, {0.5,0.5}, 
         color={0,0,0,128}, texture=demo_game.texture_9slice.id, order=100)
     dude.immediate_screen_quad_9slice(&pass_main, anchor, size, size-{64,64}, {0.5,0.5}, 
         texture=demo_game.texture_9slice.id, order=101)
@@ -115,6 +118,7 @@ init :: proc(game: ^dude.Game) {
 
         texture_test = texture_load_from_mem(#load("../res/texture/dude.png"))
         texture_9slice = texture_load_from_mem(#load("../res/texture/default_ui_background_9slice.png"))
+        texture_set_filter(texture_9slice.id, .Nearest, .Nearest)
     }
 
     using dude
