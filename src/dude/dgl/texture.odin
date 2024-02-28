@@ -24,6 +24,11 @@ TextureId :: u32
 
 Color32 :: distinct [4]u8
 
+TextureType :: enum {
+    RGBA, Red,
+}
+
+
 image_load :: proc (path: string) -> Image {
     width, height, channels : libc.int
     data := image.load(strings.clone_to_cstring(path, context.temp_allocator), 
@@ -117,7 +122,7 @@ texture_create_empty :: proc(width, height : i32) -> TextureId {
     gl.TexImage2D(target, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
     return tex
 }
-texture_create_with_color :: proc(width, height : int, color : [4]u8, gen_mipmap := false) -> TextureId {
+texture_create_with_color :: proc(width, height : int, color : Color32, gen_mipmap := false) -> TextureId {
     tex : u32
     gl.GenTextures(1, &tex)
     gl.BindTexture(gl.TEXTURE_2D, tex)
@@ -128,7 +133,7 @@ texture_create_with_color :: proc(width, height : int, color : [4]u8, gen_mipmap
     gl.TexParameteri(target, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.TexParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
-    data := make([dynamic][4]u8, 0, width * height); defer delete(data)
+    data := make([dynamic]Color32, 0, width * height); defer delete(data)
     for i := 0; i < width * height; i += 1 {
         append(&data, color)
     }
@@ -138,7 +143,7 @@ texture_create_with_color :: proc(width, height : int, color : [4]u8, gen_mipmap
     return tex
 }
 
-texture_create_with_buffer :: proc(width, height : int, buffer : []u8, gen_mipmap := false) -> TextureId {
+texture_create_with_buffer :: proc(width, height : int, buffer : []u8, type:TextureType=.RGBA, gen_mipmap := false) -> TextureId {
     tex : u32
     gl.GenTextures(1, &tex)
     gl.BindTexture(gl.TEXTURE_2D, tex)
@@ -149,13 +154,10 @@ texture_create_with_buffer :: proc(width, height : int, buffer : []u8, gen_mipma
     gl.TexParameteri(target, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.TexParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
-    gl.TexImage2D(target, 0, 4, cast(i32)width, cast(i32)height, 0, gl.RGBA, gl.UNSIGNED_BYTE, raw_data(buffer))
+    w,h :i32= cast(i32)width, cast(i32)height
+    texture_update_current(w,h, buffer, type)
     if gen_mipmap do gl.GenerateMipmap(target)
     return tex
-}
-
-TextureType :: enum {
-    RGBA, Red,
 }
 
 TextureWrapMode :: enum i32 {
@@ -186,10 +188,15 @@ texture_set_filter :: proc(texture: TextureId, min, mag: TextureFilterMode) {
 
 texture_update :: proc(texture : TextureId, w,h : i32, buffer: []u8, type: TextureType=.RGBA) {
     gl.BindTexture(gl.TEXTURE_2D, texture)
+    texture_update_current(w,h, buffer, type)
+}
+texture_update_current :: #force_inline proc(w,h : i32, buffer: []u8, type: TextureType=.RGBA) {
     if type == .RGBA {
         gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w,h, 0, gl.RGBA, gl.UNSIGNED_BYTE, raw_data(buffer))
-    } else {
+    } else if type == .Red {
         gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, w,h, 0, gl.RED, gl.UNSIGNED_BYTE, raw_data(buffer))
+    } else {
+        assert(false, "Texture type not implemented.")
     }
 }
 

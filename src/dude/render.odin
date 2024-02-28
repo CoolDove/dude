@@ -479,16 +479,12 @@ execute_render_command :: proc(cmd: RObjCommand) {
 // ** Text rendering
 @(private="file")
 _fontstash_callback_resize :: proc(data: rawptr, w, h: int) {
-    dgl.texture_delete(&rsys.fontstash_data.atlas)
     fst := &rsys.fontstash_context
-    // FIXME: Should create a single channel texture,
-    //  otherwise the buffer size wont match the texture type.
-    rsys.fontstash_data.atlas = dgl.texture_create_with_buffer(w, h, fst.textureData)
+    dgl.texture_update(rsys.fontstash_data.atlas, auto_cast fst.width, auto_cast fst.height, fst.textureData, .Red)
 }
 @(private="file")
 _fontstash_callback_update :: proc(data: rawptr, dirtyRect: [4]f32, textureData: rawptr) {
     // Temporary: Just ignore the dirty rect, update the whole texture.
     fst := &rsys.fontstash_context
-    // log.debugf("upload atlas: {}, {}, buffer size: {}", fst.width, fst.height, len(fst.textureData))
     dgl.texture_update(rsys.fontstash_data.atlas, auto_cast fst.width, auto_cast fst.height, fst.textureData, .Red)
 }
