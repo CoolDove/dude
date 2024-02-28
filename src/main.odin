@@ -31,6 +31,8 @@ DemoGame :: struct {
 
     book : []rune,
     book_ptr : int,
+
+    dialogue_size : f32,
 }
 
 @(private="file")
@@ -68,6 +70,14 @@ update :: proc(game: ^dude.Game, delta: f32) {
         _flip_page()
     }
 
+    if get_mouse_button_down(.Left)  {
+        if demo_game.dialogue_size == 0 {
+            dude.tween(&game.global_tweener, &demo_game.dialogue_size, 1.0, 0.3)->set_easing(dude.ease_outcubic)
+        } else if demo_game.dialogue_size == 1 {
+            dude.tween(&game.global_tweener, &demo_game.dialogue_size, 0.0, 0.3)->set_easing(dude.ease_outcubic)
+        }
+    }
+
     {
         msg := hla.hla_get_pointer(robj_message)
         msg.position.x = -5
@@ -75,17 +85,21 @@ update :: proc(game: ^dude.Game, delta: f32) {
 
     dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_test.id)
 
-    dialogue(get_mouse_position(), {256, 128})
+    if demo_game.dialogue_size > 0 {
+        dialogue(get_mouse_position(), {256, 128} * demo_game.dialogue_size, demo_game.dialogue_size)
+    }
 }
 
-dialogue :: proc(anchor, size: dude.Vec2) {
+dialogue :: proc(anchor, size: dude.Vec2, alpha:f32) {
+    padding :dude.Vec2= {64,64}
+    size := linalg.max(padding, size)
     t := cast(f32)dude.game.time_total
     t = (math.sin(t * 2) + 1) * 0.5
     t = t * 0.8 + 0.2
-    dude.immediate_screen_quad_9slice(&pass_main, anchor+{4-2*t,4-2*t}, size, size-{64,64}, {0.5,0.5}, 
-        color={0,0,0,128}, texture=demo_game.texture_9slice.id, order=100)
-    dude.immediate_screen_quad_9slice(&pass_main, anchor, size, size-{64,64}, {0.5,0.5}, 
-        texture=demo_game.texture_9slice.id, order=101)
+    dude.immediate_screen_quad_9slice(&pass_main, anchor+{4-2*t,4-2*t}, size, size-padding, {0.5,0.5}, 
+        color={0,0,0,cast(u8)(128*alpha)}, texture=demo_game.texture_9slice.id, order=100)
+    dude.immediate_screen_quad_9slice(&pass_main, anchor, size, size-padding, {0.5,0.5}, 
+        texture=demo_game.texture_9slice.id, order=101, color={255,255,255, cast(u8)(alpha*255.0)})
 }
 
 @(private="file")
