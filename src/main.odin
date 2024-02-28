@@ -56,8 +56,14 @@ update :: proc(game: ^dude.Game, delta: f32) {
 
     // dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_test.id)
 
-    dude.immediate_screen_quad_9slice(&pass_main, get_mouse_position(), {80,128}, {80-64,128-64}, {0.5,0.5}, texture=texture_9slice.id, order=100)
-    
+    dialogue(get_mouse_position(), {256, 128})
+}
+
+dialogue :: proc(anchor, size: dude.Vec2) {
+    dude.immediate_screen_quad_9slice(&pass_main, anchor+{4,4}, size, size-{64,64}, {0.5,0.5}, 
+        color={0,0,0,128}, texture=demo_game.texture_9slice.id, order=100)
+    dude.immediate_screen_quad_9slice(&pass_main, anchor, size, size-{64,64}, {0.5,0.5}, 
+        texture=demo_game.texture_9slice.id, order=101)
 }
 
 @(private="file")
