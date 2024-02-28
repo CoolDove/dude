@@ -5,16 +5,16 @@ import "dgl"
 
 
 // anchor: x: [0,1], y: [0,1]
-mesher_quad :: proc(mb: ^dgl.MeshBuilder, size, anchor: Vec2, offset:Vec2={0,0}) {
+mesher_quad :: proc(mb: ^dgl.MeshBuilder, size, anchor: Vec2, offset:Vec2={0,0}, uv_min:Vec2={0,0},uv_max:Vec2={1,1}) {
     assert(mb.vertex_format == dgl.VERTEX_FORMAT_P2U2, "Mesher: Only P2U2 format is supported.")
-    idx := cast(u32)len(mb.vertices)
+    idx := cast(u32)len(mb.vertices)/4
     min := -anchor * size + offset
     max := (1-anchor) * size + offset
     dgl.mesh_builder_add_vertices(mb, 
-        {v4={min.x,min.y, 0,0}},
-        {v4={max.x,min.y, 1,0}},
-        {v4={min.x,max.y, 0,1}},
-        {v4={max.x,max.y, 1,1}},
+        {v4={min.x,min.y, uv_min.x, uv_min.y}},
+        {v4={max.x,min.y, uv_max.x, uv_min.y}},
+        {v4={min.x,max.y, uv_min.x, uv_max.y}},
+        {v4={max.x,max.y, uv_max.x, uv_max.y}},
     )
     dgl.mesh_builder_add_indices(mb, idx+0,idx+1,idx+2, idx+1,idx+3,idx+2)
 }

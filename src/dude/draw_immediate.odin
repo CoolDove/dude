@@ -37,7 +37,10 @@ immediate_release :: proc(using ctx: ^ImmediateDrawContext) {
 // You should call this when you start to draw immediate objects to prevent that there's no elems in
 //  the immediate buffer.
 immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
-    if len(mesh_builder.vertices) <= 0 do return
+    if len(mesh_builder.vertices) <= 0 {
+        dgl.mesh_builder_clear(&mesh_builder)
+        return
+    }
     if buffered_type == .ScreenQuad {
         mesh := dgl.mesh_builder_create(mesh_builder)
         append(&meshes, mesh)
@@ -65,7 +68,6 @@ immediate_clear :: proc(using ctx: ^ImmediateDrawContext) {
     clear(&immediate_robjs)
 }
 
-
 /*
 *------------*(w,h)
 |  viewport  |
@@ -82,7 +84,62 @@ immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Colo
     ctx.texture = texture if texture > 0 else rsys.texture_default_white
     ctx.order = order
     dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
-    mesher_quad(&ctx.mesh_builder, size, {0,0}, corner)
+    mesher_quad(&ctx.mesh_builder, size, {0,0}, corner, {1,1}, {0,0})
+}
+
+/*
+*------------*(w,h)
+|    -iw-    |
+|  *------*  |
+|  |      || |
+|  |      |ih|
+|  |      || |
+|  *------*  |
+|            |
+*(0,0)-------*
+*/
+immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size, uv_inner_size: Vec2, color:Color32={255,255,255,255}, texture: u32=0, order:i32=0) {
+    ctx := &pass.impl.immediate_draw_ctx
+    if ctx.buffered_type != .ScreenQuad || ctx.texture != texture || ctx.color != color || ctx.order != order {
+        immediate_confirm(ctx)
+    }
+    ctx.buffered_type = .ScreenQuad
+    ctx.color = color
+    ctx.texture = texture if texture > 0 else rsys.texture_default_white
+    ctx.order = order
+    dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
+    w_long, w_short := inner_size.x, (size.x - inner_size.x) * 0.5
+    h_long, h_short := inner_size.y, (size.y - inner_size.y) * 0.5
+
+    u_long, u_short := uv_inner_size.x, (1-uv_inner_size.x) * 0.5
+    v_long, v_short := uv_inner_size.y, (1-uv_inner_size.y) * 0.5
+
+    zero :Vec2: {0,0}
+    mesher_quad(&ctx.mesh_builder, 
+        {w_short, h_short}, zero, corner+{0,0},      
+        {0,0}, {u_short, v_short})
+    mesher_quad(&ctx.mesh_builder,
+        {w_long, h_short}, zero, corner+{w_short, 0},
+        {u_short,0}, {u_short+u_long, v_short})
+    mesher_quad(&ctx.mesh_builder, {w_short, h_short}, zero, corner+{w_short+w_long, 0},
+        {u_short+u_long, 0}, {1, v_short})
+
+    mesher_quad(&ctx.mesh_builder, {w_short, h_long}, zero, corner+{0,h_short},
+        {0,v_short}, {u_short, 1-v_short})
+    mesher_quad(&ctx.mesh_builder, {w_long, h_long}, zero, corner+{w_short,h_short},
+        {u_short,v_short}, {u_short+u_long, 1-v_short})
+    mesher_quad(&ctx.mesh_builder, {w_short, h_long}, zero, corner+{w_short+w_long,h_short},
+        {u_short+u_long,v_short}, {1, 1-v_short})
+
+    mesher_quad(&ctx.mesh_builder, {w_short, h_short}, zero, corner+{0,h_short+h_long},
+        {0,1-v_short}, {u_short,1})
+    mesher_quad(&ctx.mesh_builder, {w_long, h_short}, zero, corner+{w_short, h_short+h_long},
+        {u_short,1-v_short}, {u_short+u_long,1})
+    mesher_quad(&ctx.mesh_builder, {w_short, h_short}, zero, corner+{w_short+w_long, h_short+h_long},
+        {u_short+u_long,1-v_short}, {1,1})
+}
+
+immediate_text :: proc(pass: ^RenderPass, text: string) {
 }
 
 // immediate_line :: proc(using ctx: ^ImmediateDrawContext, corner, size: Vec2) {

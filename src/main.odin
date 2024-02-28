@@ -16,7 +16,8 @@ pass_main : dude.RenderPass
 DemoGame :: struct {
     mat_red, mat_green : dude.Material,
     mat_grid, mat_grid2 : dude.Material,
-    test_texture : dgl.Texture,
+    texture_test : dgl.Texture,
+    texture_9slice : dgl.Texture,
     player : dude.RObjHandle,
 
     test_mesh_triangle, test_mesh_grid, test_mesh_grid2 : dgl.Mesh,
@@ -53,7 +54,10 @@ update :: proc(game: ^dude.Game, delta: f32) {
     if get_key(.W) do t.position.y += move_speed * delta
     else if get_key(.S) do t.position.y -= move_speed * delta
 
-    dude.immediate_screen_quad(&pass_main, get_mouse_position()-{32,32}, {64,64}, color={255,64,64, 128}, texture=test_texture.id)
+    // dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_test.id)
+
+    dude.immediate_screen_quad_9slice(&pass_main, get_mouse_position(), {80,128}, {80-64,128-64}, {0.5,0.5}, texture=texture_9slice.id, order=100)
+    
 }
 
 @(private="file")
@@ -83,18 +87,19 @@ init :: proc(game: ^dude.Game) {
         dude.mesher_line_grid(mb, 4, 5.0)
         test_mesh_grid2 = mesh_builder_create(mb^)
 
-        test_texture = texture_load_from_mem(#load("../res/texture/dude.png"))
+        texture_test = texture_load_from_mem(#load("../res/texture/dude.png"))
+        texture_9slice = texture_load_from_mem(#load("../res/texture/default_ui_background_9slice.png"))
     }
 
     using dude
     utable_general := rsys.shader_default_mesh.utable_general
 	material_init(&mat_red, &rsys.shader_default_mesh)
 	material_set(&mat_red, utable_general.color, Vec4{1,0.6,0.8, 1})
-	material_set(&mat_red, utable_general.texture, test_texture.id)
+	material_set(&mat_red, utable_general.texture, texture_test.id)
 
 	material_init(&mat_green, &rsys.shader_default_mesh)
 	material_set(&mat_green, utable_general.color, Vec4{0.8,1,0.6, 1})
-	material_set(&mat_green, utable_general.texture, test_texture.id)
+	material_set(&mat_green, utable_general.texture, texture_test.id)
 
 	material_init(&mat_grid, &rsys.shader_default_mesh)
 	material_set(&mat_grid, utable_general.color, Vec4{0.18,0.14,0.13, 1})
@@ -114,20 +119,20 @@ init :: proc(game: ^dude.Game) {
     // render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
     // render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
     // render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
-    // render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, test_texture.id, {0.5,0.5}, {1,1}}, order=101)
+    // render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, texture_test.id, {0.5,0.5}, {1,1}}, order=101)
 
     player = render_pass_add_object(&pass_main, 
-        RObjSprite{color={1,1,1,1}, texture=test_texture.id, size={4,4}, anchor={0.5,0.5}}, order=100)
+        RObjSprite{color={1,1,1,1}, texture=texture_test.id, size={4,4}, anchor={0.5,0.5}}, order=100)
 
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid2, mode=.Lines}, &mat_grid2, order=-9998)
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-9999)
 
-    // render_pass_add_object(&pass_main, RObjSpriteScreen{{1,0,0,0.2}, test_texture.id, {.5,.5}, {320,320}}, position={1,0}, order=999)
+    // render_pass_add_object(&pass_main, RObjSpriteScreen{{1,0,0,0.2}, texture_test.id, {.5,.5}, {320,320}}, position={1,0}, order=999)
 }
 @(private="file")
 release :: proc(game: ^dude.Game) {
     using dude, demo_game
-    dgl.texture_delete(&test_texture.id)
+    dgl.texture_delete(&texture_test.id)
     
 	material_release(&mat_red)
 	material_release(&mat_green)
