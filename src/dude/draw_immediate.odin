@@ -139,11 +139,6 @@ immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size,
         {u_short+u_long,1-v_short}, {1,1})
 }
 
-immediate_text :: proc(pass: ^RenderPass, text: string) {
-}
-
-// immediate_line :: proc(using ctx: ^ImmediateDrawContext, corner, size: Vec2) {
-// }
 
 // ImmediateDrawElement :: struct {
     // shader : u32,

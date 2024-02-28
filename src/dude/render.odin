@@ -77,8 +77,11 @@ RenderTransform :: struct {
 }
 
 RObj :: union {
-    RObjMesh, RObjMeshScreen, RObjSprite, RObjSpriteScreen, RObjHandle, RObjCustom, RObjCommand,
+    RObjMesh, RObjMeshScreen, 
     RObjImmediateScreenMesh,
+    RObjSprite, RObjSpriteScreen, 
+    RObjTextMesh,
+    RObjHandle, RObjCustom, RObjCommand,
 }
 
 RObjMesh :: struct {
@@ -92,6 +95,13 @@ RObjImmediateScreenMesh :: struct {
     texture : u32,
 }
 RObjMeshScreen :: distinct RObjMesh
+
+RObjTextMesh :: struct {
+    text_mesh : dgl.Mesh,
+    color : Color,
+}
+RObjTextMeshScreen :: distinct RObjTextMesh
+
 // NOTE: When you create a `Lines` mode mesh, the indices buffer is not used.
 MeshMode :: enum {
     Triangle, Lines, LineStrip,
@@ -118,6 +128,8 @@ CameraUniformData :: struct {
 
 RenderSystem :: struct {
     temp_mesh_builder : dgl.MeshBuilder,
+    fontstash_context : fontstash.FontContext,
+    fontstash_data : FontstashData,
 
     // Builtin resources
     mesh_unit_quad : dgl.Mesh,
@@ -139,6 +151,12 @@ RenderSystem :: struct {
 
     render_data_dude : RenderDataDude,
     render_data_dude_ubo : dgl.UniformBlockId,
+
+    fontid_unifont : int,
+}
+
+FontstashData :: struct {
+    atlas : dgl.TextureId,
 }
 
 rsys : RenderSystem
@@ -198,10 +216,25 @@ render_init :: proc() {
         mesher_quad(&temp_mesh_builder, {1,1}, {0,0})
         mesh_unit_quad = mesh_builder_create(temp_mesh_builder)
     }
+
+    // Fontstash
+    atlas_size :int= 4096
+    fontstash.Init(&rsys.fontstash_context, atlas_size, atlas_size, .TOPLEFT)
+    rsys.fontstash_context.userData = &rsys
+    // FIXME: The texture should be a single channel texture.
+    rsys.fontstash_data.atlas = dgl.texture_create_empty(auto_cast atlas_size, auto_cast atlas_size)
+    rsys.fontid_unifont = fontstash.AddFontMem(&rsys.fontstash_context, "unifont", #load("./resources/unifont.ttf"), false)
+    rsys.fontstash_context.callbackResize = _fontstash_callback_resize
+    rsys.fontstash_context.callbackUpdate = _fontstash_callback_update
+    _fontstash_callback_update(nil,{},nil)
+
 }
 
 render_release :: proc() {
     using rsys
+
+    dgl.texture_delete(&rsys.fontstash_data.atlas)
+    fontstash.Destroy(&fontstash_context)
 
     dgl.mesh_delete(&mesh_unit_quad)
 
@@ -325,6 +358,8 @@ render_pass_draw :: proc(pass: ^RenderPass) {
             _draw_sprite(transmute(^RObjSprite)&robj, obj, &rsys.material_default_screen_sprite)
         case RObjSprite:
             _draw_sprite(&robj, obj, &rsys.material_default_sprite)
+        case RObjTextMesh:
+            _draw_text(&robj, obj)
         case RObjHandle:
             log.errorf("Render: Render object type not supported.")
         case RObjCommand:
@@ -392,6 +427,18 @@ _draw_sprite :: #force_inline proc(robj: ^RObjSprite, obj: ^RenderObject, defaul
     dgl.draw_mesh(rsys.mesh_unit_quad)
 }
 
+@(private="file")
+_draw_text :: #force_inline proc(robj: ^RObjTextMesh, obj: ^RenderObject) {
+    material := obj.material if (obj.material != nil) else &rsys.material_default_mesh
+    shader := material.shader
+    dgl.material_upload(material.mat)
+    uniform_transform(shader.utable_transform, obj.position, obj.scale, obj.angle)
+    dgl.uniform_set(shader.utable_general.color, robj.color)
+    dgl.uniform_set_texture(shader.utable_general.texture, rsys.fontstash_data.atlas, MAX_TEXTURES_FOR_MATERIAL)
+        
+    dgl.draw_mesh(robj.text_mesh)
+}
+
 RObjCommand :: union {
     dgl.GlStateBlend, RObjCmdRenderTarget,
 }
@@ -417,4 +464,19 @@ execute_render_command :: proc(cmd: RObjCommand) {
         assert(false, "RenderObject: Command RenderTarget is not supported now.")
         // dgl.framebuffer_attach_color(cmd.attach_point, cmd.texture)
     }
+}
+
+// ** Text rendering
+@(private="file")
+_fontstash_callback_resize :: proc(data: rawptr, w, h: int) {
+    dgl.texture_delete(&rsys.fontstash_data.atlas)
+    fst := &rsys.fontstash_context
+    rsys.fontstash_data.atlas = dgl.texture_create_with_buffer(w, h, fst.textureData)
+}
+@(private="file")
+_fontstash_callback_update :: proc(data: rawptr, dirtyRect: [4]f32, textureData: rawptr) {
+    // Temporary: Just ignore the dirty rect, update the whole texture.
+    fst := &rsys.fontstash_context
+    log.debugf("upload atlas: {}, {}, buffer size: {}", fst.width, fst.height, len(fst.textureData))
+    dgl.texture_update(rsys.fontstash_data.atlas, auto_cast fst.width, auto_cast fst.height, fst.textureData, .Red)
 }

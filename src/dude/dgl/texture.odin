@@ -154,6 +154,19 @@ texture_create_with_buffer :: proc(width, height : int, buffer : []u8, gen_mipma
     return tex
 }
 
+TextureType :: enum {
+    RGBA, Red
+}
+
+texture_update :: proc(texture : TextureId, w,h : i32, buffer: []u8, type: TextureType=.RGBA) {
+    gl.BindTexture(gl.TEXTURE_2D, texture)
+    if type == .RGBA {
+        gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w,h, 0, gl.RGBA, gl.UNSIGNED_BYTE, raw_data(buffer))
+    } else {
+        gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, w,h, 0, gl.RED, gl.UNSIGNED_BYTE, raw_data(buffer))
+    }
+}
+
 texture_delete :: proc(id: ^u32) {
     gl.DeleteTextures(1, id)
 }

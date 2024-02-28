@@ -21,6 +21,8 @@ DemoGame :: struct {
     player : dude.RObjHandle,
 
     test_mesh_triangle, test_mesh_grid, test_mesh_grid2 : dgl.Mesh,
+
+    tm_test : dgl.Mesh,
 }
 
 @(private="file")
@@ -54,7 +56,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     if get_key(.W) do t.position.y += move_speed * delta
     else if get_key(.S) do t.position.y -= move_speed * delta
 
-    // dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_test.id)
+    dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_test.id)
 
     dialogue(get_mouse_position(), {256, 128})
 }
@@ -134,9 +136,16 @@ init :: proc(game: ^dude.Game) {
     render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_grid, mode=.Lines}, &mat_grid, order=-9999)
 
     // render_pass_add_object(&pass_main, RObjSpriteScreen{{1,0,0,0.2}, texture_test.id, {.5,.5}, {320,320}}, position={1,0}, order=999)
+
+    tm_test = dude.mesher_text(&rsys.fontstash_context, "Hello ,Dove", 32)
+
+    render_pass_add_object(&pass_main, RObjTextMesh{text_mesh=tm_test, color={1,0,0,1}}, scale={0.05,0.05}, order=999)
+    
 }
 @(private="file")
 release :: proc(game: ^dude.Game) {
+    dgl.mesh_delete(&demo_game.tm_test)
+
     using dude, demo_game
     dgl.texture_delete(&texture_test.id)
     
@@ -153,7 +162,7 @@ release :: proc(game: ^dude.Game) {
 @(private="file")
 on_gui :: proc() {
     using demo_game, imgui
-    set_next_window_pos({10,10})
+    // set_next_window_pos({10,10})
     begin("DemoGame", nil)
     text("Frame time: %f", time.duration_seconds(dude.app.duration_frame))
     p : ^dude.RenderObject = hla.hla_get_pointer(player)
