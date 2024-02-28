@@ -77,7 +77,10 @@ app_init :: proc() {
 
 	sdl.GL_SetAttribute(.CONTEXT_MAJOR_VERSION, OPENGL_VERSION_MAJOR)
 	sdl.GL_SetAttribute(.CONTEXT_MINOR_VERSION, OPENGL_VERSION_MINOR)
-	sdl.GL_SetAttribute(sdl.GLattr.CONTEXT_PROFILE_MASK, cast(i32)sdl.GLprofile.CORE)
+	sdl.GL_SetAttribute(.CONTEXT_PROFILE_MASK, cast(i32)sdl.GLprofile.CORE)
+
+    sdl.GL_SetAttribute(.MULTISAMPLEBUFFERS, 1)
+    sdl.GL_SetAttribute(.MULTISAMPLESAMPLES, 4)
 	
 	major, minor, profile : c.int
 	sdl.GL_GetAttribute(.CONTEXT_MAJOR_VERSION, &major)
