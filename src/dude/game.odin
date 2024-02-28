@@ -60,6 +60,7 @@ game_update :: proc() {
 	imgui_frame_end()
 
     free_all(allocators.frame)
+    free_all(context.temp_allocator)
 }
 
 game_init :: proc() {
