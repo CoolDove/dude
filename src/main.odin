@@ -137,9 +137,9 @@ init :: proc(game: ^dude.Game) {
 
     // render_pass_add_object(&pass_main, RObjSpriteScreen{{1,0,0,0.2}, texture_test.id, {.5,.5}, {320,320}}, position={1,0}, order=999)
 
-    tm_test = dude.mesher_text(&rsys.fontstash_context, "Hello ,Dove", 32)
+    tm_test = dude.mesher_text(&rsys.fontstash_context, "Hello, Dove.\n中文也OK。", 32)
 
-    render_pass_add_object(&pass_main, RObjTextMesh{text_mesh=tm_test, color={1,0,0,1}}, scale={0.05,0.05}, order=999)
+    render_pass_add_object(&pass_main, RObjTextMesh{text_mesh=tm_test, color={.8,.6,0,1}}, scale={0.05,0.05}, order=999)
     
 }
 @(private="file")
@@ -162,11 +162,14 @@ release :: proc(game: ^dude.Game) {
 @(private="file")
 on_gui :: proc() {
     using demo_game, imgui
-    // set_next_window_pos({10,10})
     begin("DemoGame", nil)
     text("Frame time: %f", time.duration_seconds(dude.app.duration_frame))
     p : ^dude.RenderObject = hla.hla_get_pointer(player)
     slider_float2("position", &p.position, -10, 10)
+    img := imgui.Texture_ID(uintptr(dude.rsys.fontstash_data.atlas))
+    @static scale :f32= 1.0
+    slider_float("atlas scale", &scale, 0.001, 1.0)
+    image(img, scale * Vec2{512,512}, border_col={1,1,0,1})
     end()
 }
 

@@ -140,6 +140,9 @@ RenderSystem :: struct {
     shader_default_sprite : Shader,
     material_default_sprite : Material,
 
+    shader_default_text : Shader,
+    material_default_text : Material,
+
     shader_default_screen_mesh : Shader,
     material_default_screen_mesh : Material,
 
@@ -192,6 +195,13 @@ render_init :: proc() {
         material_set_texture(&material_default_sprite, utable_general.texture, rsys.texture_default_white)
     }
 
+    {using shader_default_text
+        shader_init(&shader_default_text, 
+            #load("./resources/default_mesh.vert"),
+            #load("./resources/default_text.frag"))
+        material_init(&material_default_text, &shader_default_text)
+    }
+
     {using shader_default_screen_mesh
         shader_init(&shader_default_screen_mesh, 
             #load("./resources/default_screen_mesh.vert"),
@@ -218,7 +228,7 @@ render_init :: proc() {
     }
 
     // Fontstash
-    atlas_size :int= 4096
+    atlas_size :int= 512
     fontstash.Init(&rsys.fontstash_context, atlas_size, atlas_size, .TOPLEFT)
     rsys.fontstash_context.userData = &rsys
     // FIXME: The texture should be a single channel texture.
@@ -429,7 +439,7 @@ _draw_sprite :: #force_inline proc(robj: ^RObjSprite, obj: ^RenderObject, defaul
 
 @(private="file")
 _draw_text :: #force_inline proc(robj: ^RObjTextMesh, obj: ^RenderObject) {
-    material := obj.material if (obj.material != nil) else &rsys.material_default_mesh
+    material := obj.material if (obj.material != nil) else &rsys.material_default_text
     shader := material.shader
     dgl.material_upload(material.mat)
     uniform_transform(shader.utable_transform, obj.position, obj.scale, obj.angle)
@@ -477,6 +487,6 @@ _fontstash_callback_resize :: proc(data: rawptr, w, h: int) {
 _fontstash_callback_update :: proc(data: rawptr, dirtyRect: [4]f32, textureData: rawptr) {
     // Temporary: Just ignore the dirty rect, update the whole texture.
     fst := &rsys.fontstash_context
-    log.debugf("upload atlas: {}, {}, buffer size: {}", fst.width, fst.height, len(fst.textureData))
+    // log.debugf("upload atlas: {}, {}, buffer size: {}", fst.width, fst.height, len(fst.textureData))
     dgl.texture_update(rsys.fontstash_data.atlas, auto_cast fst.width, auto_cast fst.height, fst.textureData, .Red)
 }
