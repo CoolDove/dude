@@ -19,7 +19,7 @@ pass_main : dude.RenderPass
 DemoGame :: struct {
     // mat_grid, mat_grid2 : dude.Material,
     texture_test : dgl.Texture,
-    texture_9slice : dgl.Texture,
+    texture_9slice, texture_qq : dgl.Texture,
     player : dude.RObjHandle,
 
     test_mesh_triangle, mesh_grid, mesh_arrow : dgl.Mesh,
@@ -59,7 +59,6 @@ update :: proc(game: ^dude.Game, delta: f32) {
 
     camera := &pass_main.camera
     t := hla.hla_get_pointer(player)
-    t.angle += delta * 0.6
     move_speed :f32= 3.0
     if get_key(.A) do t.position.x -= move_speed * delta
     else if get_key(.D) do t.position.x += move_speed * delta
@@ -83,7 +82,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
         msg.position.x = -5
     }
 
-    dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_test.id)
+    dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_qq.id)
 
     if demo_game.dialogue_size > 0 {
         dialogue(get_mouse_position(), {256, 128} * demo_game.dialogue_size, demo_game.dialogue_size)
@@ -121,7 +120,7 @@ init :: proc(game: ^dude.Game) {
         test_mesh_triangle = mesh_builder_create(mb^)
 
         mesh_builder_reset(mb, VERTEX_FORMAT_P2U2C4)
-        dude.mesher_arrow_p2u2c4(mb, {0,0}, {5,6}, 0.6, {.6,.8,.2, 1.0})
+        dude.mesher_arrow_p2u2c4(mb, {0,0}, {0,-1}, 0.2, {.9,.3,.2, 1.0})
         mesh_arrow = mesh_builder_create(mb^)
 
         mesh_builder_reset(mb, VERTEX_FORMAT_P2U2C4)
@@ -130,6 +129,7 @@ init :: proc(game: ^dude.Game) {
 
         texture_test = texture_load_from_mem(#load("../res/texture/dude.png"))
         texture_9slice = texture_load_from_mem(#load("../res/texture/default_ui_background_9slice.png"))
+        texture_qq = texture_load_from_mem(#load("../res/texture/qq.png"))
         texture_set_filter(texture_9slice.id, .Nearest, .Nearest)
     }
 
@@ -199,6 +199,7 @@ release :: proc(game: ^dude.Game) {
 
     using dude, demo_game
     dgl.texture_delete(&texture_test.id)
+    dgl.texture_delete(&texture_qq.id)
     
 	dgl.mesh_delete(&test_mesh_triangle)
 	dgl.mesh_delete(&mesh_grid)

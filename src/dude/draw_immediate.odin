@@ -84,7 +84,7 @@ immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Colo
     ctx.texture = texture if texture > 0 else rsys.texture_default_white
     ctx.order = order
     dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
-    mesher_quad(&ctx.mesh_builder, size, {0,0}, corner, {1,1}, {0,0})
+    mesher_quad(&ctx.mesh_builder, size, {0,0}, corner)
 }
 
 /*
