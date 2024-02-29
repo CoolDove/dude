@@ -23,6 +23,7 @@ mesher_quad :: proc(mb: ^dgl.MeshBuilder, size, anchor: Vec2, offset:Vec2={0,0},
 
 mesher_line_grid :: proc(mb: ^dgl.MeshBuilder, half_size:int, unit: f32, color: Color, subcell_size := 0, color_b := Color{1,0,1,1}) {
     assert(mb.vertex_format == dgl.VERTEX_FORMAT_P2U2C4, "Mesher: Only P2U2C4 format is supported.")
+    // You should reset mesh builder before this
     size := 2 * half_size
     min := -cast(f32)half_size * unit;
     max := cast(f32)half_size * unit;
@@ -46,6 +47,7 @@ mesher_line_grid :: proc(mb: ^dgl.MeshBuilder, half_size:int, unit: f32, color: 
 
 mesher_arrow_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, from,to: Vec2, width: f32, color: Color) {
     assert(mb.vertex_format == dgl.VERTEX_FORMAT_P2U2C4, "Mesher: Only P2U2C4 format is supported.")
+    idx := cast(u32)len(mb.vertices)/8
 
     forward := to-from
     forwardn := linalg.normalize(forward)
@@ -86,10 +88,10 @@ mesher_arrow_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, from,to: Vec2, width: f32, col
         {v8={paa.x,paa.y, 0,0, c.r,c.g,c.b,c.a}},
     )
     dgl.mesh_builder_add_indices(mb, 
-        0,2,3,
-        0,3,6,
-        1,5,2,
-        2,5,3,
-        3,5,4,
+        idx+0,idx+2,idx+3,
+        idx+0,idx+3,idx+6,
+        idx+1,idx+5,idx+2,
+        idx+2,idx+5,idx+3,
+        idx+3,idx+5,idx+4,
     )
 }

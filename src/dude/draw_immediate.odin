@@ -20,7 +20,7 @@ ImmediateDrawContext :: struct {
 }
 
 ImmediateElemType :: enum {
-    ScreenQuad, Line,
+    ScreenMeshP2U2C4, ScreenMeshP2U2, Line,
 }
 
 immediate_init :: proc(using ctx: ^ImmediateDrawContext) {
@@ -41,7 +41,8 @@ immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
         dgl.mesh_builder_clear(&mesh_builder)
         return
     }
-    if buffered_type == .ScreenQuad {
+    switch buffered_type {
+    case .ScreenMeshP2U2:
         mesh := dgl.mesh_builder_create(mesh_builder)
         append(&meshes, mesh)
         append(&immediate_robjs, 
@@ -49,7 +50,16 @@ immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
                 obj = RObjImmediateScreenMesh{mesh=mesh, mode=.Triangle, color=col_u2f(color), texture=texture},
                 order = order,
         })
-    } else if buffered_type == .Line {
+    case .ScreenMeshP2U2C4:
+        mesh := dgl.mesh_builder_create(mesh_builder)
+        append(&meshes, mesh)
+        append(&immediate_robjs, 
+            RenderObject{ 
+                obj = RObjImmediateScreenMesh{mesh=mesh, mode=.Triangle, texture=rsys.texture_default_white},
+                ex={1,0,0,0}, // Use vertex color.
+                order = order,
+        })
+    case .Line:
         mesh := dgl.mesh_builder_create(mesh_builder, true)
         append(&meshes, mesh)
         append(&immediate_robjs, 
@@ -76,14 +86,14 @@ immediate_clear :: proc(using ctx: ^ImmediateDrawContext) {
 */
 immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
-    if ctx.buffered_type != .ScreenQuad || ctx.texture != texture || ctx.color != color || ctx.order != order {
+    if ctx.buffered_type != .ScreenMeshP2U2 || ctx.texture != texture || ctx.color != color || ctx.order != order {
         immediate_confirm(ctx)
+        dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
     }
-    ctx.buffered_type = .ScreenQuad
+    ctx.buffered_type = .ScreenMeshP2U2
     ctx.color = color
     ctx.texture = texture if texture > 0 else rsys.texture_default_white
     ctx.order = order
-    dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
     mesher_quad(&ctx.mesh_builder, size, {0,0}, corner)
 }
 
@@ -100,14 +110,14 @@ immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Colo
 */
 immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size, uv_inner_size: Vec2, color:Color32={255,255,255,255}, texture: u32=0, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
-    if ctx.buffered_type != .ScreenQuad || ctx.texture != texture || ctx.color != color || ctx.order != order {
+    if ctx.buffered_type != .ScreenMeshP2U2 || ctx.texture != texture || ctx.color != color || ctx.order != order {
         immediate_confirm(ctx)
+        dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
     }
-    ctx.buffered_type = .ScreenQuad
+    ctx.buffered_type = .ScreenMeshP2U2
     ctx.color = color
     ctx.texture = texture if texture > 0 else rsys.texture_default_white
     ctx.order = order
-    dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
     w_long, w_short := inner_size.x, (size.x - inner_size.x) * 0.5
     h_long, h_short := inner_size.y, (size.y - inner_size.y) * 0.5
 
@@ -139,6 +149,20 @@ immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size,
         {u_short+u_long,1-v_short}, {1,1})
 }
 
+immediate_screen_arrow :: proc(pass: ^RenderPass, from,to : Vec2, width: f32, color:Color32={255,255,255,255}, order:i32=0) {
+    ctx := &pass.impl.immediate_draw_ctx
+
+    if ctx.buffered_type != .ScreenMeshP2U2C4 || ctx.color != {0,0,0,0} || ctx.texture != 0 || ctx.order != order {
+        immediate_confirm(ctx)
+        dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2C4)
+    }
+
+    ctx.buffered_type = .ScreenMeshP2U2C4
+    ctx.color = { 0,0,0,0 }
+    ctx.texture = 0
+    ctx.order = order
+    mesher_arrow_p2u2c4(&ctx.mesh_builder, from,to, width, col_u2f(color))
+}
 
 // ImmediateDrawElement :: struct {
     // shader : u32,

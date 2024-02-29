@@ -8,6 +8,11 @@ import "dgl"
 import hla "collections/hollow_array"
 import "vendor/fontstash"
 
+// What's the `ex` in RenderObject?
+//  ex.x: Vertex color multiplier, 0 to disable vertex color, 1 to use.
+//  ex.y: ......
+
+
 // Reserved up to 8, when you want to make your own custom uniform block, the slot should be greater 
 //  than 8.
 UNIFORM_BLOCK_SLOT_CAMERA :: 0
@@ -131,7 +136,7 @@ RenderCamera :: struct {
 CameraUniformData :: struct {
     position : Vec2,
     angle : f32,
-    size : f32,
+    size : f32, // 1 unit in world space takes 2*size pixels on screen(viewport).
     viewport : Vec2,
 }
 

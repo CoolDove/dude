@@ -55,7 +55,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     pass_main.camera.viewport = vec_i2f(viewport)
 
     pass_main.camera.angle = 0.06 * math.sin(time*0.8)
-    pass_main.camera.size = 64 + 6 * math.sin(time*1.2)
+    pass_main.camera.size = 60 + 6 * math.sin(time*1.2)
 
     camera := &pass_main.camera
     t := hla.hla_get_pointer(player)
@@ -64,6 +64,8 @@ update :: proc(game: ^dude.Game, delta: f32) {
     else if get_key(.D) do t.position.x += move_speed * delta
     if get_key(.W) do t.position.y += move_speed * delta
     else if get_key(.S) do t.position.y -= move_speed * delta
+
+    pass_main.camera.position = t.position
 
     if get_key(.F) {
         _flip_page()
@@ -83,6 +85,28 @@ update :: proc(game: ^dude.Game, delta: f32) {
     }
 
     dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_qq.id)
+
+    to_screen :: proc(pos: dude.Vec2) -> dude.Vec2 {
+        return dude.coord_world2screen(&pass_main.camera, pos)
+    }
+
+    dude.immediate_screen_quad(&pass_main, to_screen({0,0}), {16,16}, texture=texture_qq.id)
+    dude.immediate_screen_quad(&pass_main, to_screen({3,0}), {16,16}, texture=texture_qq.id)
+    dude.immediate_screen_quad(&pass_main, to_screen({6,0}), {16,16}, texture=texture_qq.id)
+
+    {// test arrow
+        root := dude.coord_world2screen(&pass_main.camera, {0,0})
+        forward := dude.get_mouse_position() - root
+        left := dude.rotate_vector(forward, 90 * math.RAD_PER_DEG)
+        dude.immediate_screen_arrow(&pass_main, 
+            root,
+            root + forward,
+            16.0, {200, 64, 32, 222})
+        dude.immediate_screen_arrow(&pass_main, 
+            root,
+            root + left,
+            16.0, {32, 230, 20, 222})
+    }
 
     if demo_game.dialogue_size > 0 {
         dialogue(get_mouse_position(), {256, 128} * demo_game.dialogue_size, demo_game.dialogue_size)
@@ -216,6 +240,7 @@ on_gui :: proc() {
     slider_float2("position", &p.position, -10, 10)
     img := imgui.Texture_ID(uintptr(dude.rsys.fontstash_data.atlas))
     @static scale :f32= 1.0
+    text("mouse pos: %f", dude.get_mouse_position())
     text(fmt.tprintf("current atlas size: ({}, {})", dude.rsys.fontstash_context.width, dude.rsys.fontstash_context.height))
     slider_float("atlas scale", &scale, 0.001, 1.0)
     image(img, scale * Vec2{512,512}, border_col={1,1,0,1})

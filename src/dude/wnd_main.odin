@@ -23,7 +23,7 @@ ImguiState :: struct {
 }
 
 create_main_window :: proc (allocator:=context.allocator, loc := #caller_location) -> Window {
-	wnd := window_get_basic_template(game_config.name)
+	wnd := window_get_basic_template(game_config.name, {800,600})
 	wnd.vtable = &main_wnd_vtable
 	wnd.window_flags += { .RESIZABLE }
     return wnd
