@@ -154,7 +154,7 @@ init :: proc(game: ^dude.Game) {
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_grid, mode=.Lines}, order=-9999, vertex_color_on=true)
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_arrow}, vertex_color_on=true)
 
-    tm_test = dude.mesher_text(&rsys.fontstash_context, "Hello, Dove.\n中文也OK。", 32)
+    tm_test = dude.mesher_text(&rsys.fontstash_context, "诗篇46的秘密\n试试换行", 32)
 
     robj_message = render_pass_add_object(&pass_main, RObjTextMesh{text_mesh=tm_test, color={.8,.6,0,1}}, scale={0.05,0.05}, order=999)
 

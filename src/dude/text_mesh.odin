@@ -23,8 +23,6 @@ mesher_text :: proc(ctx: ^fontstash.FontContext, text: string, size: f32) -> dgl
 	prev_iter := iter
 	q: fontstash.Quad
 	for fontstash.TextIterNext(fs, &iter, &q) {
-		c: [4 * 2]f32
-		
 		if iter.previousGlyphIndex == -1 { // can not retrieve glyph?
 			iter = prev_iter
 			fontstash.TextIterNext(fs, &iter, &q) // try again
