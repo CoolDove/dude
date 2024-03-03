@@ -78,6 +78,7 @@ mesh_builder_reset :: proc(builder: ^MeshBuilder, vertex_format: VertexFormat) {
     clear(&builder.vertices)
     clear(&builder.indices)
     builder.vertex_format = vertex_format
+    builder.stride = cast(u32)mesh_builder_calc_stride(builder)
 }
 mesh_builder_clear :: proc(builder: ^MeshBuilder) {
     clear(&builder.vertices)
