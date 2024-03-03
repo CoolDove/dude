@@ -75,8 +75,6 @@ game_init :: proc() {
 
     game.settings = new(GameSettings)
 
-    tween_system_init()
-
 	tweener_init(&game.global_tweener, 16)
 	
 	// time.stopwatch_start(&game.timer)

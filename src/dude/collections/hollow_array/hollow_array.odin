@@ -36,10 +36,6 @@ hla_clear :: proc(using hla: ^HollowArray($T)) {
     count, id_access = 0,0
 }
 
-hla_count :: proc(using hla: ^HollowArray($T)) -> int {
-    return len(buffer)-len(dead_idx)
-}
-
 hla_append :: proc(using hla : ^HollowArray($T), elem: T) -> HollowArrayHandle(T) {
     index : int
     obj : ^HollowArrayValue(T)
@@ -66,13 +62,13 @@ hla_remove :: proc {
     hla_remove_index,
     hla_remove_handle,
 }
-hla_remove_index :: proc(using hla : ^HollowArray($T), index: int) {
-    if index >= len(hla.buffer) do return
-    ptr := &hla.buffer[index]
+hla_remove_index :: proc(using hla : ^HollowArray($T), buffer_index: int) {
+    if buffer_index >= len(hla.buffer) do return
+    ptr := &hla.buffer[buffer_index]
     if ptr.id >= 0 {
         ptr.id = -1
         count -= 1
-        append(&dead_idx, index)
+        append(&dead_idx, buffer_index)
     }
 }
 hla_remove_handle :: proc(using handle: HollowArrayHandle($T)) {
@@ -105,19 +101,24 @@ hla_get_pointer :: proc(using handle: HollowArrayHandle($T)) -> (^T, bool) #opti
     return &v.value, true
 }
 
-hla_ite :: proc(using hla: ^HollowArray($T), buffer_index:^int, alive_index:^int=nil) -> (^T, bool) {
-    assert(buffer_index!=nil, "HollowArray: Invalid iterator.")
+hla_ite :: proc(using hla: ^HollowArray($T), using iterator: ^HollowArrayIterator) -> (^T, bool) {
+    assert(iterator!=nil, "HollowArray: No iterator.")
     if count == 0 do return nil, false
+    if next_buffer_idx == 0 do next_alive_idx = -1
 
-    if buffer_index^ == 0 && alive_index != nil do alive_index^= -1
-
-    for i in buffer_index^..<len(hla.buffer) {
+    for i in cast(int)next_buffer_idx..<len(hla.buffer) {
         v := &hla.buffer[i]
-        // TODO: Check if this buffer_index is correct.
-        buffer_index^ += 1
+        next_buffer_idx += 1
         if v.id < 0 do continue
-        if alive_index != nil do alive_index^ += 1
+        next_alive_idx += 1
+        buffer_idx = next_buffer_idx-1
+        alive_idx = next_alive_idx-1
         return &v.value, true
     }
     return nil, false
+}
+
+HollowArrayIterator :: struct {
+    next_buffer_idx, next_alive_idx : int,
+    buffer_idx, alive_idx : int,
 }

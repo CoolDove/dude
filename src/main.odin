@@ -14,6 +14,7 @@ import "vendor:microui"
 import "dude"
 import "dude/dgl"
 import "dude/vendor/imgui"
+import hla "dude/collections/hollow_array"
 
 pass_main : dude.RenderPass
 
@@ -266,10 +267,11 @@ on_gui :: proc() {
 }
 
 gui_tweener :: proc(tweener: ^dude.Tweener) {
-    using imgui
+    using imgui, hla
     text("Tweener")
-    for &tween in tweener.tweens {
-        if tween.id == 0 do continue
+    // buffer_index, alive_index : int
+    iterator : HollowArrayIterator
+    for tween in hla_ite(&tweener.tweens, &iterator) {
         interp := tween.time/tween.duration
         bullet()
         same_line()

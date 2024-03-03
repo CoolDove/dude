@@ -322,9 +322,9 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     dgl.ubo_bind(pass.camera_ubo, UNIFORM_BLOCK_SLOT_CAMERA)
 
     // ** Sort all the render objects.
-    robj_idx : int
     clear(&pass.robjs_sorted)
-    for obj in hla.hla_ite(&pass.robjs, &robj_idx) {
+    iterator : hla.HollowArrayIterator
+    for obj in hla.hla_ite(&pass.robjs, &iterator) {
         append(&pass.robjs_sorted, obj)
     }
 

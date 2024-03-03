@@ -7,6 +7,9 @@ import "core:math/linalg"
 import "core:runtime"
 
 import "core:mem"
+import "core:fmt"
+
+import hla "collections/hollow_array"
 
 // NOTE:
 // Do not keep the ^Tween, it's not stable.
@@ -22,53 +25,46 @@ import "core:mem"
 
 
 Tweener :: struct {
-    tweens : [dynamic]Tween,
-    dead : [dynamic]int,
-    available_id : int,
+    tweens : hla.HollowArray(Tween),
 }
 
 tweener_update :: proc(tweener: ^Tweener, delta: f32/*in seconds*/) {
-    for &tween, idx in tweener.tweens {
-        if tween.id <= 0 do continue
-        tween.time += delta
-        interp := tween.time/tween.duration
+    using hla
+    iterator : HollowArrayIterator
+    for twn in hla_ite(&tweener.tweens, &iterator) {
+        twn.time += delta
+        interp := twn.time/twn.duration
         if interp >= 1.0 {
-            _tween_set_data(&tween, tween.end_value)
-            if tween.on_complete != nil do tween.on_complete(tween.user_data)
-            append(&tweener.dead, idx)
-            tween.id = 0// Mark it as dead
+            _tween_set_data(twn, twn.end_value)
+            if twn.on_complete != nil do twn.on_complete(twn.user_data)
+            hla_remove_index(&tweener.tweens, iterator.buffer_idx)
         } else {
-            assert(tween.easing_proc != nil, "Tween: easeing_proc missing.")
-            assert(tween.impl != nil && tween.impl.interp != nil, "Tween: impl missing or broken.")
-            eased_interp := tween.easing_proc(interp)
-            _tween_set_data(&tween, tween.impl.interp(&tween, eased_interp))
+            assert(twn.easing_proc != nil, "Tween: easeing_proc missing.")
+            assert(twn.impl != nil && twn.impl.interp != nil, "Tween: impl missing or broken.")
+            eased_interp := twn.easing_proc(interp)
+            _tween_set_data(twn, twn.impl.interp(twn, eased_interp))
         }
     }
 }
 
 tweener_init :: proc(tweener: ^Tweener, reserve: int, allocator:= context.allocator) {
     context.allocator = allocator
-    tweener.tweens = make_dynamic_array_len_cap([dynamic]Tween, 0, reserve)
-    tweener.dead = make_dynamic_array_len_cap([dynamic]int, 0, reserve)
+    tweener.tweens = hla.hla_make(Tween, 16)
 }
 tweener_release :: proc(tweener: ^Tweener) {
-    delete(tweener.tweens)
-    delete(tweener.dead)
+    hla.hla_delete(&tweener.tweens)
     tweener^ = {}
 }
 tweener_reset :: proc(tweener: ^Tweener) {
-    clear(&tweener.tweens)
-    clear(&tweener.dead)
-    tweener.available_id = 0
+    hla.hla_clear(&tweener.tweens)
 }
+
 tweener_count :: proc(tweener: ^Tweener) -> int {
-    return len(tweener.tweens) - len(tweener.dead)
+    return tweener.tweens.count
 }
 
 // ## types
 Tween :: struct {
-    id : int,
-
     data : rawptr,
     begin_value, end_value : TweenableValue,
     duration : f32,// in sec
@@ -87,28 +83,22 @@ tween :: proc(tweener: ^Tweener, value: ^$T, target : T, duration : f32, easing_
     assert(size_of(T)%size_of(f32) == 0, "This type is unable to tween.")
     assert(dimen > 0 && dimen < 5, "This type is unable to tween.")
 
-    tween :^Tween
-    if len(tweener.dead) > 0 {
-        reuse_idx := pop(&tweener.dead)
-        tween = &tweener.tweens[reuse_idx]
-    } else {
-        append(&tweener.tweens, Tween{})
-        tween = &tweener.tweens[len(tweener.tweens)-1]
-    }
-    
-    tweener.available_id += 1
-    tween.id = tweener.available_id
+    using hla
+    tween :^Tween= hla_get_pointer(hla_append(&tweener.tweens, Tween{}))
 
     tween.dimension = cast(i32)dimen
     tween.impl = &_impl_default
 
     tween.easing_proc = easing_proc
     tween.data = cast(rawptr)value
+
     mem.copy(&tween.begin_value, value, size_of(T))
     target := target
     mem.copy(&tween.end_value, &target, size_of(T))
+
     tween.duration = duration
     tween.time = 0
+
     return tween
 }
 
@@ -248,10 +238,12 @@ TweenImplementation :: struct {
     interp : proc(tween: ^Tween, interp: f32) -> TweenableValue,
 }
 
+@(private="file")
 _impl_default :TweenImplementation= {
     _impl_interp_default,
 }
 
+@(private="file")
 _impl_interp_default :: proc(using tween: ^Tween, interp: f32) -> TweenableValue {
     switch dimension {
     case 1:
@@ -269,7 +261,7 @@ _impl_interp_default :: proc(using tween: ^Tween, interp: f32) -> TweenableValue
 }
 
 @(private="file")
-_tween_set_data :: proc(tween: ^Tween, value: TweenableValue) {
+_tween_set_data :: #force_inline proc(tween: ^Tween, value: TweenableValue) {
     value := value
     mem.copy(tween.data, &value, cast(int)tween.dimension * size_of(f32))
 }
