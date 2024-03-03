@@ -366,7 +366,7 @@ _draw_immediate_mesh :: #force_inline proc(robj: ^RObjImmediateScreenMesh, obj: 
 
     shader := material.shader
     dgl.material_upload(material.mat)
-    uniform_transform(shader.utable_transform, {0,0}, {1,1}, 0,)
+    uniform_transform(shader.utable_transform, obj.position, obj.scale, obj.angle)
     dgl.uniform_set_vec4(shader.utable_general.ex, transmute(Vec4)obj.ex)
 
     dgl.uniform_set(shader.utable_general.color, robj.color)

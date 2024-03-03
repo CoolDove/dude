@@ -15,8 +15,6 @@ mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, text: string, size: f32, color:
 	fontstash.SetAlignVertical(fs, .BASELINE)
 	fontstash.SetFont(fs, rsys.fontid_unifont)
 
-    // dgl.mesh_builder_init(&mb, dgl.VERTEX_FORMAT_P2U2C4); defer dgl.mesh_builder_release(&mb)
-
 	iter := fontstash.TextIterInit(fs, 0, 0, text)
 	prev_iter := iter
 	q: fontstash.Quad
