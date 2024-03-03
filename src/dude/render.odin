@@ -8,11 +8,6 @@ import "dgl"
 import hla "collections/hollow_array"
 import "vendor/fontstash"
 
-// What's the `ex` in RenderObject?
-//  ex.x: Vertex color multiplier, 0 to disable vertex color, 1 to use.
-//  ex.y: ......
-
-
 // Reserved up to 8, when you want to make your own custom uniform block, the slot should be greater 
 //  than 8.
 UNIFORM_BLOCK_SLOT_CAMERA :: 0
@@ -58,7 +53,7 @@ RenderObject :: struct {
     material : ^Material,
 	obj : RObj,
     order : i32, // Objects with smaller order would be drawn earlier.
-    ex : RenderObjectEx, // x: vertex color factor.
+    ex : RenderObjectEx,
 }
 RenderObjectEx :: struct {
     vertex_color_on : f32,
@@ -90,9 +85,9 @@ RenderTransform :: struct {
 }
 
 RObj :: union {
-    RObjMesh, RObjMeshScreen, 
+    RObjMesh,
     RObjImmediateScreenMesh,
-    RObjSprite, RObjSpriteScreen, 
+    RObjSprite,
     RObjTextMesh,
     RObjHandle, RObjCustom, RObjCommand,
 }
@@ -107,7 +102,7 @@ RObjImmediateScreenMesh :: struct {
 	color : Color,
     texture : u32,
 }
-RObjMeshScreen :: distinct RObjMesh
+// RObjMeshScreen :: distinct RObjMesh
 
 RObjTextMesh :: struct {
     text_mesh : dgl.Mesh,
@@ -125,7 +120,7 @@ RObjSprite :: struct { // A sprite in 2D world space.
     anchor : Vec2, // [0,1]
     size : Vec2, // This differs from scale in transform.
 }
-RObjSpriteScreen :: distinct RObjSprite
+
 RObjCustom :: #type proc()
 
 RenderCamera :: struct {
@@ -154,12 +149,6 @@ RenderSystem :: struct {
 
     shader_default_text : Shader,
     material_default_text : Material,
-
-    shader_default_screen_mesh : Shader,
-    material_default_screen_mesh : Material,
-
-    shader_default_screen_sprite : Shader,
-    material_default_screen_sprite : Material,
 
     texture_default_white : dgl.TextureId,
     texture_default_black : dgl.TextureId,
@@ -214,24 +203,6 @@ render_init :: proc() {
         material_init(&material_default_text, &shader_default_text)
     }
 
-    {using shader_default_screen_mesh
-        shader_init(&shader_default_screen_mesh, 
-            #load("./resources/default_screen_mesh.vert"),
-            #load("./resources/default_mesh.frag"))
-        material_init(&material_default_screen_mesh, &shader_default_screen_mesh)
-        material_set_vec4(&material_default_screen_mesh,  utable_general.color, {1,1,1,1})
-        material_set_texture(&material_default_screen_mesh, utable_general.texture, rsys.texture_default_white)
-    }
-
-    {using shader_default_screen_sprite
-        shader_init(&shader_default_screen_sprite, 
-            #load("./resources/default_screen_sprite.vert"),
-            #load("./resources/default_sprite.frag"))
-        material_init(&material_default_screen_sprite, &shader_default_screen_sprite)
-        material_set_vec4(&material_default_screen_sprite,  utable_general.color, {1,1,1,1})
-        material_set_texture(&material_default_screen_sprite, utable_general.texture, rsys.texture_default_white)
-    }
-
     // Meshes
     {using dgl
         mesh_builder_init(&temp_mesh_builder, VERTEX_FORMAT_P2U2)
@@ -265,12 +236,6 @@ render_release :: proc() {
 
     material_release(&material_default_sprite)
     shader_release(&shader_default_sprite)
-
-    material_release(&material_default_screen_mesh)
-    shader_release(&shader_default_screen_mesh)
-
-    material_release(&material_default_screen_sprite)
-    shader_release(&shader_default_screen_sprite)
     
     dgl.mesh_builder_release(&temp_mesh_builder)
     dgl.ubo_release(&render_data_dude_ubo)
@@ -311,13 +276,13 @@ render_pass_release :: proc(pass: ^RenderPass) {
 }
 
 render_pass_add_object :: proc(pass: ^RenderPass, obj: RObj, material: ^Material=nil,
-order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0, vertex_color_on:=false) -> RObjHandle {
-    return hla.hla_append(&pass.robjs, 
+order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0, vertex_color_on:=false, screen_space:=false) -> RObjHandle {
+    return hla.hla_append(&pass.robjs,
         RenderObject{ 
             obj = obj, 
             material = material,
             order = order,
-            ex = {1,0,0,0},
+            ex = {1 if vertex_color_on else 0, 1 if screen_space else 0, 0,0},
             transform = {
                 position=position,
                 scale=scale,
@@ -375,13 +340,9 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     for obj in pass.robjs_sorted {
         switch &robj in obj.obj {
         case RObjImmediateScreenMesh: 
-            _draw_immediate_screen_mesh(&robj, obj)
-        case RObjMeshScreen: 
-            _draw_mesh(transmute(^RObjMesh)&robj, obj, &rsys.material_default_screen_mesh)
+            _draw_immediate_mesh(&robj, obj)
         case RObjMesh:
             _draw_mesh(&robj, obj, &rsys.material_default_mesh)
-        case RObjSpriteScreen: 
-            _draw_sprite(transmute(^RObjSprite)&robj, obj, &rsys.material_default_screen_sprite)
         case RObjSprite:
             _draw_sprite(&robj, obj, &rsys.material_default_sprite)
         case RObjTextMesh:
@@ -399,15 +360,16 @@ render_pass_draw :: proc(pass: ^RenderPass) {
 }
 
 @(private="file")
-_draw_immediate_screen_mesh :: #force_inline proc(robj: ^RObjImmediateScreenMesh, obj: ^RenderObject) {
-    material := &rsys.material_default_screen_mesh
+_draw_immediate_mesh :: #force_inline proc(robj: ^RObjImmediateScreenMesh, obj: ^RenderObject) {
+    material := obj.material
+    if obj.material == nil do material = &rsys.material_default_mesh
+
     shader := material.shader
     dgl.material_upload(material.mat)
     uniform_transform(shader.utable_transform, {0,0}, {1,1}, 0,)
     dgl.uniform_set_vec4(shader.utable_general.ex, transmute(Vec4)obj.ex)
 
     dgl.uniform_set(shader.utable_general.color, robj.color)
-    // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
     dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, MAX_TEXTURES_FOR_MATERIAL)
 
     switch robj.mode {

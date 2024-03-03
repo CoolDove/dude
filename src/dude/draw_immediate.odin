@@ -17,6 +17,8 @@ ImmediateDrawContext :: struct {
     buffered_type : ImmediateElemType,
     color : Color32,
     texture : u32,
+    screen_space : bool,
+    material : ^Material,
     order : i32,
 }
 
@@ -52,6 +54,8 @@ immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
         append(&immediate_robjs, 
             RenderObject{ 
                 obj = RObjImmediateScreenMesh{mesh=mesh, mode=.Triangle, color=col_u2f(color), texture=texture},
+                material = ctx.material,
+                ex = {0, 1 if ctx.screen_space else 0, 0,0},
                 order = order,
         })
     case .ScreenMeshP2U2C4:
@@ -60,7 +64,8 @@ immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
         append(&immediate_robjs, 
             RenderObject{ 
                 obj = RObjImmediateScreenMesh{mesh=mesh, mode=.Triangle, texture=ctx.texture},
-                ex={1,0,0,0}, // Use vertex color.
+                ex={1,1 if ctx.screen_space else 0,0,0}, // Use vertex color.
+                material = ctx.material,
                 order = order,
         })
     case .Line:
@@ -69,6 +74,7 @@ immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
         append(&immediate_robjs, 
             RenderObject{ 
                 obj = RObjImmediateScreenMesh{mesh=mesh, mode=.Lines, color=col_u2f(color), texture=texture},
+                material = ctx.material,
                 order=order,
         })
     }
@@ -92,7 +98,7 @@ immediate_clear :: proc(using ctx: ^ImmediateDrawContext) {
 Default texture will be replaced by a default white texture*/
 immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
-    if _confirm_context(pass, .ScreenMeshP2U2, color, texture, order) {
+    if _confirm_context(pass, .ScreenMeshP2U2, color, texture, order, true, &rsys.material_default_mesh) {
         dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
     }
     ctx.texture = texture if texture > 0 else rsys.texture_default_white
@@ -112,7 +118,7 @@ immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Colo
 */
 immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size, uv_inner_size: Vec2, color:Color32={255,255,255,255}, texture: u32=0, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
-    if _confirm_context(pass, .ScreenMeshP2U2, color, texture, order) {
+    if _confirm_context(pass, .ScreenMeshP2U2, color, texture, order, true, &rsys.material_default_mesh) {
         dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
     }
     ctx.texture = texture if texture > 0 else rsys.texture_default_white
@@ -151,7 +157,7 @@ immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size,
 immediate_screen_text :: proc(pass: ^RenderPass, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
     font_atlas := rsys.fontstash_data.atlas
-    if _confirm_context(pass, .ScreenMeshP2U2C4, {}, font_atlas, order) {
+    if _confirm_context(pass, .ScreenMeshP2U2C4, {}, font_atlas, order, true, &rsys.material_default_text) {
         dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2C4)
     }
 
@@ -170,7 +176,7 @@ immediate_screen_text :: proc(pass: ^RenderPass, text: string, offset: Vec2, siz
 
 immediate_screen_arrow :: proc(pass: ^RenderPass, from,to : Vec2, width: f32, color:Color32={255,255,255,255}, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
-    if _confirm_context(pass, .ScreenMeshP2U2C4, {}, rsys.texture_default_white, order) {
+    if _confirm_context(pass, .ScreenMeshP2U2C4, {}, rsys.texture_default_white, order, true, &rsys.material_default_mesh) {
         dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2C4)
     }
     mesher_arrow_p2u2c4(&ctx.mesh_builder, from,to, width, col_u2f(color))
@@ -178,14 +184,17 @@ immediate_screen_arrow :: proc(pass: ^RenderPass, from,to : Vec2, width: f32, co
 
 // If the context states are different from the buffered settings, submit the buffered element.
 @(private="file")
-_confirm_context :: proc(pass: ^RenderPass, type: ImmediateElemType, color: Color32, texture: u32, order: i32) -> bool {
+_confirm_context :: proc(pass: ^RenderPass, type: ImmediateElemType, color: Color32, texture: u32, order: i32, screen_space: bool, material: ^Material) -> bool {
     ctx := &pass.impl.immediate_draw_ctx
-    if ctx.buffered_type != type || ctx.color != color || ctx.texture != texture || ctx.order != order {
+
+    if ctx.buffered_type != type || ctx.color != color || ctx.texture != texture || ctx.order != order || ctx.screen_space != screen_space || ctx.material != material {
         immediate_confirm(ctx)
         ctx.buffered_type = type
         ctx.color = color
         ctx.texture = texture
         ctx.order = order
+        ctx.screen_space = screen_space
+        ctx.material = material
         return true
     }
     return false
