@@ -9,6 +9,8 @@ import "core:strings"
 import "core:math/linalg"
 import "core:math"
 
+import "vendor:microui"
+
 import "dude"
 import "dude/dgl"
 import "dude/vendor/imgui"
@@ -94,6 +96,10 @@ update :: proc(game: ^dude.Game, delta: f32) {
     dude.immediate_screen_quad(&pass_main, to_screen({3,0}), {16,16}, texture=texture_qq.id)
     dude.immediate_screen_quad(&pass_main, to_screen({6,0}), {16,16}, texture=texture_qq.id)
 
+    dude.immediate_screen_text(&pass_main, "Hello, 你好鸽子", {60, 100}, 10, {0, 0.6, 0.8, 1.0}, order=9999)
+    dude.immediate_screen_text(&pass_main, "Hello, 你好鸽子2", {100, 130}, 10, {0, 0.6, 0.8, 1.0}, order=9999)
+    dude.immediate_screen_text(&pass_main, "Hello, 你好鸽子3", {60, 160}, 10, {0, 0.6, 0.8, 1.0}, order=9999)
+
     {// test arrow
         root := dude.coord_world2screen(&pass_main.camera, {0,0})
         forward := dude.get_mouse_position() - root
@@ -111,6 +117,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     if demo_game.dialogue_size > 0 {
         dialogue(get_mouse_position(), {256, 128} * demo_game.dialogue_size, demo_game.dialogue_size)
     }
+    
 }
 
 dialogue :: proc(anchor, size: dude.Vec2, alpha:f32) {
@@ -148,7 +155,7 @@ init :: proc(game: ^dude.Game) {
         mesh_arrow = mesh_builder_create(mb^)
 
         mesh_builder_reset(mb, VERTEX_FORMAT_P2U2C4)
-        dude.mesher_line_grid(mb, 20, 1.0, {0.18,0.14,0.13, 1}, 5, {0.1,0.04,0.09, 1})
+        dude.mesher_line_grid_lp2u2c4(mb, 20, 1.0, {0.18,0.14,0.13, 1}, 5, {0.1,0.04,0.09, 1})
         mesh_grid = mesh_builder_create(mb^, true) // Because the mesh is a lines mesh.
 
         texture_test = texture_load_from_mem(#load("../res/texture/dude.png"))
@@ -178,9 +185,12 @@ init :: proc(game: ^dude.Game) {
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_grid, mode=.Lines}, order=-9999, vertex_color_on=true)
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_arrow}, vertex_color_on=true)
 
-    tm_test = dude.mesher_text(&rsys.fontstash_context, "诗篇46的秘密\n试试换行", 32)
+    mb := &dude.rsys.temp_mesh_builder
+    dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2C4)
+    dude.mesher_text_p2u2c4(mb, "诗篇46的秘密\n试试换行", 32, {1,0.2,0, 1.0})
+    tm_test = dgl.mesh_builder_create(mb^)
 
-    robj_message = render_pass_add_object(&pass_main, RObjTextMesh{text_mesh=tm_test, color={.8,.6,0,1}}, scale={0.05,0.05}, order=999)
+    robj_message = render_pass_add_object(&pass_main, RObjTextMesh{text_mesh=tm_test}, scale={0.05,0.05}, order=999)
 
     if book_data, ok := os.read_entire_file("./res/The Secret of Psalm 46.md"); ok {
         book = utf8.string_to_runes(string(book_data))
@@ -212,8 +222,12 @@ _flip_page :: proc() {
 
     using demo_game
     line_str := utf8.runes_to_string(line, context.temp_allocator)
-    tm_test = dude.mesher_text(&dude.rsys.fontstash_context, line_str, 32)
-    robj_message = dude.render_pass_add_object(&pass_main, dude.RObjTextMesh{text_mesh=tm_test, color={.8,.6,0,1}}, scale={0.05,0.05}, order=999)
+
+    mb := &dude.rsys.temp_mesh_builder
+    dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2C4)
+    dude.mesher_text_p2u2c4(mb, line_str, 32, {1,0.2,0, 1.0})
+    tm_test = dgl.mesh_builder_create(mb^)
+    robj_message = dude.render_pass_add_object(&pass_main, dude.RObjTextMesh{text_mesh=tm_test}, scale={0.05,0.05}, order=999)
 }
 
 @(private="file")
@@ -246,7 +260,6 @@ on_gui :: proc() {
     image(img, scale * Vec2{512,512}, border_col={1,1,0,1})
     message := hla.hla_get_pointer(robj_message)
     tm := &message.obj.(dude.RObjTextMesh)
-    color_picker4("Text Color", cast(^Vec4)&tm.color)
     end()
 }
 

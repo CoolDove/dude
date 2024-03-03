@@ -99,7 +99,6 @@ RObj :: union {
 
 RObjMesh :: struct {
     mesh : dgl.Mesh,
-    ex : Vec4, // 0 means no vertex color used, 1 means full.
     mode : MeshMode,
 }
 RObjImmediateScreenMesh :: struct {
@@ -112,7 +111,6 @@ RObjMeshScreen :: distinct RObjMesh
 
 RObjTextMesh :: struct {
     text_mesh : dgl.Mesh,
-    color : Color,
 }
 RObjTextMeshScreen :: distinct RObjTextMesh
 
@@ -237,7 +235,7 @@ render_init :: proc() {
     // Meshes
     {using dgl
         mesh_builder_init(&temp_mesh_builder, VERTEX_FORMAT_P2U2)
-        mesher_quad(&temp_mesh_builder, {1,1}, {0,0})
+        mesher_quad_p2u2(&temp_mesh_builder, {1,1}, {0,0})
         mesh_unit_quad = mesh_builder_create(temp_mesh_builder)
     }
 
@@ -327,6 +325,9 @@ order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0, vertex_color_o
             },
         })
 }
+render_pass_get_object :: proc(handle: RObjHandle) -> ^RenderObject {
+    return hla.hla_get_pointer(handle)
+}
 
 render_pass_remove_object :: proc(obj: RObjHandle) {
     hla.hla_remove_handle(obj)
@@ -408,7 +409,7 @@ _draw_immediate_screen_mesh :: #force_inline proc(robj: ^RObjImmediateScreenMesh
     dgl.uniform_set(shader.utable_general.color, robj.color)
     // TODO: 16 is a temporary magic number, only works when you use less than 16 texture slots.
     dgl.uniform_set_texture(shader.utable_general.texture, robj.texture, MAX_TEXTURES_FOR_MATERIAL)
-        
+
     switch robj.mode {
     case .Triangle:
         dgl.draw_mesh(robj.mesh)
@@ -465,7 +466,7 @@ _draw_text :: #force_inline proc(robj: ^RObjTextMesh, obj: ^RenderObject) {
     uniform_transform(shader.utable_transform, obj.position, obj.scale, obj.angle)
     dgl.uniform_set_vec4(shader.utable_general.ex, transmute(Vec4)obj.ex)
 
-    dgl.uniform_set(shader.utable_general.color, robj.color)
+    // dgl.uniform_set(shader.utable_general.color, robj.color)
     dgl.uniform_set_texture(shader.utable_general.texture, rsys.fontstash_data.atlas, MAX_TEXTURES_FOR_MATERIAL)
         
     dgl.draw_mesh(robj.text_mesh)

@@ -7,7 +7,7 @@ import "core:math"
 
 
 // anchor: x: [0,1], y: [0,1]
-mesher_quad :: proc(mb: ^dgl.MeshBuilder, size, anchor: Vec2, offset:Vec2={0,0}, uv_min:Vec2={0,0},uv_max:Vec2={1,1}) {
+mesher_quad_p2u2 :: proc(mb: ^dgl.MeshBuilder, size, anchor: Vec2, offset:Vec2={0,0}, uv_min:Vec2={0,0},uv_max:Vec2={1,1}) {
     assert(mb.vertex_format == dgl.VERTEX_FORMAT_P2U2, "Mesher: Only P2U2 format is supported.")
     idx := cast(u32)len(mb.vertices)/4
     min := -anchor * size + offset
@@ -21,7 +21,21 @@ mesher_quad :: proc(mb: ^dgl.MeshBuilder, size, anchor: Vec2, offset:Vec2={0,0},
     dgl.mesh_builder_add_indices(mb, idx+0,idx+1,idx+2, idx+1,idx+3,idx+2)
 }
 
-mesher_line_grid :: proc(mb: ^dgl.MeshBuilder, half_size:int, unit: f32, color: Color, subcell_size := 0, color_b := Color{1,0,1,1}) {
+mesher_quad_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, size, anchor: Vec2, offset:Vec2={0,0}, uv_min:Vec2={0,0},uv_max:Vec2={1,1}, colors: [4]Color= {}) {
+    assert(mb.vertex_format == dgl.VERTEX_FORMAT_P2U2C4, "Mesher: Only P2U2C4 format is supported.")
+    idx := cast(u32)len(mb.vertices)/8
+    min := -anchor * size + offset
+    max := (1-anchor) * size + offset
+    dgl.mesh_builder_add_vertices(mb, 
+        {v8={min.x,min.y, uv_min.x, uv_min.y, colors[0].r, colors[0].g, colors[0].b, colors[0].a}},
+        {v8={max.x,min.y, uv_max.x, uv_min.y, colors[1].r, colors[1].g, colors[1].b, colors[1].a}},
+        {v8={min.x,max.y, uv_min.x, uv_max.y, colors[2].r, colors[2].g, colors[2].b, colors[2].a}},
+        {v8={max.x,max.y, uv_max.x, uv_max.y, colors[3].r, colors[3].g, colors[3].b, colors[3].a}},
+    )
+    dgl.mesh_builder_add_indices(mb, idx+0,idx+1,idx+2, idx+1,idx+3,idx+2)
+}
+
+mesher_line_grid_lp2u2c4 :: proc(mb: ^dgl.MeshBuilder, half_size:int, unit: f32, color: Color, subcell_size := 0, color_b := Color{1,0,1,1}) {
     assert(mb.vertex_format == dgl.VERTEX_FORMAT_P2U2C4, "Mesher: Only P2U2C4 format is supported.")
     // You should reset mesh builder before this
     size := 2 * half_size

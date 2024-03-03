@@ -1,22 +1,16 @@
 # Maybe a self use game framework.
 
 ## How to build
-Run `./update_builder.bat`, then a builder program will be generated to build the project.
+Run `make debug` (maybe you need MSYS2 on windows).
 
 ## TODO
-- [x] Scene switching.
-- [x] Move shader loading into resource manager.
-- [ ] Game time & game time scaling. Use game time in tweening.
 - [ ] Multi line text rendering.
-- [ ] Text renderer.
-- [x] Ortho camera.
-- [ ] World space sprite renderer.
-- [ ] Clickable button.
+- [ ] Draw immediate text
+- [ ] Remove useless RObjs.
+- [ ] Replace imgui with microui
 
-- [ ] DPackage system
-    - [x] Load references.
-    - [ ] Array/Slice initializer.
-    - [ ] Parsing error handling.
-    - [ ] Serialize dpackage, load dpackage.
+- [ ] Refactor resource loading and asset packaging.
+- [ ] Replace SDL2 with glfw.
 
-    - [ ] Fix the mem leaking. In mushroom scene.
+## FIX
+- [ ] Tween system cannot tween color.
