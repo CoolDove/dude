@@ -4,6 +4,8 @@ import "core:fmt"
 import "core:os"
 import "core:log"
 
+import mui "vendor:microui"
+
 // Build settings.
 DUDE_STARTUP_COMMAND :string: #config(DUDE_STARTUP_COMMAND, "GAME")
 DUDE_GAME :: DUDE_STARTUP_COMMAND == "GAME"
@@ -17,8 +19,10 @@ _callback_init : proc(game: ^Game)
 _callback_release : proc(game: ^Game)
 @(private)
 _callback_gui : proc()
+@(private)
+_callback_mui : proc(ctx: ^mui.Context)
 
-dude_main :: proc(update: proc(game: ^Game, delta:f32), init, release: proc(game: ^Game), gui : proc()) {
+dude_main :: proc(update: proc(game: ^Game, delta:f32), init, release: proc(game: ^Game), gui : proc(), mui: proc(ctx:^mui.Context)) {
 	when ODIN_DEBUG {
 		logger := log.create_console_logger(.Debug, {.Level, .Short_File_Path, .Line, .Terminal_Color})
 		context.logger = logger
@@ -44,6 +48,7 @@ dude_main :: proc(update: proc(game: ^Game, delta:f32), init, release: proc(game
     _callback_init = init
     _callback_release = release
     _callback_gui = gui
+    _callback_mui = mui
 
 	when DUDE_STARTUP_COMMAND == "GAME" {
 		app_run()

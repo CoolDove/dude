@@ -246,7 +246,7 @@ render_update :: proc(time_total : f32) {
     dgl.ubo_update_with_object(rsys.render_data_dude_ubo, &rsys.render_data_dude)
 }
 
-render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i) {
+render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i, blend:=false) {
 	pass.robjs = hla.hla_make(RenderObject, 128)
 	pass.robjs_sorted = make([dynamic]^RenderObject)
 
@@ -257,7 +257,7 @@ render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i) {
     pass.camera.size = 32
     pass.viewport = viewport
 
-    pass.blend = dgl.GlStateBlendSimp{false, .FUNC_ADD, .SRC_ALPHA, .ONE_MINUS_SRC_ALPHA}
+    pass.blend = dgl.GlStateBlendSimp{blend, .FUNC_ADD, .SRC_ALPHA, .ONE_MINUS_SRC_ALPHA}
 
     immediate_init(&pass.immediate_draw_ctx)
 }

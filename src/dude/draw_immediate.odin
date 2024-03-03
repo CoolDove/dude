@@ -96,13 +96,23 @@ immediate_clear :: proc(using ctx: ^ImmediateDrawContext) {
 |            |
 *(0,0)-------*
 Default texture will be replaced by a default white texture*/
-immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0) {
+immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0, uv_min:Vec2={0,0},uv_max:Vec2={1,1}) {
     ctx := &pass.impl.immediate_draw_ctx
     if _confirm_context(pass, .ScreenMeshP2U2, color, texture, order, true, &rsys.material_default_mesh) {
         dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
     }
     ctx.texture = texture if texture > 0 else rsys.texture_default_white
-    mesher_quad_p2u2(&ctx.mesh_builder, size, {0,0}, corner)
+    mesher_quad_p2u2(&ctx.mesh_builder, size, {0,0}, corner, uv_min, uv_max)
+}
+
+immediate_screen_textquad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0, uv_min:Vec2={0,0},uv_max:Vec2={1,1}) {
+    ctx := &pass.impl.immediate_draw_ctx
+    if _confirm_context(pass, .ScreenMeshP2U2C4, color, texture, order, true, &rsys.material_default_text) {
+        dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2C4)
+    }
+    ctx.texture = texture if texture > 0 else rsys.texture_default_white
+    col := col_u2f(color)
+    mesher_quad_p2u2c4(&ctx.mesh_builder, size, {0,0}, corner, uv_min, uv_max, {col,col,col,col})
 }
 
 /*

@@ -9,7 +9,7 @@ import "core:strings"
 import "core:math/linalg"
 import "core:math"
 
-import "vendor:microui"
+import mui "vendor:microui"
 
 import "dude"
 import "dude/dgl"
@@ -42,7 +42,7 @@ demo_game : DemoGame
 
 main :: proc() {
 	dude.init("dude game demo", {_package_game, _test})
-    dude.dude_main(update, init, release, on_gui)
+    dude.dude_main(update, init, release, on_gui, on_mui)
 }
 
 @(private="file")
@@ -86,15 +86,15 @@ update :: proc(game: ^dude.Game, delta: f32) {
         msg.position.x = -5
     }
 
-    dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_qq.id)
+    // dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_qq.id)
 
     to_screen :: proc(pos: dude.Vec2) -> dude.Vec2 {
         return dude.coord_world2screen(&pass_main.camera, pos)
     }
 
-    dude.immediate_screen_quad(&pass_main, to_screen({0,0}), {16,16}, texture=texture_qq.id)
-    dude.immediate_screen_quad(&pass_main, to_screen({3,0}), {16,16}, texture=texture_qq.id)
-    dude.immediate_screen_quad(&pass_main, to_screen({6,0}), {16,16}, texture=texture_qq.id)
+    // dude.immediate_screen_quad(&pass_main, to_screen({0,0}), {16,16}, texture=texture_qq.id)
+    // dude.immediate_screen_quad(&pass_main, to_screen({3,0}), {16,16}, texture=texture_qq.id)
+    // dude.immediate_screen_quad(&pass_main, to_screen({6,0}), {16,16}, texture=texture_qq.id)
 
     {// test arrow
         root := dude.coord_world2screen(&pass_main.camera, {0,0})
@@ -243,6 +243,19 @@ release :: proc(game: ^dude.Game) {
     render_pass_release(&pass_main)
 }
 
+on_mui :: proc(ctx: ^mui.Context) {
+    if mui.window(ctx, "Hello, Mui", {50,50, 300, 400}, {.NO_CLOSE }) {
+		win := mui.get_current_container(ctx)
+        mui.layout_row(ctx, {54, -1}, 0)
+        mui.label(ctx, "Position:")
+        mui.label(ctx, fmt.tprintf("%d, %d", win.rect.x, win.rect.y))
+        mui.label(ctx, "Size:")
+        mui.label(ctx, fmt.tprintf("%d, %d", win.rect.w, win.rect.h))
+        p := dude.render_pass_get_object(demo_game.player)
+        mui.slider(ctx, &p.angle, 0.1, 30, 0.1)
+    }
+}
+
 @(private="file")
 on_gui :: proc() {
     using demo_game, imgui
@@ -253,15 +266,15 @@ on_gui :: proc() {
 
     gui_tweener(&dude.game.global_tweener)
 
-    @static visible_font_atlas := false
-    if collapsing_header("Font Atlas", &visible_font_atlas) {// ** Draw font atlas
-        img := imgui.Texture_ID(uintptr(dude.rsys.fontstash_data.atlas))
-        @static scale :f32= 1.0
-        text("mouse pos: %f", dude.get_mouse_position())
-        text(fmt.tprintf("current atlas size: ({}, {})", dude.rsys.fontstash_context.width, dude.rsys.fontstash_context.height))
-        slider_float("atlas scale", &scale, 0.001, 1.0)
-        image(img, scale * Vec2{512,512}, border_col={1,1,0,1})
-    }
+    img := imgui.Texture_ID(uintptr(dude.rsys.fontstash_data.atlas))
+    @static scale :f32= 1.0
+    text("mouse pos: %f", dude.get_mouse_position())
+    text(fmt.tprintf("current atlas size: ({}, {})", dude.rsys.fontstash_context.width, dude.rsys.fontstash_context.height))
+    slider_float("atlas scale", &scale, 0.001, 1.0)
+    image(img, scale * Vec2{512,512}, border_col={1,1,0,1})
+
+    muiatlas := imgui.Texture_ID(uintptr(dude.muictx.atlas_texture))
+    image(muiatlas, scale * Vec2{512,512}, border_col={1,1,0,1})
 
     end()
 }

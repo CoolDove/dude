@@ -10,6 +10,7 @@ Input :: struct {
     keys : [sdl.NUM_SCANCODES]KeyState,
     mouse_buttons : [NUM_MOUSE_BUTTONS]MouseButtonState,
     mouse_position, mouse_position_prev, mouse_motion : Vec2,
+    mouse_wheel : Vec2,
 }
 
 KeyState :: struct {
@@ -70,6 +71,10 @@ get_mouse_motion :: proc() -> Vec2 {
     return input.mouse_motion
 }
 
+get_mouse_wheel :: proc() -> Vec2 {
+    return input.mouse_wheel
+}
+
 get_key_state :: proc(key : KeyCode) -> KeyState {
     return get_key_state_ptr(key)^
 }
@@ -101,6 +106,7 @@ input_after_update_sdl2 :: proc() {
     for state in &input.mouse_buttons {
         if state.pressed_prev != state.pressed do state.pressed_prev = state.pressed
     }
+    input.mouse_wheel = {}
     input.mouse_motion = input.mouse_position - input.mouse_position_prev
     input.mouse_position_prev = input.mouse_position
 }
@@ -133,5 +139,7 @@ input_handle_sdl2 :: proc(event: sdl.Event) {
             input.mouse_position_prev = input.mouse_position
             init = false
         }
+    case sdl.EventType.MOUSEWHEEL:
+        input.mouse_wheel = vec_i2f(Vec2i{event.wheel.x, event.wheel.y})
     }
 }
