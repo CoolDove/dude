@@ -19,7 +19,6 @@ import hla "dude/collections/hollow_array"
 pass_main : dude.RenderPass
 
 DemoGame :: struct {
-    // mat_grid, mat_grid2 : dude.Material,
     texture_test : dgl.Texture,
     texture_9slice, texture_qq : dgl.Texture,
     player : dude.RObjHandle,
@@ -66,7 +65,6 @@ update :: proc(game: ^dude.Game, delta: f32) {
     else if get_key(.D) do t.position.x += move_speed * delta
     if get_key(.W) do t.position.y += move_speed * delta
     else if get_key(.S) do t.position.y -= move_speed * delta
-
     pass_main.camera.position = t.position
 
     if get_key(.F) {
@@ -86,15 +84,15 @@ update :: proc(game: ^dude.Game, delta: f32) {
         msg.position.x = -5
     }
 
-    // dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_qq.id)
+    dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_qq.id)
 
     to_screen :: proc(pos: dude.Vec2) -> dude.Vec2 {
         return dude.coord_world2screen(&pass_main.camera, pos)
     }
 
-    // dude.immediate_screen_quad(&pass_main, to_screen({0,0}), {16,16}, texture=texture_qq.id)
-    // dude.immediate_screen_quad(&pass_main, to_screen({3,0}), {16,16}, texture=texture_qq.id)
-    // dude.immediate_screen_quad(&pass_main, to_screen({6,0}), {16,16}, texture=texture_qq.id)
+    dude.immediate_screen_quad(&pass_main, to_screen({0,0}), {16,16}, texture=texture_qq.id)
+    dude.immediate_screen_quad(&pass_main, to_screen({3,0}), {16,16}, texture=texture_qq.id)
+    dude.immediate_screen_quad(&pass_main, to_screen({6,0}), {16,16}, texture=texture_qq.id)
 
     {// test arrow
         root := dude.coord_world2screen(&pass_main.camera, {0,0})
@@ -126,8 +124,9 @@ dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
         color={0,0,0,cast(u8)(128*alpha)}, texture=demo_game.texture_9slice.id, order=100)
     dude.immediate_screen_quad_9slice(&pass_main, anchor, size, size-padding, {0.5,0.5}, 
         texture=demo_game.texture_9slice.id, order=101, color={255,255,255, cast(u8)(alpha*255.0)})
-    dude.immediate_screen_text(&pass_main, message, anchor + {22,38}, 32, {0.1, 0.1, 0.1, 0.4*dude.ease_outcubic(alpha)}, order=102)
-    dude.immediate_screen_text(&pass_main, message, anchor + {20,36}, 32, {0.2, 0.2, 0.2, dude.ease_outcubic(alpha)}, order=103)
+    msg := message[:cast(int)(alpha*cast(f32)len(message))]
+    dude.immediate_screen_text(&pass_main, msg, anchor + {22,38}, 32, {0.1, 0.1, 0.1, 0.4*dude.ease_outcubic(alpha)}, order=102)
+    dude.immediate_screen_text(&pass_main, msg, anchor + {20,36}, 32, {0.2, 0.2, 0.2, dude.ease_outcubic(alpha)}, order=103)
 }
 
 @(private="file")
@@ -172,13 +171,12 @@ init :: proc(game: ^dude.Game) {
     blend := &pass_main.blend.(dgl.GlStateBlendSimp)
     blend.enable = true
 
-    // render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, &mat_red, position={0.2,0.8})
+    render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1,1}, order=9999)
     // render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
     // render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
     // render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, texture_test.id, {0.5,0.5}, {1,1}}, order=101)
 
-    player = render_pass_add_object(&pass_main, 
-        RObjSprite{color={1,1,1,1}, texture=texture_test.id, size={4,4}, anchor={0.5,0.5}}, order=100)
+    player = render_pass_add_object(&pass_main, RObjSprite{color={1,0,0,1}, texture=texture_test.id, size={4,4}, anchor={0.5,0.5}}, order=100)
 
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_grid, mode=.Lines}, order=-9999, vertex_color_on=true)
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_arrow}, vertex_color_on=true)
@@ -244,20 +242,27 @@ release :: proc(game: ^dude.Game) {
 }
 
 on_mui :: proc(ctx: ^mui.Context) {
-    if mui.window(ctx, "Hello, Mui", {50,50, 300, 400}, {.NO_CLOSE }) {
-        if .ACTIVE in mui.header(ctx, "Tween") {
-            mui.label(ctx, "tweens")
+    if mui.window(ctx, "Hello, mui", {50,50, 300, 400}, {.NO_CLOSE }) {
+        if .ACTIVE in mui.treenode(ctx, "Test 1") {
+            if .ACTIVE in mui.treenode(ctx, "Test 1a") {
+                mui.label(ctx, "Hello")
+                mui.label(ctx, "world")
+            }
+            if .ACTIVE in mui.treenode(ctx, "Test 1b") {
+                if .SUBMIT in mui.button(ctx, "Button 1") { log.debugf("Pressed button 1") }
+                if .SUBMIT in mui.button(ctx, "Button 2") { log.debugf("Pressed button 2") }
+            }
+        }
+        
+        if .ACTIVE in mui.treenode(ctx, "Tween") {
             iterator : hla.HollowArrayIterator
             for tween in hla.hla_ite(&dude.game.global_tweener.tweens, &iterator) {
                 interp := tween.time/tween.duration
                 container := mui.get_current_container(ctx)
-                mui.layout_row(ctx, {60,100, container.rect.w-200}, 12)
+                mui.layout_row(ctx, {60, -1}, 12)
                 mui.label(ctx, fmt.tprintf("dimen: {}", tween.dimension))
                 v :f32= tween.time/tween.duration
-                mui.slider(ctx, &v, 0, 1, 0.01)
-                
-                ca, cb :dude.Color= {0,0,0,1}, {1,1,1,1}
-                mui.draw_rect(ctx, mui.layout_next(ctx), transmute(mui.Color)dude.col_f2u(ca+(cb-ca)*v))
+                mui.slider(ctx, &v, 0, 1, 0.1)
             }
         }
     }
@@ -289,7 +294,6 @@ on_gui :: proc() {
 gui_tweener :: proc(tweener: ^dude.Tweener) {
     using imgui, hla
     text("Tweener")
-    // buffer_index, alive_index : int
     iterator : HollowArrayIterator
     for tween in hla_ite(&tweener.tweens, &iterator) {
         interp := tween.time/tween.duration
