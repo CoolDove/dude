@@ -6,10 +6,12 @@ import "core:math"
 import "core:math/linalg"
 import "core:runtime"
 
+import "core:mem"
+
 // NOTE:
 // Do not keep the ^Tween, it's not stable.
 // TODO:
-//  Cancel token or immediately complete with a TweenHandle design.
+//  Cancel token or immediately complete with a TweenHandle.
 // Exp:
 // handle := tween(&value, 1.0, 0.5).get_handle()
 // // Some place in the code.
@@ -25,33 +27,21 @@ Tweener :: struct {
     available_id : int,
 }
 
-// TweenRef :: struct {
-//     tweener : ^Tweener,
-//     index, id : int,
-// }
-
-// tween setup
-tween_system_init :: proc() {
-    using runtime
-    union_type := type_info_of(TweenableValue).variant.(Type_Info_Named).base
-    tweenable_types = union_type.variant.(Type_Info_Union).variants
-}
-
 tweener_update :: proc(tweener: ^Tweener, delta: f32/*in seconds*/) {
     for &tween, idx in tweener.tweens {
         if tween.id <= 0 do continue
         tween.time += delta
         interp := tween.time/tween.duration
         if interp >= 1.0 {
-            tween_set_data(tween.data, tween.end_value)
+            _tween_set_data(&tween, tween.end_value)
             if tween.on_complete != nil do tween.on_complete(tween.user_data)
             append(&tweener.dead, idx)
             tween.id = 0// Mark it as dead
         } else {
             assert(tween.easing_proc != nil, "Tween: easeing_proc missing.")
-            eased_value := tween.easing_proc(interp)
-            value := tween_value(tween.begin_value, tween.end_value, eased_value)
-            tween_set_data(tween.data, value)
+            assert(tween.impl != nil && tween.impl.interp != nil, "Tween: impl missing or broken.")
+            eased_interp := tween.easing_proc(interp)
+            _tween_set_data(&tween, tween.impl.interp(&tween, eased_interp))
         }
     }
 }
@@ -79,29 +69,23 @@ tweener_count :: proc(tweener: ^Tweener) -> int {
 Tween :: struct {
     id : int,
 
-    using vtable : ^Tween_VTable,
-
     data : rawptr,
     begin_value, end_value : TweenableValue,
     duration : f32,// in sec
     time : f32,// Accumulation
 
+    dimension : i32, // How many floats to tween, calculated by the type.
+    impl : ^TweenImplementation,
     easing_proc : EasingProc,
-
     on_complete : proc(user_data: rawptr),
     user_data : rawptr,
 }
 
-Tween_VTable :: struct {
-    set_on_complete : type_of(_set_on_complete),
-    set_easing : type_of(_set_easing),
-    // reference : type_of(_reference),
-}
-
-tween :: proc(tweener: ^Tweener, value: ^$T, target : T, duration : f32) -> ^Tween {
+tween :: proc(tweener: ^Tweener, value: ^$T, target : T, duration : f32, easing_proc := ease_linear) -> ^Tween {
     ptr_type := type_info_of(^T).variant.(runtime.Type_Info_Pointer).elem.id
-    assert(tween_type_is_valid(ptr_type), 
-        "Invalid tween invoke.")
+    dimen := size_of(T)/size_of(f32)
+    assert(size_of(T)%size_of(f32) == 0, "This type is unable to tween.")
+    assert(dimen > 0 && dimen < 5, "This type is unable to tween.")
 
     tween :^Tween
     if len(tweener.dead) > 0 {
@@ -115,39 +99,18 @@ tween :: proc(tweener: ^Tweener, value: ^$T, target : T, duration : f32) -> ^Twe
     tweener.available_id += 1
     tween.id = tweener.available_id
 
-    tween.easing_proc = ease_linear
-    tween.vtable = &_tween_vtable
-    tween.data = transmute(^TweenableValue)value
-    tween.begin_value = value^
-    tween.end_value = cast(TweenableValue)target
+    tween.dimension = cast(i32)dimen
+    tween.impl = &_impl_default
+
+    tween.easing_proc = easing_proc
+    tween.data = cast(rawptr)value
+    mem.copy(&tween.begin_value, value, size_of(T))
+    target := target
+    mem.copy(&tween.end_value, &target, size_of(T))
     tween.duration = duration
     tween.time = 0
     return tween
 }
-
-// ## vtable setup
-@(private="file")
-_tween_vtable := Tween_VTable {
-    _set_on_complete,
-    _set_easing,
-    // _reference,
-}
-
-@(private="file")
-_set_on_complete :: proc(tween: ^Tween, callback: proc(use_data: rawptr), user_data: rawptr=nil) -> ^Tween {
-    tween.on_complete = callback
-    tween.user_data = user_data
-    return tween
-}
-@(private="file")
-_set_easing :: proc(tween: ^Tween, easing_proc : EasingProc) {
-    tween.easing_proc = easing_proc
-}
-// @(private="file")
-// _reference :: proc(tween: ^Tween) -> TweenRef {
-//     assert(false, "Not implemented.")
-//     return {}
-// }
 
 // ## easing proc
 // Easing function reference: [https://easings.net](https://easings.net)
@@ -273,75 +236,40 @@ ease_inoutbounce :: proc(x: f32) -> f32 {
     return x < 0.5 ? (1 - ease_outbounce(1 - 2 * x)) / 2 : (1 + ease_outbounce(2 * x - 1)) / 2;
 }
 
-// ## tween implements
-TweenableValue :: union #no_nil {
-    f32, linalg.Vector2f32, linalg.Vector3f32, linalg.Vector4f32, linalg.Quaternionf32,
+// ** tween implements
+TweenableValue :: struct #raw_union {
+    v1 : f32,
+    v2 : linalg.Vector2f32,
+    v3 : linalg.Vector3f32,
+    v4 : linalg.Vector4f32,
 }
 
-tweenable_types : []^runtime.Type_Info
-
-tween_value :: proc(begin, end: TweenableValue, interp: f32) -> TweenableValue {
-    using linalg
-    switch _ in begin {
-    case f32:
-        return _tween_impl_f32(begin.(f32), end.(f32), interp)
-    case Vector2f32:
-        return _tween_impl_vec2(begin.(Vector2f32), end.(Vector2f32), interp)
-    case Vector3f32:
-        return _tween_impl_vec3(begin.(Vector3f32), end.(Vector3f32), interp)
-    case Vector4f32:
-        return _tween_impl_vec4(begin.(Vector4f32), end.(Vector4f32), interp)
-    case Quaternionf32:
-        return _tween_impl_quaternionf32(begin.(linalg.Quaternionf32), end.(linalg.Quaternionf32), interp)
-    }
-    return 0.0
+TweenImplementation :: struct {
+    interp : proc(tween: ^Tween, interp: f32) -> TweenableValue,
 }
-tween_set_data :: proc(ptr: rawptr, value: TweenableValue) {
-    using linalg
-    switch i in value {
-    case f32:
-        data := transmute(^f32)ptr
-        data^ = value.(f32)
-    case Vector2f32:
-        data := transmute(^Vector2f32)ptr
-        data^ = value.(Vector2f32)
-    case Vector3f32:
-        data := transmute(^Vector3f32)ptr
-        data^ = value.(Vector3f32)
-    case Vector4f32:
-        data := transmute(^Vector4f32)ptr
-        data^ = value.(Vector4f32)
-    case Quaternionf32:
-        data := transmute(^Quaternionf32)ptr
-        data^ = value.(Quaternionf32)
+
+_impl_default :TweenImplementation= {
+    _impl_interp_default,
+}
+
+_impl_interp_default :: proc(using tween: ^Tween, interp: f32) -> TweenableValue {
+    switch dimension {
+    case 1:
+        return {v1=(end_value.v1 - begin_value.v1) * interp + begin_value.v1}
+    case 2:
+        return {v2=(end_value.v2 - begin_value.v2) * interp + begin_value.v2}
+    case 3:
+        return {v3=(end_value.v3 - begin_value.v3) * interp + begin_value.v3}
+    case 4:
+        return {v4=(end_value.v4 - begin_value.v4) * interp + begin_value.v4}
+    case:
+        assert(false, "Invalid tween object.")
+        return {}
     }
 }
 
-tween_type_is_valid :: proc(T: typeid) -> bool {
-    for t in tweenable_types {
-        if T == t.id do return true
-    }
-    return false
-}
-
-
 @(private="file")
-_tween_impl_f32 :: proc(begin, end: f32, interp: f32) -> f32 {
-    return (end - begin) * interp + begin
-}
-@(private="file")
-_tween_impl_vec2 :: proc(begin, end: linalg.Vector2f32, interp: f32) -> linalg.Vector2f32 {
-    return (end - begin) * interp + begin
-}
-@(private="file")
-_tween_impl_vec3 :: proc(begin, end: linalg.Vector3f32, interp: f32) -> linalg.Vector3f32 {
-    return (end - begin) * interp + begin
-}
-@(private="file")
-_tween_impl_vec4 :: proc(begin, end: linalg.Vector4f32, interp: f32) -> linalg.Vector4f32 {
-    return (end - begin) * interp + begin
-}
-@(private="file")
-_tween_impl_quaternionf32 :: proc(begin, end: linalg.Quaternionf32, interp: f32) -> linalg.Quaternionf32 {
-    return linalg.quaternion_slerp_f32(begin, end, interp)
+_tween_set_data :: proc(tween: ^Tween, value: TweenableValue) {
+    value := value
+    mem.copy(tween.data, &value, cast(int)tween.dimension * size_of(f32))
 }

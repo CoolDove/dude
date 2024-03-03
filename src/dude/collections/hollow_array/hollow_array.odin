@@ -36,6 +36,10 @@ hla_clear :: proc(using hla: ^HollowArray($T)) {
     count, id_access = 0,0
 }
 
+hla_count :: proc(using hla: ^HollowArray($T)) -> int {
+    return len(buffer)-len(dead_idx)
+}
+
 hla_append :: proc(using hla : ^HollowArray($T), elem: T) -> HollowArrayHandle(T) {
     index : int
     obj : ^HollowArrayValue(T)

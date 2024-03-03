@@ -74,9 +74,9 @@ update :: proc(game: ^dude.Game, delta: f32) {
 
     if get_mouse_button_down(.Left)  {
         if demo_game.dialogue_size == 0 {
-            dude.tween(&game.global_tweener, &demo_game.dialogue_size, 1.0, 0.3)->set_easing(dude.ease_outcubic)
+            dude.tween(&game.global_tweener, &demo_game.dialogue_size, 1.0, 0.3, dude.ease_outcubic)
         } else if demo_game.dialogue_size == 1 {
-            dude.tween(&game.global_tweener, &demo_game.dialogue_size, 0.0, 0.3)->set_easing(dude.ease_outcubic)
+            dude.tween(&game.global_tweener, &demo_game.dialogue_size, 0.0, 0.3, dude.ease_outcubic)
         }
     }
 
@@ -249,15 +249,34 @@ on_gui :: proc() {
     text("Frame time: %f", time.duration_seconds(dude.app.duration_frame))
     p : ^dude.RenderObject = dude.render_pass_get_object(player)
     slider_float2("position", &p.position, -10, 10)
-    img := imgui.Texture_ID(uintptr(dude.rsys.fontstash_data.atlas))
-    @static scale :f32= 1.0
-    text("mouse pos: %f", dude.get_mouse_position())
-    text(fmt.tprintf("current atlas size: ({}, {})", dude.rsys.fontstash_context.width, dude.rsys.fontstash_context.height))
-    slider_float("atlas scale", &scale, 0.001, 1.0)
-    image(img, scale * Vec2{512,512}, border_col={1,1,0,1})
-    message := dude.render_pass_get_object(robj_message)
-    tm := &message.obj.(dude.RObjTextMesh)
+
+    gui_tweener(&dude.game.global_tweener)
+
+    @static visible_font_atlas := false
+    if collapsing_header("Font Atlas", &visible_font_atlas) {// ** Draw font atlas
+        img := imgui.Texture_ID(uintptr(dude.rsys.fontstash_data.atlas))
+        @static scale :f32= 1.0
+        text("mouse pos: %f", dude.get_mouse_position())
+        text(fmt.tprintf("current atlas size: ({}, {})", dude.rsys.fontstash_context.width, dude.rsys.fontstash_context.height))
+        slider_float("atlas scale", &scale, 0.001, 1.0)
+        image(img, scale * Vec2{512,512}, border_col={1,1,0,1})
+    }
+
     end()
+}
+
+gui_tweener :: proc(tweener: ^dude.Tweener) {
+    using imgui
+    text("Tweener")
+    for &tween in tweener.tweens {
+        if tween.id == 0 do continue
+        interp := tween.time/tween.duration
+        bullet()
+        same_line()
+        text("dimen: %d", tween.dimension)
+        same_line()
+        slider_float("prog", &interp, 0,1)
+    }
 }
 
 @(private="file")
