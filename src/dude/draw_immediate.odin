@@ -24,11 +24,13 @@ ImmediateElemType :: enum {
     ScreenMeshP2U2C4, ScreenMeshP2U2, Line,
 }
 
+@private
 immediate_init :: proc(using ctx: ^ImmediateDrawContext) {
     dgl.mesh_builder_init(&mesh_builder, dgl.VERTEX_FORMAT_P2U2, 64, 64)
     immediate_robjs = make([dynamic]RenderObject)
     meshes = make([dynamic]dgl.Mesh)
 }
+@private
 immediate_release :: proc(using ctx: ^ImmediateDrawContext) {
     dgl.mesh_builder_release(&mesh_builder)
     delete(immediate_robjs)
@@ -37,6 +39,7 @@ immediate_release :: proc(using ctx: ^ImmediateDrawContext) {
 
 // You should call this when you start to draw immediate objects to prevent that there's no elems in
 //  the immediate buffer.
+@private
 immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
     if len(mesh_builder.vertices) <= 0 {
         dgl.mesh_builder_clear(&mesh_builder)
@@ -70,6 +73,8 @@ immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
         })
     }
 }
+
+@private
 immediate_clear :: proc(using ctx: ^ImmediateDrawContext) {
     for &mesh in meshes {
         dgl.mesh_delete(&mesh)
@@ -84,17 +89,13 @@ immediate_clear :: proc(using ctx: ^ImmediateDrawContext) {
 |  viewport  |
 |            |
 *(0,0)-------*
-*/
+Default texture will be replaced by a default white texture*/
 immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
-    if ctx.buffered_type != .ScreenMeshP2U2 || ctx.texture != texture || ctx.color != color || ctx.order != order {
-        immediate_confirm(ctx)
+    if _confirm_context(pass, .ScreenMeshP2U2, color, texture, order) {
         dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
     }
-    ctx.buffered_type = .ScreenMeshP2U2
-    ctx.color = color
     ctx.texture = texture if texture > 0 else rsys.texture_default_white
-    ctx.order = order
     mesher_quad_p2u2(&ctx.mesh_builder, size, {0,0}, corner)
 }
 
@@ -111,14 +112,11 @@ immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Colo
 */
 immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size, uv_inner_size: Vec2, color:Color32={255,255,255,255}, texture: u32=0, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
-    if ctx.buffered_type != .ScreenMeshP2U2 || ctx.texture != texture || ctx.color != color || ctx.order != order {
-        immediate_confirm(ctx)
+    if _confirm_context(pass, .ScreenMeshP2U2, color, texture, order) {
         dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2)
     }
-    ctx.buffered_type = .ScreenMeshP2U2
-    ctx.color = color
     ctx.texture = texture if texture > 0 else rsys.texture_default_white
-    ctx.order = order
+    
     w_long, w_short := inner_size.x, (size.x - inner_size.x) * 0.5
     h_long, h_short := inner_size.y, (size.y - inner_size.y) * 0.5
 
@@ -153,15 +151,9 @@ immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size,
 immediate_screen_text :: proc(pass: ^RenderPass, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
     font_atlas := rsys.fontstash_data.atlas
-    if ctx.buffered_type != .ScreenMeshP2U2C4 || ctx.color != {0,0,0,0} || ctx.texture != font_atlas || ctx.order != order {
-        immediate_confirm(ctx)
+    if _confirm_context(pass, .ScreenMeshP2U2C4, {}, font_atlas, order) {
         dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2C4)
     }
-
-    ctx.buffered_type = .ScreenMeshP2U2C4
-    ctx.color = { 0,0,0,0 }
-    ctx.texture = font_atlas
-    ctx.order = order
 
     mb := &ctx.mesh_builder
     vstart := dgl.mesh_builder_count_vertex(mb)
@@ -178,15 +170,23 @@ immediate_screen_text :: proc(pass: ^RenderPass, text: string, offset: Vec2, siz
 
 immediate_screen_arrow :: proc(pass: ^RenderPass, from,to : Vec2, width: f32, color:Color32={255,255,255,255}, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
-
-    if ctx.buffered_type != .ScreenMeshP2U2C4 || ctx.color != {0,0,0,0} || ctx.texture != rsys.texture_default_white || ctx.order != order {
-        immediate_confirm(ctx)
+    if _confirm_context(pass, .ScreenMeshP2U2C4, {}, rsys.texture_default_white, order) {
         dgl.mesh_builder_reset(&ctx.mesh_builder, dgl.VERTEX_FORMAT_P2U2C4)
     }
-
-    ctx.buffered_type = .ScreenMeshP2U2C4
-    ctx.color = { 0,0,0,0 }
-    ctx.texture = rsys.texture_default_white
-    ctx.order = order
     mesher_arrow_p2u2c4(&ctx.mesh_builder, from,to, width, col_u2f(color))
+}
+
+// If the context states are different from the buffered settings, submit the buffered element.
+@(private="file")
+_confirm_context :: proc(pass: ^RenderPass, type: ImmediateElemType, color: Color32, texture: u32, order: i32) -> bool {
+    ctx := &pass.impl.immediate_draw_ctx
+    if ctx.buffered_type != type || ctx.color != color || ctx.texture != texture || ctx.order != order {
+        immediate_confirm(ctx)
+        ctx.buffered_type = type
+        ctx.color = color
+        ctx.texture = texture
+        ctx.order = order
+        return true
+    }
+    return false
 }
