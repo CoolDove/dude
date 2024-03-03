@@ -14,7 +14,6 @@ import "vendor:microui"
 import "dude"
 import "dude/dgl"
 import "dude/vendor/imgui"
-import hla "dude/collections/hollow_array"
 
 pass_main : dude.RenderPass
 
@@ -60,7 +59,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     pass_main.camera.size = 60 + 6 * math.sin(time*1.2)
 
     camera := &pass_main.camera
-    t := hla.hla_get_pointer(player)
+    t := dude.render_pass_get_object(player)
     move_speed :f32= 3.0
     if get_key(.A) do t.position.x -= move_speed * delta
     else if get_key(.D) do t.position.x += move_speed * delta
@@ -82,7 +81,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     }
 
     {
-        msg := hla.hla_get_pointer(robj_message)
+        msg := dude.render_pass_get_object(robj_message)
         msg.position.x = -5
     }
 
@@ -95,10 +94,6 @@ update :: proc(game: ^dude.Game, delta: f32) {
     dude.immediate_screen_quad(&pass_main, to_screen({0,0}), {16,16}, texture=texture_qq.id)
     dude.immediate_screen_quad(&pass_main, to_screen({3,0}), {16,16}, texture=texture_qq.id)
     dude.immediate_screen_quad(&pass_main, to_screen({6,0}), {16,16}, texture=texture_qq.id)
-
-    dude.immediate_screen_text(&pass_main, "Hello, 你好鸽子", {60, 100}, 10, {0, 0.6, 0.8, 1.0}, order=9999)
-    dude.immediate_screen_text(&pass_main, "Hello, 你好鸽子2", {100, 130}, 10, {0, 0.6, 0.8, 1.0}, order=9999)
-    dude.immediate_screen_text(&pass_main, "Hello, 你好鸽子3", {60, 160}, 10, {0, 0.6, 0.8, 1.0}, order=9999)
 
     {// test arrow
         root := dude.coord_world2screen(&pass_main.camera, {0,0})
@@ -115,12 +110,12 @@ update :: proc(game: ^dude.Game, delta: f32) {
     }
 
     if demo_game.dialogue_size > 0 {
-        dialogue(get_mouse_position(), {256, 128} * demo_game.dialogue_size, demo_game.dialogue_size)
+        dialogue("Hello, Dove!", get_mouse_position(), {256, 128} * demo_game.dialogue_size, demo_game.dialogue_size)
     }
     
 }
 
-dialogue :: proc(anchor, size: dude.Vec2, alpha:f32) {
+dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
     padding :dude.Vec2= {64,64}
     size := linalg.max(padding, size)
     t := cast(f32)dude.game.time_total
@@ -130,6 +125,8 @@ dialogue :: proc(anchor, size: dude.Vec2, alpha:f32) {
         color={0,0,0,cast(u8)(128*alpha)}, texture=demo_game.texture_9slice.id, order=100)
     dude.immediate_screen_quad_9slice(&pass_main, anchor, size, size-padding, {0.5,0.5}, 
         texture=demo_game.texture_9slice.id, order=101, color={255,255,255, cast(u8)(alpha*255.0)})
+    dude.immediate_screen_text(&pass_main, message, anchor + {22,38}, 32 * alpha, {0.1, 0.1, 0.1, 0.4*dude.ease_outcubic(alpha)}, order=102)
+    dude.immediate_screen_text(&pass_main, message, anchor + {20,36}, 32 * alpha, {0.2, 0.2, 0.2, dude.ease_outcubic(alpha)}, order=103)
 }
 
 @(private="file")
@@ -250,7 +247,7 @@ on_gui :: proc() {
     using demo_game, imgui
     begin("DemoGame", nil)
     text("Frame time: %f", time.duration_seconds(dude.app.duration_frame))
-    p : ^dude.RenderObject = hla.hla_get_pointer(player)
+    p : ^dude.RenderObject = dude.render_pass_get_object(player)
     slider_float2("position", &p.position, -10, 10)
     img := imgui.Texture_ID(uintptr(dude.rsys.fontstash_data.atlas))
     @static scale :f32= 1.0
@@ -258,7 +255,7 @@ on_gui :: proc() {
     text(fmt.tprintf("current atlas size: ({}, {})", dude.rsys.fontstash_context.width, dude.rsys.fontstash_context.height))
     slider_float("atlas scale", &scale, 0.001, 1.0)
     image(img, scale * Vec2{512,512}, border_col={1,1,0,1})
-    message := hla.hla_get_pointer(robj_message)
+    message := dude.render_pass_get_object(robj_message)
     tm := &message.obj.(dude.RObjTextMesh)
     end()
 }
