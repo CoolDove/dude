@@ -15,7 +15,6 @@ void main()
 {
     vec2 sprite = transform_unit_quad_as_sprite(position, anchor, size);
     vec2 pos = transform_point(sprite);
-    pos = transform_point_world2camera(pos);
     gl_Position = vec4(pos.x, pos.y, 0.5, 1.0);
 	_uv = uv;
 }
