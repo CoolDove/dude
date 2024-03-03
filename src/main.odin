@@ -245,14 +245,21 @@ release :: proc(game: ^dude.Game) {
 
 on_mui :: proc(ctx: ^mui.Context) {
     if mui.window(ctx, "Hello, Mui", {50,50, 300, 400}, {.NO_CLOSE }) {
-		win := mui.get_current_container(ctx)
-        mui.layout_row(ctx, {54, -1}, 0)
-        mui.label(ctx, "Position:")
-        mui.label(ctx, fmt.tprintf("%d, %d", win.rect.x, win.rect.y))
-        mui.label(ctx, "Size:")
-        mui.label(ctx, fmt.tprintf("%d, %d", win.rect.w, win.rect.h))
-        p := dude.render_pass_get_object(demo_game.player)
-        mui.slider(ctx, &p.angle, 0.1, 30, 0.1)
+        if .ACTIVE in mui.header(ctx, "Tween") {
+            mui.label(ctx, "tweens")
+            iterator : hla.HollowArrayIterator
+            for tween in hla.hla_ite(&dude.game.global_tweener.tweens, &iterator) {
+                interp := tween.time/tween.duration
+                container := mui.get_current_container(ctx)
+                mui.layout_row(ctx, {60,100, container.rect.w-200}, 12)
+                mui.label(ctx, fmt.tprintf("dimen: {}", tween.dimension))
+                v :f32= tween.time/tween.duration
+                mui.slider(ctx, &v, 0, 1, 0.01)
+                
+                ca, cb :dude.Color= {0,0,0,1}, {1,1,1,1}
+                mui.draw_rect(ctx, mui.layout_next(ctx), transmute(mui.Color)dude.col_f2u(ca+(cb-ca)*v))
+            }
+        }
     }
 }
 

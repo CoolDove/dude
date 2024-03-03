@@ -27,6 +27,7 @@ mui_init :: proc() {
 }
 
 mui_update :: proc() {
+    // TODO: text input handling...
     // { // text input
     //     text_input: [512]byte = ---
     //     text_input_offset := 0
@@ -88,26 +89,6 @@ mui_update :: proc() {
 
 mui_render :: proc(pass: ^RenderPass) {
     ctx := &muictx.mu
-	// render_texture :: proc(rect: mu.Rect, pos: [2]i32, color: mu.Color) {
-	// 	source := rl.Rectangle{
-	// 		f32(rect.x),
-	// 		f32(rect.y),
-	// 		f32(rect.w),
-	// 		f32(rect.h),
-	// 	}
-	// 	position := rl.Vector2{f32(pos.x), f32(pos.y)}
-		
-	// 	rl.DrawTextureRec(state.atlas_texture, source, position, transmute(rl.Color)color)
-	// }
-	
-	// rl.ClearBackground(transmute(rl.Color)state.bg)
-	
-	// rl.BeginDrawing()
-	// defer rl.EndDrawing()
-	
-	// rl.BeginScissorMode(0, 0, rl.GetScreenWidth(), rl.GetScreenHeight())
-	// defer rl.EndScissorMode()
-
     draw_atlas_rect :: proc(pass: ^RenderPass, rect: mui.Rect, pos: Vec2, color: Color32) {
         rectf := Vec4{auto_cast rect.x, auto_cast rect.y, auto_cast rect.w, auto_cast rect.h}
         atlas_size := Vec2{mui.DEFAULT_ATLAS_WIDTH, mui.DEFAULT_ATLAS_HEIGHT}
@@ -127,13 +108,6 @@ mui_render :: proc(pass: ^RenderPass) {
 				r := min(int(ch), 127)
 				rect := mui.default_atlas[mui.DEFAULT_ATLAS_FONT + r]
                 draw_atlas_rect(pass, rect, pos, transmute(Color32)cmd.color)
-                // rectf := Vec4{auto_cast rect.x, auto_cast rect.y, auto_cast rect.w, auto_cast rect.h}
-                // atlas_size := Vec2{mui.DEFAULT_ATLAS_WIDTH, mui.DEFAULT_ATLAS_HEIGHT}
-                // uv_from := Vec2{rectf.x,rectf.y}/atlas_size
-                // uv_to := uv_from+Vec2{rectf.z, rectf.w}
-                // immediate_screen_quad(pass, pos, {rectf.z, rectf.w}, color=transmute(Color32)cmd.color,
-                //     texture=muictx.atlas_texture,
-                //     uv_min = uv_from, uv_max= uv_to)
 				pos.x += cast(f32)rect.w
 			}
 		case ^mui.Command_Rect:
