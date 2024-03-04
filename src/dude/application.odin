@@ -92,14 +92,16 @@ app_init :: proc() {
 	window_instantiate(&window)
 
 	game.window = &window
+
+    input_init()
+    
 }
 @(private="file")
 app_release :: proc() {
+    input_release()
 	window_destroy(&app.window)
 	sdl.Quit()
 }
-
-
 
 
 @(private ="file")

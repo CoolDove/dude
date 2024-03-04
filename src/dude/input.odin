@@ -4,6 +4,7 @@ package dude
 import "core:c"
 import "core:fmt"
 import "core:log"
+import "core:strings"
 import sdl "vendor:sdl2"
 
 Input :: struct {
@@ -11,10 +12,11 @@ Input :: struct {
     mouse_buttons : [NUM_MOUSE_BUTTONS]MouseButtonState,
     mouse_position, mouse_position_prev, mouse_motion : Vec2,
     mouse_wheel : Vec2,
+    strbuffer : strings.Builder,
 }
 
 KeyState :: struct {
-    pressed, pressed_prev : bool,
+    pressed, pressed_prev, repeat : bool,
 }
 
 KeyCode :: distinct sdl.Scancode // c.int
@@ -44,6 +46,10 @@ get_key :: proc(key: KeyCode) -> bool {
 get_key_down :: proc(key: KeyCode) -> bool {
     state := get_key_state(key)
     return state.pressed && !state.pressed_prev
+}
+get_key_repeat :: proc(key: KeyCode) -> bool {
+    state := get_key_state(key)
+    return state.repeat || (state.pressed && !state.pressed_prev)
 }
 get_key_up :: proc(key: KeyCode) -> bool {
     state := get_key_state(key)
@@ -96,12 +102,19 @@ get_mouse_button_state_ptr :: proc(button : MouseButton) -> ^MouseButtonState {
     return &input.mouse_buttons[code]
 }
 
+@private
 input_init :: proc() {
+    strings.builder_init(&input.strbuffer)
+}
+@private
+input_release :: proc() {
+    strings.builder_destroy(&input.strbuffer)
 }
 
 input_after_update_sdl2 :: proc() {
     for state in &input.keys {
         if state.pressed_prev != state.pressed do state.pressed_prev = state.pressed
+        state.repeat = false
     }
     for state in &input.mouse_buttons {
         if state.pressed_prev != state.pressed do state.pressed_prev = state.pressed
@@ -117,6 +130,7 @@ input_handle_sdl2 :: proc(event: sdl.Event) {
         key := event.key
         key_state := get_key_state_ptr(cast(KeyCode)key.keysym.scancode)
         key_state.pressed = true
+        key_state.repeat = key.repeat > 0
     case sdl.EventType.KEYUP:
         key := event.key
         key_state := get_key_state_ptr(cast(KeyCode)key.keysym.scancode)

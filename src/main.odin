@@ -242,15 +242,16 @@ release :: proc(game: ^dude.Game) {
 on_mui :: proc(ctx: ^mui.Context) {
     if mui.window(ctx, "Hello, mui", {50,50, 300, 400}, {.NO_CLOSE }) {
         if .ACTIVE in mui.treenode(ctx, "Treenode") {
+            using dude
             @static box := false
             mui.layout_row(ctx, {128,40}, 128)
-            mui.button(ctx, "test")
+            muix.image(ctx, dude.rsys.fontstash_data.atlas, col_i2u(0xffffffff))
             mui.layout_begin_column(ctx)
-            mui.button(ctx, "a")
-            mui.button(ctx, "b")
-            mui.layout_height(ctx, 40)
-            dude._muic_image(ctx, dude.rsys.fontstash_data.atlas, dude.col_i2u(0xffffffff))
-
+            mui.button(ctx, "button a")
+            mui.button(ctx, "button b")
+            @static input_buffer : [2048]u8
+            @static length : int
+            mui.textbox(ctx, input_buffer[:], &length)
             mui.layout_end_column(ctx)
         }
         

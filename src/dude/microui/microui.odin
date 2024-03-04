@@ -585,6 +585,9 @@ input_key_up :: proc(ctx: ^Context, key: Key) {
 input_text :: proc(ctx: ^Context, text: string) {
 	strings.write_string(&ctx.text_input, text)
 }
+input_text_byte :: proc(ctx: ^Context, b: u8) {
+	strings.write_byte(&ctx.text_input, b)
+}
 
 /*============================================================================
 ** commandlist

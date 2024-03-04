@@ -1,5 +1,6 @@
 package dude
 
+import "core:unicode/utf8"
 import "core:slice"
 import mui "microui"
 import "./dgl"
@@ -12,6 +13,7 @@ MuiContext :: struct {
     atlas_texture : u32,
 }
 
+@private
 mui_init :: proc() {
     mui.init(&muictx.mu)
     w, h := mui.DEFAULT_ATLAS_WIDTH, mui.DEFAULT_ATLAS_HEIGHT
@@ -26,27 +28,21 @@ mui_init :: proc() {
 	muictx.mu.text_height = mui.default_atlas_text_height
 }
 
+@private
 mui_update :: proc() {
-    // TODO: text input handling...
-    // { // text input
-    //     text_input: [512]byte = ---
-    //     text_input_offset := 0
-    //     for text_input_offset < len(text_input) {
-    //         ch := rl.GetCharPressed()
-    //         if ch == 0 {
-    //             break
-    //         }
-    //         b, w := utf8.encode_rune(ch)
-    //         copy(text_input[text_input_offset:], b[:w])
-    //         text_input_offset += w
-    //     }
-    //     mu.input_text(ctx, string(text_input[:text_input_offset]))
-    // }
-
     ctx := &muictx.mu
     mouse_pos := vec_f2i(get_mouse_position())
     mui.input_mouse_move(ctx, mouse_pos.x, mouse_pos.y)
     mui.input_scroll(ctx, cast(i32)get_mouse_wheel().x, cast(i32)get_mouse_wheel().y)
+
+    // FIXME: Write a better text input for mui. This one is too bad.
+    for k in KeyCode.A..<KeyCode.Z {
+        if get_key_repeat(k) {
+            A, a :i32: cast(i32)'A', cast(i32)'a'
+            cap :i32= A-a if get_key(.LSHIFT) || get_key(.RSHIFT) else 0
+            mui.input_text_byte(ctx, cast(u8)(cast(i32)(k-KeyCode.A) + cast(i32)a + cap))
+        }
+    }
 
     // mouse buttons
     @static buttons_to_key := [?]struct{ dude_btn: MouseButton, mu_btn: mui.Mouse} {
@@ -79,7 +75,7 @@ mui_update :: proc() {
         {.BACKSPACE, .BACKSPACE},
     }
     for key in keys_to_check {
-        if get_key_down(key.dude_key) {
+        if get_key_repeat(key.dude_key) {
             mui.input_key_down(ctx, key.mu_key)
         } else if get_key_up(key.dude_key) {
             mui.input_key_up(ctx, key.mu_key)
@@ -87,6 +83,7 @@ mui_update :: proc() {
     }
 }
 
+@private
 mui_render :: proc(pass: ^RenderPass) {
     ctx := &muictx.mu
     draw_atlas_rect :: proc(pass: ^RenderPass, rect: mui.Rect, pos: Vec2, color: Color32) {
@@ -128,11 +125,19 @@ mui_render :: proc(pass: ^RenderPass) {
 	}
 }
 
+@private
 mui_release :: proc() {
     dgl.texture_delete(&muictx.atlas_texture)
 }
 
+muix :struct {
+    image : proc(ctx: ^mui.Context, texture: u32, color: Color32),
+}: {
+    image = _muic_image,
+}
+
 // ** Custom controls
+@(private="file")
 _muic_image :: proc(ctx: ^mui.Context, texture: u32, color: Color32) {
     rect := mui.layout_next(ctx);
     mui.draw_rect(ctx, rect, transmute(mui.Color)color, texture)
