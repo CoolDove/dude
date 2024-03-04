@@ -7,6 +7,14 @@ import "core:strings"
 import "dgl"
 import "vendor/fontstash"
 
+imdraw :ImdDrawApi= {
+    quad = immediate_screen_quad,
+    quad_9slice = immediate_screen_quad_9slice,
+    text = immediate_screen_text,
+    arrow = immediate_screen_arrow,
+}
+
+@private
 ImmediateDrawContext :: struct {
     // These things would be deleted and cleared in the `immediate_clear`.
     immediate_robjs : [dynamic]RenderObject,
@@ -22,6 +30,7 @@ ImmediateDrawContext :: struct {
     order : i32,
 }
 
+@private
 ImmediateElemType :: enum {
     ScreenMeshP2U2C4, ScreenMeshP2U2, Line,
 }
@@ -96,6 +105,7 @@ immediate_clear :: proc(using ctx: ^ImmediateDrawContext) {
 |            |
 *(0,0)-------*
 Default texture will be replaced by a default white texture*/
+@private
 immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0, uv_min:Vec2={0,0},uv_max:Vec2={1,1}) {
     ctx := &pass.impl.immediate_draw_ctx
     if _confirm_context(pass, .ScreenMeshP2U2C4, {}, texture, order, true, &rsys.material_default_mesh) {
@@ -106,6 +116,7 @@ immediate_screen_quad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Colo
     mesher_quad_p2u2c4(&ctx.mesh_builder, size, {0,0}, corner, uv_min, uv_max, {col,col,col,col})
 }
 
+@private
 immediate_screen_textquad :: proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0, uv_min:Vec2={0,0},uv_max:Vec2={1,1}) {
     ctx := &pass.impl.immediate_draw_ctx
     if _confirm_context(pass, .ScreenMeshP2U2C4, color, texture, order, true, &rsys.material_default_text) {
@@ -127,6 +138,7 @@ immediate_screen_textquad :: proc(pass: ^RenderPass, corner, size: Vec2, color: 
 |            |
 *(0,0)-------*
 */
+@private
 immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size, uv_inner_size: Vec2, color:Color32={255,255,255,255}, texture: u32=0, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
     if _confirm_context(pass, .ScreenMeshP2U2, color, texture, order, true, &rsys.material_default_mesh) {
@@ -165,6 +177,7 @@ immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size,
         {u_short+u_long,1-v_short}, {1,1})
 }
 
+@private
 immediate_screen_text :: proc(pass: ^RenderPass, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
     font_atlas := rsys.fontstash_data.atlas
@@ -185,6 +198,7 @@ immediate_screen_text :: proc(pass: ^RenderPass, text: string, offset: Vec2, siz
     }
 }
 
+@private
 immediate_screen_arrow :: proc(pass: ^RenderPass, from,to : Vec2, width: f32, color:Color32={255,255,255,255}, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
     if _confirm_context(pass, .ScreenMeshP2U2C4, {}, rsys.texture_default_white, order, true, &rsys.material_default_mesh) {
@@ -212,3 +226,10 @@ _confirm_context :: proc(pass: ^RenderPass, type: ImmediateElemType, color: Colo
 }
 
 
+@private
+ImdDrawApi :: struct {
+    quad : proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0, uv_min:Vec2={0,0},uv_max:Vec2={1,1}),
+    quad_9slice : proc(pass: ^RenderPass, corner,size, inner_size, uv_inner_size: Vec2, color:Color32={255,255,255,255}, texture: u32=0, order:i32=0),
+    text : proc(pass: ^RenderPass, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, order:i32=0),
+    arrow : proc(pass: ^RenderPass, from,to : Vec2, width: f32, color:Color32={255,255,255,255}, order:i32=0),
+}

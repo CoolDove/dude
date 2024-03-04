@@ -82,25 +82,25 @@ update :: proc(game: ^dude.Game, delta: f32) {
         msg.position.x = -5
     }
 
-    dude.immediate_screen_quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_qq.id)
+    dude.imdraw.quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_qq.id)
 
     to_screen :: proc(pos: dude.Vec2) -> dude.Vec2 {
         return dude.coord_world2screen(&pass_main.camera, pos)
     }
 
-    dude.immediate_screen_quad(&pass_main, to_screen({0,0}), {16,16}, texture=texture_qq.id)
-    dude.immediate_screen_quad(&pass_main, to_screen({3,0}), {16,16}, texture=texture_qq.id)
-    dude.immediate_screen_quad(&pass_main, to_screen({6,0}), {16,16}, texture=texture_qq.id)
+    imdraw.quad(&pass_main, to_screen({0,0}), {16,16}, texture=texture_qq.id)
+    imdraw.quad(&pass_main, to_screen({3,0}), {16,16}, texture=texture_qq.id)
+    imdraw.quad(&pass_main, to_screen({6,0}), {16,16}, texture=texture_qq.id)
 
     {// test arrow
         root := dude.coord_world2screen(&pass_main.camera, {0,0})
         forward := dude.get_mouse_position() - root
         left := dude.rotate_vector(forward, 90 * math.RAD_PER_DEG)
-        dude.immediate_screen_arrow(&pass_main, 
+        imdraw.arrow(&pass_main, 
             root,
             root + forward,
             16.0, {200, 64, 32, 222})
-        dude.immediate_screen_arrow(&pass_main, 
+        imdraw.arrow(&pass_main, 
             root,
             root + left,
             16.0, {32, 230, 20, 222})
@@ -118,13 +118,14 @@ dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
     t := cast(f32)dude.game.time_total
     t = (math.sin(t * 2) + 1) * 0.5
     t = t * 0.8 + 0.2
-    dude.immediate_screen_quad_9slice(&pass_main, anchor+{4-2*t,4-2*t}, size, size-padding, {0.5,0.5}, 
+    using dude.imdraw
+    quad_9slice(&pass_main, anchor+{4-2*t,4-2*t}, size, size-padding, {0.5,0.5}, 
         color={0,0,0,cast(u8)(128*alpha)}, texture=demo_game.texture_9slice.id, order=100)
-    dude.immediate_screen_quad_9slice(&pass_main, anchor, size, size-padding, {0.5,0.5}, 
+    quad_9slice(&pass_main, anchor, size, size-padding, {0.5,0.5}, 
         texture=demo_game.texture_9slice.id, order=101, color={255,255,255, cast(u8)(alpha*255.0)})
     msg := message[:cast(int)(alpha*cast(f32)len(message))]
-    dude.immediate_screen_text(&pass_main, msg, anchor + {22,38}, 32, {0.1, 0.1, 0.1, 0.4*dude.ease_outcubic(alpha)}, order=102)
-    dude.immediate_screen_text(&pass_main, msg, anchor + {20,36}, 32, {0.2, 0.2, 0.2, dude.ease_outcubic(alpha)}, order=103)
+    text(&pass_main, msg, anchor + {22,38}, 32, {0.1, 0.1, 0.1, 0.4*dude.ease_outcubic(alpha)}, order=102)
+    text(&pass_main, msg, anchor + {20,36}, 32, {0.2, 0.2, 0.2, dude.ease_outcubic(alpha)}, order=103)
 }
 
 @(private="file")
