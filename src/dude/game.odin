@@ -58,13 +58,18 @@ game_update :: proc() {
     mui.end(&muictx.mu)
     mui_render(&_builtin_pass)
 
+
+    dgl.state_set_scissor({0,0, app.window.size.x, app.window.size.y})
+
     render_update(total_time)
     for pass in &game.render_pass {
         render_pass_draw(pass)
     }
 
+    dgl.state_set_scissor({0,0, app.window.size.x, app.window.size.y})
     _builtin_pass.viewport = {0,0, app.window.size.x, app.window.size.y}
     _builtin_pass.camera.viewport = vec_i2f(Vec2i{app.window.size.x, app.window.size.y})
+    _builtin_pass.immediate_draw_ctx.overlap_mode = true
     render_pass_draw(&_builtin_pass)
 
     free_all(allocators.frame)
@@ -80,8 +85,6 @@ game_init :: proc() {
     game.settings = new(GameSettings)
 
 	tweener_init(&game.global_tweener, 16)
-	
-	// time.stopwatch_start(&game.timer)
 
     render_init()
 

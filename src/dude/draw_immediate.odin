@@ -21,6 +21,12 @@ ImmediateDrawContext :: struct {
     meshes : [dynamic]dgl.Mesh,
     mesh_builder : dgl.MeshBuilder,
 
+    // Configs
+
+    // If true, this immediate context's render objects would be rendered after all the static render 
+    //  objects without concerning the `order`.
+    overlap_mode : bool,
+
     // buffered things
     buffered_type : ImmediateElemType,
     color : Color32,
@@ -60,7 +66,7 @@ immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
     case .ScreenMeshP2U2:
         mesh := dgl.mesh_builder_create(mesh_builder)
         append(&meshes, mesh)
-        append(&immediate_robjs, 
+        immediate_add_object(ctx, 
             RenderObject{ 
                 obj = RObjImmediateScreenMesh{mesh=mesh, mode=.Triangle, color=col_u2f(color), texture=texture},
                 material = ctx.material,
@@ -70,7 +76,7 @@ immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
     case .ScreenMeshP2U2C4:
         mesh := dgl.mesh_builder_create(mesh_builder)
         append(&meshes, mesh)
-        append(&immediate_robjs, 
+        immediate_add_object(ctx,
             RenderObject{ 
                 obj = RObjImmediateScreenMesh{mesh=mesh, mode=.Triangle, texture=ctx.texture},
                 ex={1,1 if ctx.screen_space else 0,0,0}, // Use vertex color.
@@ -80,13 +86,18 @@ immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
     case .Line:
         mesh := dgl.mesh_builder_create(mesh_builder, true)
         append(&meshes, mesh)
-        append(&immediate_robjs, 
+        immediate_add_object(ctx,
             RenderObject{ 
                 obj = RObjImmediateScreenMesh{mesh=mesh, mode=.Lines, color=col_u2f(color), texture=texture},
                 material = ctx.material,
                 order=order,
         })
     }
+}
+
+@private
+immediate_add_object :: proc(using ctx: ^ImmediateDrawContext, obj: RenderObject) {
+    append(&immediate_robjs, obj)
 }
 
 @private

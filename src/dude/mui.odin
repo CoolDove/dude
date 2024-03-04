@@ -1,6 +1,7 @@
 package dude
 
 import "core:unicode/utf8"
+import "core:log"
 import "core:slice"
 import mui "microui"
 import "./dgl"
@@ -118,7 +119,8 @@ mui_render :: proc(pass: ^RenderPass) {
 			y := cmd.rect.y + (cmd.rect.h - rect.h)/2
 			draw_atlas_rect(pass, rect, vec_i2f(Vec2i{x, y}), transmute(Color32)cmd.color)
 		case ^mui.Command_Clip:
-            dgl.state_set_scissor(transmute(Vec4i)cmd.rect)
+            c :RObjCommand= RObjCmdScissor{transmute(Vec4i)cmd.rect}
+            render_pass_add_object_immediate(pass, c)
 		case ^mui.Command_Jump: 
 			unreachable()
 		}

@@ -7,7 +7,9 @@ Run `make debug` (maybe you need MSYS2 on windows).
 - [x] Draw immediate text
 - [x] Remove useless RObjs.
 - [x] Replace imgui with microui
-    - [ ] Microui polish (text input)
+    - [ ] Microui polish
+        - [ ] scissor
+        - [ ] text input
 - [ ] Multi line text rendering.
 
 - [ ] module: coordinate

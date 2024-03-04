@@ -1,6 +1,8 @@
 package dgl
 
 import gl "vendor:OpenGL"
+import "core:log"
+import "core:math"
 
 GlStateViewport :: Vec4i
 
@@ -59,7 +61,24 @@ state_set_viewport :: proc(viewport: GlStateViewport) {
 }
 
 state_set_scissor :: proc(rect: Vec4i/*xy,wh*/) {
-    gl.Scissor(rect.x,rect.y, rect.z,rect.w)
+    gl.Enable(gl.SCISSOR_TEST)
+
+    // // FIXME: Terrible scissor, why y-axis flipped in OpenGL?
+    // viewport := state_get_viewport()
+
+    // rect := rect
+    // rect.z = math.min(rect.z-rect.x, viewport.z-rect.x)
+    // rect.w = math.min(rect.w-rect.y, viewport.w-rect.y)
+
+    // min :Vec2i= {rect.x, rect.y}
+    // max :Vec2i= {rect.x+rect.z, rect.y+rect.w}
+    // min.y = viewport.w - min.y
+    // max.y = viewport.w - max.y
+    // min.y, max.y = math.min(min.y, max.y), math.max(min.y, max.y)
+    // min.x, max.x = math.min(min.x, max.x), math.max(min.x, max.x)
+    
+    // gl.Scissor(min.x, min.y, max.x-min.x, max.y-min.y)
+    gl.Scissor(rect.x, rect.y, rect.z, rect.w)
 }
 
 state_get_blend_simple :: proc() -> GlStateBlend {

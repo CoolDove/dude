@@ -38,7 +38,7 @@ RenderDataDude :: struct {
 }
 
 // Implementation necessary data, which you cannot access from outside.
-@(private="file")
+@private
 RenderPassImplData :: struct {
     // Immediate draw
     immediate_draw_ctx : ImmediateDrawContext,
@@ -290,6 +290,23 @@ order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0, vertex_color_o
             },
         })
 }
+
+render_pass_add_object_immediate :: proc(pass: ^RenderPass, obj: RObj, material: ^Material=nil,
+order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0, vertex_color_on:=false, screen_space:=false) {
+    immediate_add_object(&pass.immediate_draw_ctx,
+        RenderObject{
+            obj = obj, 
+            material = material,
+            order = order,
+            ex = {1 if vertex_color_on else 0, 1 if screen_space else 0, 0,0},
+            transform = {
+                position=position,
+                scale=scale,
+                angle=angle,
+            },
+        })
+}
+
 render_pass_get_object :: proc(handle: RObjHandle) -> ^RenderObject {
     return hla.hla_get_pointer(handle)
 }
@@ -329,13 +346,24 @@ render_pass_draw :: proc(pass: ^RenderPass) {
     }
 
     immediate_confirm(&pass.immediate_draw_ctx); defer immediate_clear(&pass.immediate_draw_ctx)
-    for &obj in pass.immediate_draw_ctx.immediate_robjs {
-        append(&pass.robjs_sorted, &obj)
-    }
+    imdraw_overlap := pass.immediate_draw_ctx.overlap_mode
 
-    slice.sort_by(pass.robjs_sorted[:], proc(i,j : ^RenderObject) -> bool {
-        return i.order < j.order
-    })
+    if imdraw_overlap {
+        slice.sort_by(pass.robjs_sorted[:], proc(i,j : ^RenderObject) -> bool {
+            return i.order < j.order
+        })
+        for &obj in pass.immediate_draw_ctx.immediate_robjs {
+            append(&pass.robjs_sorted, &obj)
+        }
+    } else {
+        for &obj in pass.immediate_draw_ctx.immediate_robjs {
+            append(&pass.robjs_sorted, &obj)
+        }
+        slice.sort_by(pass.robjs_sorted[:], proc(i,j : ^RenderObject) -> bool {
+            return i.order < j.order
+        })
+
+    }
 
     for obj in pass.robjs_sorted {
         switch &robj in obj.obj {
@@ -435,13 +463,15 @@ _draw_text :: #force_inline proc(robj: ^RObjTextMesh, obj: ^RenderObject) {
 }
 
 RObjCommand :: union {
-    dgl.GlStateBlend, RObjCmdRenderTarget,
+    dgl.GlStateBlend, RObjCmdRenderTarget, RObjCmdScissor,
 }
 RObjCmdRenderTarget :: struct {
     texture : u32,
     attach_point: u32,
 }
-
+RObjCmdScissor :: struct {
+    scissor : Vec4i,
+}
 // ** Render object commands
 robjcmd_set_blend :: proc(blend: dgl.GlStateBlend) -> RObjCommand {
     return blend
@@ -455,6 +485,8 @@ execute_render_command :: proc(cmd: RObjCommand) {
     switch cmd in cmd {
     case dgl.GlStateBlend:
         dgl.state_set_blend(cmd)
+    case RObjCmdScissor:
+        dgl.state_set_scissor(cmd.scissor)
     case RObjCmdRenderTarget:
         assert(false, "RenderObject: Command RenderTarget is not supported now.")
         // dgl.framebuffer_attach_color(cmd.attach_point, cmd.texture)
