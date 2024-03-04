@@ -242,6 +242,7 @@ release :: proc(game: ^dude.Game) {
     render_pass_release(&pass_main)
 }
 
+@(private="file")
 on_mui :: proc(ctx: ^mui.Context) {
     if mui.window(ctx, "Hello, mui", {50,50, 300, 400}, {.NO_CLOSE}) {
         if .ACTIVE in mui.treenode(ctx, "Treenode") {
