@@ -18,8 +18,6 @@ Window :: struct {
 
 	using state : WindowState,
 
-    imgui_state : ImguiState,
-
 	position, size : Vec2i,
 
 	name     : string,

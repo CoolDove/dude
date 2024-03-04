@@ -15,8 +15,6 @@ import sdl "vendor:sdl2"
 import gl "vendor:OpenGL"
 import mui "microui"
 
-import "vendor/imgui"
-
 import "dgl"
 import "ecs"
 import "dpac"
@@ -64,15 +62,6 @@ game_update :: proc() {
     for pass in &game.render_pass {
         render_pass_draw(pass)
     }
-
-    // Game builtin draw.
-    if game.settings.status_window_alpha > 0 do draw_status()
-
-    // ## DEBUG IMGUI
-	imgui_frame_begin()
-    if _callback_gui != nil do _callback_gui()
-	dude_imgui_basic_settings()
-	imgui_frame_end()
 
     _builtin_pass.viewport = {0,0, app.window.size.x, app.window.size.y}
     _builtin_pass.camera.viewport = vec_i2f(Vec2i{app.window.size.x, app.window.size.y})

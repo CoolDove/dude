@@ -11,7 +11,6 @@ import "core:math"
 
 import "dude"
 import "dude/dgl"
-import "dude/vendor/imgui"
 import mui "dude/microui"
 import hla "dude/collections/hollow_array"
 
@@ -40,7 +39,7 @@ demo_game : DemoGame
 
 main :: proc() {
 	dude.init("dude game demo", {_package_game, _test})
-    dude.dude_main(update, init, release, on_gui, on_mui)
+    dude.dude_main(update, init, release, on_mui)
 }
 
 @(private="file")
@@ -266,43 +265,6 @@ on_mui :: proc(ctx: ^mui.Context) {
                 mui.slider(ctx, &v, 0, 1, 0.1)
             }
         }
-    }
-}
-
-@(private="file")
-on_gui :: proc() {
-    using demo_game, imgui
-    begin("DemoGame", nil)
-    text("Frame time: %f", time.duration_seconds(dude.app.duration_frame))
-    p : ^dude.RenderObject = dude.render_pass_get_object(player)
-    slider_float2("position", &p.position, -10, 10)
-
-    gui_tweener(&dude.game.global_tweener)
-
-    img := imgui.Texture_ID(uintptr(dude.rsys.fontstash_data.atlas))
-    @static scale :f32= 1.0
-    text("mouse pos: %f", dude.get_mouse_position())
-    text(fmt.tprintf("current atlas size: ({}, {})", dude.rsys.fontstash_context.width, dude.rsys.fontstash_context.height))
-    slider_float("atlas scale", &scale, 0.001, 1.0)
-    image(img, scale * Vec2{512,512}, border_col={1,1,0,1})
-
-    muiatlas := imgui.Texture_ID(uintptr(dude.muictx.atlas_texture))
-    image(muiatlas, scale * Vec2{512,512}, border_col={1,1,0,1})
-
-    end()
-}
-
-gui_tweener :: proc(tweener: ^dude.Tweener) {
-    using imgui, hla
-    text("Tweener")
-    iterator : HollowArrayIterator
-    for tween in hla_ite(&tweener.tweens, &iterator) {
-        interp := tween.time/tween.duration
-        bullet()
-        same_line()
-        text("dimen: %d", tween.dimension)
-        same_line()
-        slider_float("prog", &interp, 0,1)
     }
 }
 

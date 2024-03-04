@@ -91,7 +91,6 @@ app_init :: proc() {
 	window = create_main_window()
 	window_instantiate(&window)
 
-	imgui_init(&window.imgui_state, window.window)
 	game.window = &window
 }
 @(private="file")
