@@ -27,6 +27,13 @@ mui_init :: proc() {
 	
 	muictx.mu.text_width = mui.default_atlas_text_width
 	muictx.mu.text_height = mui.default_atlas_text_height
+
+    style := muictx.mu._style
+    style.colors[.WINDOW_BG] = {56, 58, 59, 168}
+    style.colors[.TITLE_BG] = {34, 37, 35, 255}
+    style.colors[.BORDER] = {34, 37, 35, 0}
+    
+    muictx.mu._style = style
 }
 
 @private

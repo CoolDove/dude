@@ -31,8 +31,6 @@ DemoGame :: struct {
     book : []rune,
     book_ptr : int,
 
-    scissor : dude.RObjHandle,
-
     dialogue_size : f32,
 }
 
@@ -194,9 +192,6 @@ init :: proc(game: ^dude.Game) {
         book = utf8.string_to_runes(string(book_data))
         delete(book_data)
     }
-
-    cmd_scissor :RObjCommand= RObjCmdScissor{{ 0,0, wndx,wndy }}
-    scissor = render_pass_add_object(&pass_main, cmd_scissor, order=-99999)
     
 }
 
@@ -248,41 +243,7 @@ release :: proc(game: ^dude.Game) {
 }
 
 on_mui :: proc(ctx: ^mui.Context) {
-    if mui.window(ctx, "Hello, mui", {50,50, 300, 400}, {.NO_CLOSE }) {
-        if .ACTIVE in mui.treenode(ctx, "Scissor") {// ** scissor 
-            container := mui.get_current_container(ctx)
-            ctw, cth := container.rect.w, container.rect.h
-
-            scobj := dude.render_pass_get_object(demo_game.scissor)
-            cmd := &scobj.obj.(dude.RObjCommand)
-            sccmd := &cmd.(dude.RObjCmdScissor)
-            sc := sccmd.scissor
-            scf := dude.vec_i2f(sc)
-            @static width :f32= 80
-            @static width2 :f32= 80
-
-            mui.layout_row(ctx, {cast(i32)(cast(f32)ctw*0.2), -1}, ctw/2)
-            {
-                mui.button(ctx, "hello, world")
-                mui.layout_begin_column(ctx)
-                    ctw, cth := cast(i32)(cast(f32)ctw*0.8), ctw/2
-                    w := (ctw-40)/4
-                    mui.layout_row(ctx, {40, w,w,w,-1})
-                        wndsize := dude.app.window.size
-                        wndsizef := dude.vec_i2f(dude.app.window.size)
-                        mui.label(ctx, "scissor")
-                        mui.slider(ctx, &scf.x, 0, wndsizef.x, 1, "x%.2f")
-                        mui.slider(ctx, &scf.y, 0, wndsizef.y, 1, "y%.2f")
-                        mui.slider(ctx, &scf.z, 0, wndsizef.x-scf.x, 1, "w%.2f")
-                        mui.slider(ctx, &scf.w, 0, wndsizef.y-scf.y, 1, "h%.2f")
-                    sccmd.scissor = dude.vec_f2i(scf)
-                    mui.label(ctx, "line")
-                mui.layout_end_column(ctx)
-            }
-            mui.layout_width(ctx, 80)
-            mui.text(ctx, "You can set the scissor with this.")
-        }
-        
+    if mui.window(ctx, "Hello, mui", {50,50, 300, 400}, {.NO_CLOSE}) {
         if .ACTIVE in mui.treenode(ctx, "Treenode") {
             using dude
             @static box := false
