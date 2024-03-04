@@ -13,6 +13,8 @@ Input :: struct {
     mouse_position, mouse_position_prev, mouse_motion : Vec2,
     mouse_wheel : Vec2,
     strbuffer : strings.Builder,
+
+    mui_hovering : bool,
 }
 
 KeyState :: struct {
@@ -88,6 +90,11 @@ get_mouse_button_state :: proc(button : MouseButton) -> MouseButtonState {
     return get_mouse_button_state_ptr(button)^
 }
 
+get_mui_hovering :: proc() -> bool {
+    return input.mui_hovering
+}
+
+
 @(private="file")
 get_key_state_ptr :: proc(key : KeyCode) -> ^KeyState {
     scancode :c.int= cast(c.int)key
@@ -111,7 +118,12 @@ input_release :: proc() {
     strings.builder_destroy(&input.strbuffer)
 }
 
-input_after_update_sdl2 :: proc() {
+@private
+input_before_update :: proc() {
+}
+
+@private
+input_after_update :: proc() {
     for state in &input.keys {
         if state.pressed_prev != state.pressed do state.pressed_prev = state.pressed
         state.repeat = false
@@ -124,6 +136,12 @@ input_after_update_sdl2 :: proc() {
     input.mouse_position_prev = input.mouse_position
 }
 
+@private
+input_set_mui_hovering :: proc(hovering: bool) {
+    input.mui_hovering = hovering
+}
+
+@private
 input_handle_sdl2 :: proc(event: sdl.Event) {
     #partial switch event.type {
     case sdl.EventType.KEYDOWN:

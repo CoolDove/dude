@@ -46,6 +46,9 @@ game_update :: proc() {
 
 	tweener_update(&game.global_tweener, delta)
 
+    input_set_mui_hovering(muictx.mu.hover_root != nil)
+    
+
     if _callback_update == nil {
         log.errorf("Dude: You should set a valid `update` for me.")
     } else do _callback_update(&game, delta)
@@ -58,7 +61,6 @@ game_update :: proc() {
     mui.end(&muictx.mu)
     mui_render(&_builtin_pass)
 
-
     dgl.state_set_scissor({0,0, app.window.size.x, app.window.size.y})
 
     render_update(total_time)
@@ -66,9 +68,10 @@ game_update :: proc() {
         render_pass_draw(pass)
     }
 
-    dgl.state_set_scissor({0,0, app.window.size.x, app.window.size.y})
-    _builtin_pass.viewport = {0,0, app.window.size.x, app.window.size.y}
-    _builtin_pass.camera.viewport = vec_i2f(Vec2i{app.window.size.x, app.window.size.y})
+    wndx, wndy := app.window.size.x, app.window.size.y
+    dgl.state_set_scissor({0,0, wndx,wndy})
+    _builtin_pass.viewport = {0,0, wndx,wndy}
+    _builtin_pass.camera.viewport = vec_i2f(Vec2i{wndx,wndy})
     _builtin_pass.immediate_draw_ctx.overlap_mode = true
     render_pass_draw(&_builtin_pass)
 

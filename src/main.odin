@@ -69,7 +69,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
         _flip_page()
     }
 
-    if get_mouse_button_down(.Left)  {
+    if !get_mui_hovering() && get_mouse_button_down(.Left)  {
         if demo_game.dialogue_size == 0 {
             dude.tween(&game.global_tweener, &demo_game.dialogue_size, 1.0, 0.3, dude.ease_outcubic)
         } else if demo_game.dialogue_size == 1 {

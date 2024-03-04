@@ -51,10 +51,12 @@ app_run :: proc() {
 
 		// update and render
 		if !window_closed {
+            input_before_update()
+
             game_update()
 
             sdl.GL_SwapWindow(app.window.window)
-            input_after_update_sdl2()
+            input_after_update()
 		}
 	}
 
