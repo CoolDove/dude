@@ -3,6 +3,7 @@ package dude
 import "core:log"
 import "core:math"
 
+// FIXME:coord_world2screen
 coord_world2screen :: proc(camera: ^RenderCamera, pos: Vec2) -> Vec2 {
     p :Vec2= pos + camera.position * Vec2{-1,1}
     sa := math.sin(camera.angle)
