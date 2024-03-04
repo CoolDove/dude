@@ -1310,6 +1310,7 @@ begin_window :: proc(ctx: ^Context, title: string, rect: Rect, opt := Options{})
 
 	/* draw frame */
 	if .NO_FRAME not_in opt {
+        draw_rect(ctx, transmute(Rect)(transmute([4]i32)rect+{4,4,0,0}), {0,0,0,26})
 		ctx.draw_frame(ctx, rect, .WINDOW_BG)
 	}
 
