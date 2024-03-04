@@ -1,7 +1,7 @@
 package dude
 
 import "core:slice"
-import mui "vendor:microui"
+import mui "microui"
 import "./dgl"
 
 
@@ -113,15 +113,15 @@ mui_render :: proc(pass: ^RenderPass) {
 		case ^mui.Command_Rect:
             pos := vec_i2f(Vec2i{cmd.rect.x, cmd.rect.y})
             size := vec_i2f(Vec2i{cmd.rect.w, cmd.rect.h})
-            immediate_screen_quad(pass, pos, size, transmute(Color32)cmd.color)
+            texture := cmd.texture
+            immediate_screen_quad(pass, pos, size, transmute(Color32)cmd.color, texture)
 		case ^mui.Command_Icon:
 			rect := mui.default_atlas[cmd.id]
 			x := cmd.rect.x + (cmd.rect.w - rect.w)/2
 			y := cmd.rect.y + (cmd.rect.h - rect.h)/2
 			draw_atlas_rect(pass, rect, vec_i2f(Vec2i{x, y}), transmute(Color32)cmd.color)
 		case ^mui.Command_Clip:
-			// rl.EndScissorMode()
-			// rl.BeginScissorMode(cmd.rect.x, cmd.rect.y, cmd.rect.w, cmd.rect.h)
+            dgl.state_set_scissor(transmute(Vec4i)cmd.rect)
 		case ^mui.Command_Jump: 
 			unreachable()
 		}
@@ -130,4 +130,10 @@ mui_render :: proc(pass: ^RenderPass) {
 
 mui_release :: proc() {
     dgl.texture_delete(&muictx.atlas_texture)
+}
+
+// ** Custom controls
+_muic_image :: proc(ctx: ^mui.Context, texture: u32, color: Color32) {
+    rect := mui.layout_next(ctx);
+    mui.draw_rect(ctx, rect, transmute(mui.Color)color, texture)
 }

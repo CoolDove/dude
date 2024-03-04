@@ -1,7 +1,5 @@
 ﻿package dude
 
-
-
 @(private="file")
 _COLORS :: struct { 
     RED,
@@ -11,7 +9,6 @@ _COLORS :: struct {
     WHITE,
     GRAY,
     BLACK : Color,
-
 }
 
 COLORS :: _COLORS {

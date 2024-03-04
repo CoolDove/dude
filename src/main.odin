@@ -9,11 +9,10 @@ import "core:strings"
 import "core:math/linalg"
 import "core:math"
 
-import mui "vendor:microui"
-
 import "dude"
 import "dude/dgl"
 import "dude/vendor/imgui"
+import mui "dude/microui"
 import hla "dude/collections/hollow_array"
 
 pass_main : dude.RenderPass
@@ -243,15 +242,17 @@ release :: proc(game: ^dude.Game) {
 
 on_mui :: proc(ctx: ^mui.Context) {
     if mui.window(ctx, "Hello, mui", {50,50, 300, 400}, {.NO_CLOSE }) {
-        if .ACTIVE in mui.treenode(ctx, "Test 1") {
-            if .ACTIVE in mui.treenode(ctx, "Test 1a") {
-                mui.label(ctx, "Hello")
-                mui.label(ctx, "world")
-            }
-            if .ACTIVE in mui.treenode(ctx, "Test 1b") {
-                if .SUBMIT in mui.button(ctx, "Button 1") { log.debugf("Pressed button 1") }
-                if .SUBMIT in mui.button(ctx, "Button 2") { log.debugf("Pressed button 2") }
-            }
+        if .ACTIVE in mui.treenode(ctx, "Treenode") {
+            @static box := false
+            mui.layout_row(ctx, {128,40}, 128)
+            mui.button(ctx, "test")
+            mui.layout_begin_column(ctx)
+            mui.button(ctx, "a")
+            mui.button(ctx, "b")
+            mui.layout_height(ctx, 40)
+            dude._muic_image(ctx, dude.rsys.fontstash_data.atlas, dude.col_i2u(0xffffffff))
+
+            mui.layout_end_column(ctx)
         }
         
         if .ACTIVE in mui.treenode(ctx, "Tween") {

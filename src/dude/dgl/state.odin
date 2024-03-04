@@ -58,6 +58,10 @@ state_set_viewport :: proc(viewport: GlStateViewport) {
     gl.Viewport(viewport.x, viewport.y, viewport.z, viewport.w)
 }
 
+state_set_scissor :: proc(rect: Vec4i/*xy,wh*/) {
+    gl.Scissor(rect.x,rect.y, rect.z,rect.w)
+}
+
 state_get_blend_simple :: proc() -> GlStateBlend {
     blend : GlStateBlendSimp
     gl.GetBooleanv(gl.BLEND, &blend.enable)

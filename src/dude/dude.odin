@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:os"
 import "core:log"
 
-import mui "vendor:microui"
+import mui "microui"
 
 // Build settings.
 DUDE_STARTUP_COMMAND :string: #config(DUDE_STARTUP_COMMAND, "GAME")

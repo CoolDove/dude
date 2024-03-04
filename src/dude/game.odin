@@ -13,7 +13,7 @@ import "core:math/linalg"
 
 import sdl "vendor:sdl2"
 import gl "vendor:OpenGL"
-import mui "vendor:microui"
+import mui "microui"
 
 import "vendor/imgui"
 

@@ -61,12 +61,17 @@ vec_f2i_4 :: #force_inline proc "contextless" (input: Vec4, method: RoundingMeth
     return {}
 }
 
-
 col_u2f :: proc(color : Color32) -> Vec4 {
     return {(cast(f32)color.x)/255.0, (cast(f32)color.y)/255.0, (cast(f32)color.z)/255.0, (cast(f32)color.w)/255.0}
 }
 col_f2u :: proc(color : Vec4) -> Color32 {
     return {cast(u8)(color.x*255.0), cast(u8)(color.y*255.0), cast(u8)(color.z*255.0), cast(u8)(color.w*255.0)}
+}
+col_i2u :: proc(color: u32) -> Color32 {
+    return transmute(Color32)color
+}
+col_i2f :: proc(color: u32) -> Color {
+    return col_u2f(transmute(Color32)color)
 }
 
 RoundingMethod :: enum {
