@@ -4,7 +4,9 @@ import "core:math/linalg"
 import "core:log"
 import "core:mem"
 import "core:math/rand"
+import "core:fmt"
 import "core:slice"
+import "core:strconv"
 import "core:os"
 import "core:runtime"
 import "core:reflect"
@@ -18,16 +20,24 @@ import "core:encoding/json"
 //  by `dpac` and it's a struct, the dpac will take it as a nested struct.
 // You can tag an array/slice's load path like "./res/texture_$(index).png"
 //  the index should be continuous.
+
+// TODO: Endian is not handled.
+
+MAGIC :[4]u8: {'D','P','A','C'}
+VERSION :u32: 1
+
 bundle :: proc($T: typeid, allocator:= context.allocator) -> []byte {
     using strings
     b : Builder
     builder_init(&b)
-    _write_object(&b, PackageHeader{MAGIC, VERSION})
+    _write_object(&b, PackageHeader{transmute(u32)MAGIC, VERSION})
 
     if _bundle_struct(&b, type_info_of(T)) {
+        fmt.printf("bundle success, size: {} bytes.", builder_len(b))
         return transmute([]u8)to_string(b)
     } else {
         builder_destroy(&b)
+        fmt.printf("bundle failed.")
         return {}
     }
 }
@@ -63,6 +73,7 @@ _bundle_struct :: proc(b: ^strings.Builder, type: ^reflect.Type_Info) -> bool {
 
 // Array or slice
 _bundle_array :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string) -> bool {
+    assert(tag != "", "Array field must be tagged by dpac.")
     using strings
     elem_type : ^reflect.Type_Info
     elem_count : int = -1
@@ -79,9 +90,21 @@ _bundle_array :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string
     _write_object(b, BlockHeader{})
     header := cast(^BlockHeader)(transmute(uintptr)(&b.buf[0])+header_offset)
     header.type = .Array
-    if elem_count != -1 do header.info.count = cast(u32)elem_count
-
-    panic("not supported")
+    // @OPTIMIZE:
+    index_buffer : [6]u8
+    for i in 0..<(elem_count if elem_count > 0 else 0xffffffff) {
+        path, was_allocation := strings.replace_all(tag, "$(index)", strconv.append_uint(index_buffer[:], cast(u64)i, 10))
+        if was_allocation do defer delete(path)
+        if data, ok := os.read_entire_file_from_filename(path); ok {
+            fmt.printf("bundle: {}\n", path)
+            write_bytes(b, data)
+            header.info.count += 1
+        } else {
+            return true
+        }
+        if !was_allocation && elem_count == -1 do break
+    }
+    return true
 }
 
 _bundle_asset :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string) -> bool {
@@ -96,6 +119,7 @@ _bundle_asset :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string
 
     if data, ok := os.read_entire_file_from_filename(tag); ok {
         write_bytes(b, data)
+        fmt.printf("bundle: {}\n", tag)
         return true
     } else {
         return false
@@ -127,31 +151,3 @@ BlockType :: enum u32 {
     Array,
     NestedStruct,
 }
-
-MAGIC :u32: 0xbeacea01
-VERSION :u32: 1
-
-// @private
-// MAGIC :string: "DPAC"
-// DoveGameAssets :: struct {
-//     logo : AssetTexture `dpac:"res/logo.png"`,
-//     using player : PlayerAssets,
-//     postfx : AssetShader `dpac:"res/postfx.vert"`,
-//     bgmusic : AssetShader `dpac:"hotel_california.wav"`,
-// }
-
-// PlayerAssets :: struct {
-//     player_idle : []AssetTexture `dpac:"res/player_idle_$(idx).png"`,
-//     player_run : []AssetTexture `dpac:"res/player_run_$(idx).png"`,
-// }
-
-// pac_loader :: proc(asset: ^$T, data: []u8) {
-// }
-
-// AssetTexture :: struct {
-//     id : u32,
-//     size : [2]i32,
-//     channel : i32,
-// }
-// AssetShader :: distinct u32
-// AssetAudio :: distinct u32 // Not done yet
