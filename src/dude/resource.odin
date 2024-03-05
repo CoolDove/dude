@@ -205,3 +205,30 @@ ResKey :: distinct u64
 res_key :: proc(name:string) -> ResKey {
 	return cast(ResKey)hash.crc64_xz(raw_data(name)[:len(name)])
 }
+
+
+DoveGameAssets :: struct {
+    logo : AssetTexture `dpac:"res/logo.png"`,
+    player_idle : []AssetTexture `dpac:"res/player_idle_$(idx).png"`,
+    player_run : []AssetTexture `dpac:"res/player_run_$(idx).png"`,
+    postfx : AssetShader `dpac:"res/postfx.vert, res/postfx.frag"`,
+    bgmusic : AssetShader `dpac:"hotel_california.wav"`,
+}
+
+AssetTexture :: struct {
+    id : u32,
+    size : Vec2i,
+    channel : i32,
+}
+AssetShader :: distinct Shader
+AssetAudio :: distinct Shader // Not done yet
+
+asset_load_shader :: proc(data: []u8) -> AssetShader {
+    return {}
+}
+asset_load_texture :: proc(data: []u8) -> AssetTexture {
+    return {}
+}
+asset_load_audio :: proc(data: []u8) -> AssetAudio {
+    return {}
+}

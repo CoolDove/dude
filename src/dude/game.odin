@@ -83,7 +83,7 @@ game_init :: proc() {
     using dgl
     allocators_init()
 
-    dpac_init()
+    // dpac_init()
 
     game.settings = new(GameSettings)
 
