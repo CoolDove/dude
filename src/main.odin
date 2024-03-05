@@ -70,6 +70,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     else if get_key(.S) do t.position.y -= move_speed * delta
     pass_main.camera.position = t.position
 
+
     if get_key(.F) {
         _flip_page()
     }
