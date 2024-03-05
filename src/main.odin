@@ -10,6 +10,7 @@ import "core:math/linalg"
 import "core:math"
 
 import "dude"
+import "dude/dpac"
 import "dude/dgl"
 import mui "dude/microui"
 import hla "dude/collections/hollow_array"
@@ -38,6 +39,10 @@ DemoGame :: struct {
 demo_game : DemoGame
 
 main :: proc() {
+    assets := dpac.bundle(GameAssets); defer delete(assets)
+    os.write_entire_file("./GameAssets.dpac", assets)
+    if true do return
+    
 	dude.init("dude game demo", {_package_game, _test})
     dude.dude_main(update, init, release, on_mui)
 }
