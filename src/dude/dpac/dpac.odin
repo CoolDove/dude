@@ -21,6 +21,8 @@ import "core:strings"
 MAGIC :[4]u8: {'D','P','A','C'}
 VERSION :u32: 1
 
+DPAC_TAG :: "dpac"
+
 bundle :: proc(T: typeid, allocator:= context.allocator) -> []byte {
     using strings
     b : Builder

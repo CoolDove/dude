@@ -9,15 +9,6 @@ import "core:bytes"
 import "core:encoding/endian"
 import "core:strings"
 
-
-// Dpackage is designed to use a struct as the meta data for a dpackage.
-// Use field tag: dpac to indicate the file path. If a field is not tagged 
-//  by `dpac` and it's a struct, the dpac will take it as a nested struct.
-// You can tag an array/slice's load path like "./res/texture_$(index).png"
-//  the index should be continuous.
-
-// TODO: Endian is not handled.
-
 @private
 _bundle :: proc(b: ^strings.Builder, t: ^reflect.Type_Info, tag: string) -> bool {
     if reflect.is_struct(t) {
@@ -43,7 +34,7 @@ _bundle_struct :: proc(b: ^strings.Builder, type: ^reflect.Type_Info) -> bool {
 
     for i in 0..<header.info.count {
         t := types[i]
-        tag, has_dpac_tag := reflect.struct_tag_lookup(tags[i], "dpac")
+        tag, has_dpac_tag := reflect.struct_tag_lookup(tags[i], DPAC_TAG)
         if !_bundle(b, t, auto_cast tag) do return false
     }
     return true
