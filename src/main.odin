@@ -132,37 +132,10 @@ dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
 @(private="file")
 init :: proc(game: ^dude.Game) {
     // ** Load dpacs
-    dovehandler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8) {
-        if e == .Load {
-            // fmt.printf("Load asset: {}({} bytes)\n", t.id, len(data))
-            if t.id == dude.AssetTexture {
-                atex := cast(^dude.AssetTexture)p
-                tex := dgl.texture_load(data)
-                atex.id = tex.id
-                atex.size = tex.size
-                fmt.printf("Load texture. {}-{}\n", atex.id, atex.size)
-            } else if t.id == dude.AssetFontFile {
-                afont := cast(^dude.AssetFontFile)p
-                afont.data = data
-                fmt.printf("Load font file.\n")
-            } else {
-                fmt.printf("Load unknown type asset.\n")
-            }
-        } else if e == .Release {
-            if t.id == dude.AssetTexture {
-                atex := cast(^dude.AssetTexture)p
-                dgl.texture_delete(&atex.id)
-                fmt.printf("Release texture {} ({}).\n", atex.id, atex.size)
-            } else if t.id == dude.AssetFontFile {
-                fmt.printf("Release Font file.\n")
-            } else {
-                fmt.printf("Release unknown type.\n")
-            }
-        }
-    }
-    dpac.register_load_handler(dovehandler)
-    pac_assets, bundle_err := dpac.bundle(GameAssets); defer delete(pac_assets)
-    os.write_entire_file("./GameAssets.dpac", pac_assets)
+    dpac.register_load_handler(dove_assets_handler)
+    // pac_assets, bundle_err := dpac.bundle(GameAssets); defer delete(pac_assets)
+    // os.write_entire_file("./GameAssets.dpac", pac_assets)
+    pac_assets, _ := os.read_entire_file("./GameAssets.dpac"); defer delete(pac_assets)
 
     err := dpac.load(pac_assets, &assets, type_info_of(GameAssets))
     assert(err == .None, "Failed to load assets.")
