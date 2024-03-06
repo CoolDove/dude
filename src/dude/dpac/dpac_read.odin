@@ -3,7 +3,6 @@ package dpac
 import "core:io"
 import "core:bufio"
 import "core:reflect"
-import "core:fmt"
 import "core:mem"
 import "core:runtime"
 
@@ -31,7 +30,6 @@ load :: proc(pac: []u8, p: rawptr, t: ^reflect.Type_Info) -> LoadErr {
     loader.ptr += size_of(PackageHeader)
     if header.magic != transmute(u32)MAGIC do return .InvalidPac_NotADPac
     if header.version != VERSION {
-        fmt.eprintf("DPac version doesn't match, please repac. DPac version: {}, system version: {}.\n", header.version, VERSION)
         return .InvalidPac_VersionNotMatch
     }
 
@@ -40,7 +38,6 @@ load :: proc(pac: []u8, p: rawptr, t: ^reflect.Type_Info) -> LoadErr {
 }
 
 _data_handler_default :: proc(p: rawptr, t: ^reflect.Type_Info, data: []u8) {
-    fmt.printf("Load data {}, size: {}\n", t.id, len(data))
 }
 
 _load :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: string) -> LoadErr {
@@ -54,7 +51,6 @@ _load :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: string
     }
 }
 _load_struct :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info) -> LoadErr {
-    fmt.printf("load struct: {}\n", t.id)
     if header, ok := _load_header(loader); ok {
         if header.type != .NestedStruct do return .Unknown
         types := reflect.struct_field_types(t.id)
@@ -64,7 +60,6 @@ _load_struct :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info) -> L
             err := _load(loader, cast(rawptr)(cast(uintptr)p+offsets[i]), types[i], cast(string)tags[i])
             if err != .None do return err
         }
-        fmt.printf("struct done\n")
         return .None
     } else {
         return .Unknown
@@ -72,7 +67,6 @@ _load_struct :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info) -> L
 }
 // Array or slice
 _load_array :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: string) -> LoadErr {
-    fmt.printf("load array: {}\n", t.id)
     if tag == "" do return .InvalidPac_UntaggedArrayOrSlice
     if header, ok := _load_header(loader); ok {
         elem_count := header.info.count
@@ -90,7 +84,6 @@ _load_array :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: 
             the_slice.data = ptr
             the_slice.len = cast(int)elem_count
         }
-        fmt.printf("    array size: {}\n", elem_count)
         for i in 0..<elem_count {
             err := _load(loader, ptr, elem_type, tag)
             if err != .None do return err
@@ -102,7 +95,6 @@ _load_array :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: 
 
 @private
 _load_asset :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: string) -> LoadErr {
-    fmt.printf("load asset\n")
     header, ok := _load_header(loader)
     if ok && header.type == .Data {
         index := header.info.index

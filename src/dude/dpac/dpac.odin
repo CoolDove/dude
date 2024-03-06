@@ -1,6 +1,5 @@
 ﻿package dpac
 
-import "core:fmt"
 import "core:slice"
 import "core:strconv"
 import "core:os"
@@ -32,11 +31,9 @@ bundle :: proc(T: typeid, allocator:= context.allocator) -> (output: []byte, err
     write_bytes(&b, slice.bytes_from_ptr(&dpac_header, size_of(PackageHeader)))
 
     if err = _bundle_struct(&b, type_info_of(T)); err == .None {
-        fmt.printf("bundle success, size: {} bytes.\n", builder_len(b))
         return transmute([]u8)to_string(b), err
     } else {
         builder_destroy(&b)
-        fmt.printf("bundle failed.")
         return {}, err
     }
 }

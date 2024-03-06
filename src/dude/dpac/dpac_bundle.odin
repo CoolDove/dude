@@ -1,6 +1,5 @@
 ﻿package dpac
 
-import "core:fmt"
 import "core:slice"
 import "core:strconv"
 import "core:os"
@@ -69,7 +68,6 @@ _bundle_array :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string
         path, was_allocation := strings.replace_all(tag, "$(index)", strconv.append_uint(index_buffer[:], cast(u64)i, 10))
         if was_allocation do defer delete(path)
         if data, ok := os.read_entire_file_from_filename(path); ok {
-            fmt.printf("bundle: {}\n", path)
             _bundle_asset(b, path)
             slice_elem_count += 1
         } else {
@@ -93,7 +91,6 @@ _bundle_asset :: proc(b: ^strings.Builder, tag: string) -> BundleErr {
 
     if data, ok := os.read_entire_file_from_filename(tag); ok {
         write_bytes(b, data)
-        fmt.printf("bundle: {}\n", tag)
         return .None
     } else {
         return .FailedToLoadData
