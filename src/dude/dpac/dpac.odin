@@ -27,10 +27,12 @@ bundle :: proc(T: typeid, allocator:= context.allocator) -> []byte {
     using strings
     b : Builder
     builder_init(&b)
-    _write_object(&b, PackageHeader{transmute(u32)MAGIC, VERSION, cast(u32)endian.PLATFORM_BYTE_ORDER})
+
+    dpac_header := PackageHeader{transmute(u32)MAGIC, VERSION, cast(u32)endian.PLATFORM_BYTE_ORDER}
+    write_bytes(&b, slice.bytes_from_ptr(&dpac_header, size_of(PackageHeader)))
 
     if _bundle_struct(&b, type_info_of(T)) {
-        fmt.printf("bundle success, size: {} bytes.", builder_len(b))
+        fmt.printf("bundle success, size: {} bytes.\n", builder_len(b))
         return transmute([]u8)to_string(b)
     } else {
         builder_destroy(&b)

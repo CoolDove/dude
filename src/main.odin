@@ -39,8 +39,12 @@ DemoGame :: struct {
 demo_game : DemoGame
 
 main :: proc() {
-    assets := dpac.bundle(GameAssets); defer delete(assets)
-    os.write_entire_file("./GameAssets.dpac", assets)
+    pac_assets := dpac.bundle(GameAssets); defer delete(pac_assets)
+    os.write_entire_file("./GameAssets.dpac", pac_assets)
+
+    err := dpac.load(pac_assets, &assets, type_info_of(GameAssets))
+    fmt.printf("dpac load result: {}", err)
+    
     if true do return
     
 	dude.init("dude game demo", {_package_game, _test})

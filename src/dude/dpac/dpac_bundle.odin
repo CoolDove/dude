@@ -12,12 +12,12 @@ import "core:strings"
 @private
 _bundle :: proc(b: ^strings.Builder, t: ^reflect.Type_Info, tag: string) -> bool {
     if reflect.is_struct(t) {
-        if tag != "" do return _bundle_asset(b, t, cast(string)tag)
+        if tag != "" do return _bundle_asset(b, cast(string)tag)
         else do return _bundle_struct(b, t)
     } else if reflect.is_array(t) || reflect.is_slice(t) {
         return _bundle_array(b, t, cast(string)tag)
     } else {
-        return _bundle_asset(b, t, cast(string)tag)
+        return _bundle_asset(b, cast(string)tag)
     }
 }
 
@@ -27,12 +27,9 @@ _bundle_struct :: proc(b: ^strings.Builder, type: ^reflect.Type_Info) -> bool {
 
     types := reflect.struct_field_types(type.id)
     tags := reflect.struct_field_tags(type.id)
-    header : BlockHeader
-    header.type = .NestedStruct
-    header.info.count = auto_cast len(types)
-    _write_object(b, header)
+    _write_header(b, BlockHeader{.NestedStruct, {count=auto_cast len(types)}})
 
-    for i in 0..<header.info.count {
+    for i in 0..<len(types) {
         t := types[i]
         tag, has_dpac_tag := reflect.struct_tag_lookup(tags[i], DPAC_TAG)
         if !_bundle(b, t, auto_cast tag) do return false
@@ -56,20 +53,23 @@ _bundle_array :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string
         elem_type = slice.elem
     }
 
-    header_offset := transmute(uintptr)builder_len(b^)
-    _write_object(b, BlockHeader{})
-    header := cast(^BlockHeader)(transmute(uintptr)(&b.buf[0])+header_offset)
-    header.type = .Array
+    header_offset := _write_header(b, BlockHeader{type=.Array})
     // @OPTIMIZE:
     index_buffer : [6]u8
+    slice_elem_count := 0
     for i in 0..<(elem_count if elem_count > 0 else 0xffffffff) {
         path, was_allocation := strings.replace_all(tag, "$(index)", strconv.append_uint(index_buffer[:], cast(u64)i, 10))
         if was_allocation do defer delete(path)
         if data, ok := os.read_entire_file_from_filename(path); ok {
             fmt.printf("bundle: {}\n", path)
-            write_bytes(b, data)
-            header.info.count += 1
+            // write_bytes(b, data)
+            _bundle_asset(b, path)
+            // header := cast(^BlockHeader)_string_builder_point(b, header_offset)
+            // header.info.count += 1
+            slice_elem_count += 1
         } else {
+            header := cast(^BlockHeader)_string_builder_point(b, header_offset)
+            header.info.count = auto_cast slice_elem_count
             return true
         }
         if !was_allocation && elem_count == -1 do break
@@ -78,15 +78,13 @@ _bundle_array :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string
 }
 
 @private
-_bundle_asset :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string) -> bool {
+_bundle_asset :: proc(b: ^strings.Builder, tag: string) -> bool {
     using strings
-    header_offset := transmute(uintptr)builder_len(b^)
-    _write_object(b, BlockHeader{})
-
-    header := cast(^BlockHeader)(transmute(uintptr)(&b.buf[0])+header_offset)
-    header.type = .Data
-    header.info.index.from = cast(i64)builder_len(b^)
-    defer header.info.index.to = cast(i64)builder_len(b^)
+    header_offset := _write_header(b, BlockHeader{.Data, {index=BlockIndex{cast(i64)builder_len(b^),0}}})
+    defer {
+        header := cast(^BlockHeader)_string_builder_point(b, header_offset)
+        header.info.index.to = cast(i64)builder_len(b^)
+    }
 
     if data, ok := os.read_entire_file_from_filename(tag); ok {
         write_bytes(b, data)
@@ -98,9 +96,16 @@ _bundle_asset :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string
 }
 
 @private
-_write_object :: proc(b: ^strings.Builder, obj: $T) {
-    obj := (transmute([size_of(T)]u8)obj)
-    strings.write_bytes(b, obj[:])
+_write_header :: proc(b: ^strings.Builder, header: BlockHeader) -> uintptr {
+    obj := header
+    ptr := strings.builder_len(b^)
+    strings.write_bytes(b, slice.bytes_from_ptr(&obj, size_of(BlockHeader)))
+    return auto_cast ptr
+}
+
+@private
+_string_builder_point :: proc(b: ^strings.Builder, offset: uintptr) -> rawptr {
+    return cast(rawptr)(transmute(uintptr)(&b.buf[0])+offset)
 }
 
 PackageHeader :: struct {
