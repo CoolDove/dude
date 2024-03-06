@@ -22,18 +22,11 @@ VERSION :u32: 1
 
 DPAC_TAG :: "dpac"
 
-bundle :: proc(T: typeid, allocator:= context.allocator) -> (output: []byte, err: BundleErr) {
-    using strings
-    b : Builder
-    builder_init(&b)
-
-    dpac_header := PackageHeader{transmute(u32)MAGIC, VERSION, cast(u32)endian.PLATFORM_BYTE_ORDER}
-    write_bytes(&b, slice.bytes_from_ptr(&dpac_header, size_of(PackageHeader)))
-
-    if err = _bundle_struct(&b, type_info_of(T)); err == .None {
-        return transmute([]u8)to_string(b), err
-    } else {
-        builder_destroy(&b)
-        return {}, err
-    }
+PacEvent :: enum {
+    Load, Release,
 }
+
+register_load_handler :: proc(handler: proc(event: PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8)) {
+    append(&_handlers, handler)
+}
+

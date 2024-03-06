@@ -2,7 +2,7 @@
 
 import "core:strings"
 import "core:c/libc"
-import "core:log"
+import "core:fmt"
 
 import "vendor:sdl2"
 import "vendor:stb/image"
@@ -35,7 +35,7 @@ image_load :: proc (path: string) -> Image {
         &width, &height, &channels, 4)
 
     if data == nil {
-        log.errorf("Texture: Failed to load image: {}", path)
+        fmt.eprintf("Texture: Failed to load image: {}\n", path)
         return Image{}
     }
     return Image{{width, height}, cast(u32)channels, data}
@@ -45,7 +45,7 @@ image_from_mem :: proc(data: []byte) -> Image {
     width, height, channels : libc.int
     data_ := image.load_from_memory(raw_data(data), cast(i32)len(data), &width, &height, &channels, 4)
     if data_ == nil {
-        log.errorf("Texture: Failed to load image from memory: {}", data)
+        fmt.eprintf("Texture: Failed to load image from memory.\n")
         return Image{}
     }
     return Image{{width, height}, cast(u32)channels, data_}

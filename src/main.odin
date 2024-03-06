@@ -5,6 +5,7 @@ import "core:os"
 import "core:fmt"
 import "core:unicode/utf8"
 import "core:log"
+import "core:reflect"
 import "core:strings"
 import "core:math/linalg"
 import "core:math"
@@ -39,14 +40,6 @@ DemoGame :: struct {
 demo_game : DemoGame
 
 main :: proc() {
-    pac_assets, bundle_err := dpac.bundle(GameAssets); defer delete(pac_assets)
-    os.write_entire_file("./GameAssets.dpac", pac_assets)
-
-    err := dpac.load(pac_assets, &assets, type_info_of(GameAssets))
-    fmt.printf("dpac load result: {}", err)
-    
-    if true do return
-    
 	dude.init("dude game demo", {_package_game, _test})
     dude.dude_main(update, init, release, on_mui)
 }
@@ -140,6 +133,42 @@ dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
 
 @(private="file")
 init :: proc(game: ^dude.Game) {
+    // ** Load dpacs
+    dovehandler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8) {
+        if e == .Load {
+            // fmt.printf("Load asset: {}({} bytes)\n", t.id, len(data))
+            if t.id == dude.AssetTexture {
+                atex := cast(^dude.AssetTexture)p
+                tex := dgl.texture_load(data)
+                atex.id = tex.id
+                atex.size = tex.size
+                fmt.printf("Load texture. {}-{}\n", atex.id, atex.size)
+            } else if t.id == dude.AssetFontFile {
+                afont := cast(^dude.AssetFontFile)p
+                afont.data = data
+                fmt.printf("Load font file.\n")
+            } else {
+                fmt.printf("Load unknown type asset.\n")
+            }
+        } else if e == .Release {
+            if t.id == dude.AssetTexture {
+                atex := cast(^dude.AssetTexture)p
+                dgl.texture_delete(&atex.id)
+                fmt.printf("Release texture {} ({}).\n", atex.id, atex.size)
+            } else if t.id == dude.AssetFontFile {
+                fmt.printf("Release Font file.\n")
+            } else {
+                fmt.printf("Release unknown type.\n")
+            }
+        }
+    }
+    dpac.register_load_handler(dovehandler)
+    pac_assets, bundle_err := dpac.bundle(GameAssets); defer delete(pac_assets)
+    os.write_entire_file("./GameAssets.dpac", pac_assets)
+
+    err := dpac.load(pac_assets, &assets, type_info_of(GameAssets))
+    log.debugf("dpac loaded")
+    
     using demo_game
     append(&game.render_pass, &pass_main)
 
@@ -164,9 +193,11 @@ init :: proc(game: ^dude.Game) {
         dude.mesher_line_grid_lp2u2c4(mb, 20, 1.0, {0.18,0.14,0.13, 1}, 5, {0.1,0.04,0.09, 1})
         mesh_grid = mesh_builder_create(mb^, true) // Because the mesh is a lines mesh.
 
-        texture_test = texture_load_from_mem(#load("../res/texture/dude.png"))
-        texture_9slice = texture_load_from_mem(#load("../res/texture/default_ui_background_9slice.png"))
-        texture_qq = texture_load_from_mem(#load("../res/texture/qq.png"))
+        // FIXME: Temporary
+        texture_test = transmute(dgl.Texture)assets.dude_logo
+        texture_9slice = transmute(dgl.Texture)assets.bg9slice
+        texture_qq = transmute(dgl.Texture)assets.qq
+        
         texture_set_filter(texture_9slice.id, .Nearest, .Nearest)
     }
 
@@ -239,6 +270,8 @@ _flip_page :: proc() {
 
 @(private="file")
 release :: proc(game: ^dude.Game) {
+    dpac.release(&assets, type_info_of(GameAssets))
+    
     delete(demo_game.book)
     dgl.mesh_delete(&demo_game.tm_test)
 

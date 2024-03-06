@@ -1,7 +1,8 @@
 package dpac
 
 import "core:io"
-import "core:bufio"
+import "core:os"
+import "core:path/filepath"
 import "core:reflect"
 import "core:mem"
 import "core:runtime"
@@ -16,10 +17,34 @@ LoadErr :: enum {
     PacStructMissmatch_ArrayOrSliceCount,
 }
 
-
 DPacLoader :: struct {
     buf : []u8,
     ptr : int,
+}
+
+@private
+_handlers : [dynamic]proc(e: PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8)
+
+release :: proc(p: rawptr, t: ^reflect.Type_Info, tag: string="") {
+    if reflect.is_struct(t) && tag == "" {
+        types := reflect.struct_field_types(t.id)
+        offsets := reflect.struct_field_offsets(t.id)
+        tags := reflect.struct_field_tags(t.id)
+        for i in 0..<len(types) {
+            ptr := cast(rawptr)(cast(uintptr)p + offsets[i])
+            release(ptr, types[i], cast(string)tags[i])
+        }
+    } else if reflect.is_slice(t) {
+        s := cast(^runtime.Raw_Slice)p
+        elem := t.variant.(runtime.Type_Info_Slice).elem
+        for i in 0..<s.len {
+            ptr := cast(rawptr)(cast(uintptr)s.data + cast(uintptr)(i * elem.size))
+            release(ptr, elem, tag)
+        }
+        mem.free_with_size(s.data, s.len * elem.size)
+    } else {
+        _handle_data(.Release, p, t, {})
+    }
 }
 
 load :: proc(pac: []u8, p: rawptr, t: ^reflect.Type_Info) -> LoadErr {
@@ -37,9 +62,14 @@ load :: proc(pac: []u8, p: rawptr, t: ^reflect.Type_Info) -> LoadErr {
     return err
 }
 
-_data_handler_default :: proc(p: rawptr, t: ^reflect.Type_Info, data: []u8) {
+@private
+_handle_data :: proc(e: PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8) {
+    #reverse for h in _handlers {
+        if h != nil do h(e, p, t, data)
+    }
 }
 
+@private
 _load :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: string) -> LoadErr {
     if reflect.is_struct(t) {
         if tag != "" do return _load_asset(loader, p, t, cast(string)tag)
@@ -50,6 +80,7 @@ _load :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: string
         return _load_asset(loader, p, t, cast(string)tag)
     }
 }
+@private
 _load_struct :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info) -> LoadErr {
     if header, ok := _load_header(loader); ok {
         if header.type != .NestedStruct do return .Unknown
@@ -66,6 +97,7 @@ _load_struct :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info) -> L
     }
 }
 // Array or slice
+@private
 _load_array :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: string) -> LoadErr {
     if tag == "" do return .InvalidPac_UntaggedArrayOrSlice
     if header, ok := _load_header(loader); ok {
@@ -98,13 +130,16 @@ _load_asset :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: 
     header, ok := _load_header(loader)
     if ok && header.type == .Data {
         index := header.info.index
-        _data_handler_default(p, t, loader.buf[index.from:index.to])
+
+        data := loader.buf[index.from:index.to]
+        _handle_data(.Load, p, t, data)
         loader.ptr = cast(int)index.to
         return .None
     }
     return .Unknown
 }
 
+@private
 _load_header :: proc(using loader: ^DPacLoader, peek:= false) -> (BlockHeader, bool) {
     if len(buf) - ptr < size_of(BlockHeader) do return {}, false
     h := cast(^BlockHeader)&buf[ptr]

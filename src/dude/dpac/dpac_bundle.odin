@@ -15,6 +15,22 @@ BundleErr :: enum {
     InvalidPac_UntaggedArrayOrSlice,
 }
 
+bundle :: proc(T: typeid, allocator:= context.allocator) -> (output: []byte, err: BundleErr) {
+    using strings
+    b : Builder
+    builder_init(&b)
+
+    dpac_header := PackageHeader{transmute(u32)MAGIC, VERSION, cast(u32)endian.PLATFORM_BYTE_ORDER}
+    write_bytes(&b, slice.bytes_from_ptr(&dpac_header, size_of(PackageHeader)))
+
+    if err = _bundle_struct(&b, type_info_of(T)); err == .None {
+        return transmute([]u8)to_string(b), err
+    } else {
+        builder_destroy(&b)
+        return {}, err
+    }
+}
+
 @private
 _bundle :: proc(b: ^strings.Builder, t: ^reflect.Type_Info, tag: string) -> BundleErr {
     if reflect.is_struct(t) {
@@ -83,9 +99,11 @@ _bundle_array :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string
 @private
 _bundle_asset :: proc(b: ^strings.Builder, tag: string) -> BundleErr {
     using strings
-    header_offset := _write_header(b, BlockHeader{.Data, {index=BlockIndex{cast(i64)builder_len(b^),0}}})
+    header_offset := _write_header(b, BlockHeader{})
     defer {
         header := cast(^BlockHeader)_string_builder_point(b, header_offset)
+        header.type = .Data
+        header.info.index.from = cast(i64)(header_offset + cast(uintptr)size_of(BlockHeader))
         header.info.index.to = cast(i64)builder_len(b^)
     }
 
