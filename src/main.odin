@@ -19,8 +19,6 @@ import hla "dude/collections/hollow_array"
 pass_main : dude.RenderPass
 
 DemoGame :: struct {
-    texture_test : dgl.Texture,
-    texture_9slice, texture_qq : dgl.Texture,
     player : dude.RObjHandle,
 
     test_mesh_triangle, mesh_grid, mesh_arrow : dgl.Mesh,
@@ -85,15 +83,15 @@ update :: proc(game: ^dude.Game, delta: f32) {
         msg.position.x = -5
     }
 
-    dude.imdraw.quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=texture_qq.id)
+    dude.imdraw.quad(&pass_main, get_mouse_position()-{8,8}, {16,16}, texture=assets.qq.id)
 
     to_screen :: proc(pos: dude.Vec2) -> dude.Vec2 {
         return dude.coord_world2screen(&pass_main.camera, pos)
     }
 
-    imdraw.quad(&pass_main, to_screen({0,0}), {16,16}, texture=texture_qq.id)
-    imdraw.quad(&pass_main, to_screen({3,0}), {16,16}, texture=texture_qq.id)
-    imdraw.quad(&pass_main, to_screen({6,0}), {16,16}, texture=texture_qq.id)
+    imdraw.quad(&pass_main, to_screen({0,0}), {16,16}, texture=assets.qq.id)
+    imdraw.quad(&pass_main, to_screen({3,0}), {16,16}, texture=assets.qq.id)
+    imdraw.quad(&pass_main, to_screen({6,0}), {16,16}, texture=assets.qq.id)
 
     {// test arrow
         root := dude.coord_world2screen(&pass_main.camera, {0,0})
@@ -123,9 +121,9 @@ dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
     t = t * 0.8 + 0.2
     using dude.imdraw
     quad_9slice(&pass_main, anchor+{4-2*t,4-2*t}, size, size-padding, {0.5,0.5}, 
-        color={0,0,0,cast(u8)(128*alpha)}, texture=demo_game.texture_9slice.id, order=100)
+        color={0,0,0,cast(u8)(128*alpha)}, texture=assets.bg9slice.id, order=100)
     quad_9slice(&pass_main, anchor, size, size-padding, {0.5,0.5}, 
-        texture=demo_game.texture_9slice.id, order=101, color={255,255,255, cast(u8)(alpha*255.0)})
+        texture=assets.bg9slice.id, order=101, color={255,255,255, cast(u8)(alpha*255.0)})
     msg := message[:cast(int)(alpha*cast(f32)len(message))]
     text(&pass_main, msg, anchor + {22,38}, 32, {0.1, 0.1, 0.1, 0.4*dude.ease_outcubic(alpha)}, order=102)
     text(&pass_main, msg, anchor + {20,36}, 32, {0.2, 0.2, 0.2, dude.ease_outcubic(alpha)}, order=103)
@@ -167,7 +165,7 @@ init :: proc(game: ^dude.Game) {
     os.write_entire_file("./GameAssets.dpac", pac_assets)
 
     err := dpac.load(pac_assets, &assets, type_info_of(GameAssets))
-    log.debugf("dpac loaded")
+    assert(err == .None, "Failed to load assets.")
     
     using demo_game
     append(&game.render_pass, &pass_main)
@@ -193,12 +191,7 @@ init :: proc(game: ^dude.Game) {
         dude.mesher_line_grid_lp2u2c4(mb, 20, 1.0, {0.18,0.14,0.13, 1}, 5, {0.1,0.04,0.09, 1})
         mesh_grid = mesh_builder_create(mb^, true) // Because the mesh is a lines mesh.
 
-        // FIXME: Temporary
-        texture_test = transmute(dgl.Texture)assets.dude_logo
-        texture_9slice = transmute(dgl.Texture)assets.bg9slice
-        texture_qq = transmute(dgl.Texture)assets.qq
-        
-        texture_set_filter(texture_9slice.id, .Nearest, .Nearest)
+        texture_set_filter(assets.bg9slice.id, .Nearest, .Nearest)
     }
 
     using dude
@@ -217,7 +210,7 @@ init :: proc(game: ^dude.Game) {
     // render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
     // render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, texture_test.id, {0.5,0.5}, {1,1}}, order=101)
 
-    player = render_pass_add_object(&pass_main, RObjSprite{color={1,0,0,1}, texture=texture_test.id, size={4,4}, anchor={0.5,0.5}}, order=100)
+    player = render_pass_add_object(&pass_main, RObjSprite{color={1,0,0,1}, texture=assets.dude_logo.id, size={4,4}, anchor={0.5,0.5}}, order=100)
 
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_grid, mode=.Lines}, order=-9999, vertex_color_on=true)
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_arrow}, vertex_color_on=true)
@@ -276,8 +269,6 @@ release :: proc(game: ^dude.Game) {
     dgl.mesh_delete(&demo_game.tm_test)
 
     using dude, demo_game
-    dgl.texture_delete(&texture_test.id)
-    dgl.texture_delete(&texture_qq.id)
     
 	dgl.mesh_delete(&test_mesh_triangle)
 	dgl.mesh_delete(&mesh_grid)
