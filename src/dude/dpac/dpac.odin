@@ -23,7 +23,7 @@ VERSION :u32: 1
 
 DPAC_TAG :: "dpac"
 
-bundle :: proc(T: typeid, allocator:= context.allocator) -> []byte {
+bundle :: proc(T: typeid, allocator:= context.allocator) -> (output: []byte, err: BundleErr) {
     using strings
     b : Builder
     builder_init(&b)
@@ -31,12 +31,12 @@ bundle :: proc(T: typeid, allocator:= context.allocator) -> []byte {
     dpac_header := PackageHeader{transmute(u32)MAGIC, VERSION, cast(u32)endian.PLATFORM_BYTE_ORDER}
     write_bytes(&b, slice.bytes_from_ptr(&dpac_header, size_of(PackageHeader)))
 
-    if _bundle_struct(&b, type_info_of(T)) {
+    if err = _bundle_struct(&b, type_info_of(T)); err == .None {
         fmt.printf("bundle success, size: {} bytes.\n", builder_len(b))
-        return transmute([]u8)to_string(b)
+        return transmute([]u8)to_string(b), err
     } else {
         builder_destroy(&b)
         fmt.printf("bundle failed.")
-        return {}
+        return {}, err
     }
 }

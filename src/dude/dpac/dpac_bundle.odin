@@ -9,8 +9,15 @@ import "core:bytes"
 import "core:encoding/endian"
 import "core:strings"
 
+
+BundleErr :: enum {
+    None,
+    FailedToLoadData,
+    InvalidPac_UntaggedArrayOrSlice,
+}
+
 @private
-_bundle :: proc(b: ^strings.Builder, t: ^reflect.Type_Info, tag: string) -> bool {
+_bundle :: proc(b: ^strings.Builder, t: ^reflect.Type_Info, tag: string) -> BundleErr {
     if reflect.is_struct(t) {
         if tag != "" do return _bundle_asset(b, cast(string)tag)
         else do return _bundle_struct(b, t)
@@ -22,7 +29,7 @@ _bundle :: proc(b: ^strings.Builder, t: ^reflect.Type_Info, tag: string) -> bool
 }
 
 @private
-_bundle_struct :: proc(b: ^strings.Builder, type: ^reflect.Type_Info) -> bool {
+_bundle_struct :: proc(b: ^strings.Builder, type: ^reflect.Type_Info) -> BundleErr {
     using strings
 
     types := reflect.struct_field_types(type.id)
@@ -32,15 +39,16 @@ _bundle_struct :: proc(b: ^strings.Builder, type: ^reflect.Type_Info) -> bool {
     for i in 0..<len(types) {
         t := types[i]
         tag, has_dpac_tag := reflect.struct_tag_lookup(tags[i], DPAC_TAG)
-        if !_bundle(b, t, auto_cast tag) do return false
+        if err := _bundle(b, t, auto_cast tag); err != .None do return err
     }
-    return true
+    return .None
 }
 
 // Array or slice
 @private
-_bundle_array :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string) -> bool {
+_bundle_array :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string) -> BundleErr {
     assert(tag != "", "Array field must be tagged by dpac.")
+    if tag == "" do return .InvalidPac_UntaggedArrayOrSlice
     using strings
     elem_type : ^reflect.Type_Info
     elem_count : int = -1
@@ -62,23 +70,20 @@ _bundle_array :: proc(b: ^strings.Builder, type: ^reflect.Type_Info, tag: string
         if was_allocation do defer delete(path)
         if data, ok := os.read_entire_file_from_filename(path); ok {
             fmt.printf("bundle: {}\n", path)
-            // write_bytes(b, data)
             _bundle_asset(b, path)
-            // header := cast(^BlockHeader)_string_builder_point(b, header_offset)
-            // header.info.count += 1
             slice_elem_count += 1
         } else {
             header := cast(^BlockHeader)_string_builder_point(b, header_offset)
             header.info.count = auto_cast slice_elem_count
-            return true
+            return .None
         }
         if !was_allocation && elem_count == -1 do break
     }
-    return true
+    return .None
 }
 
 @private
-_bundle_asset :: proc(b: ^strings.Builder, tag: string) -> bool {
+_bundle_asset :: proc(b: ^strings.Builder, tag: string) -> BundleErr {
     using strings
     header_offset := _write_header(b, BlockHeader{.Data, {index=BlockIndex{cast(i64)builder_len(b^),0}}})
     defer {
@@ -89,9 +94,9 @@ _bundle_asset :: proc(b: ^strings.Builder, tag: string) -> bool {
     if data, ok := os.read_entire_file_from_filename(tag); ok {
         write_bytes(b, data)
         fmt.printf("bundle: {}\n", tag)
-        return true
+        return .None
     } else {
-        return false
+        return .FailedToLoadData
     }
 }
 

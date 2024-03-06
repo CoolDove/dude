@@ -39,7 +39,7 @@ DemoGame :: struct {
 demo_game : DemoGame
 
 main :: proc() {
-    pac_assets := dpac.bundle(GameAssets); defer delete(pac_assets)
+    pac_assets, bundle_err := dpac.bundle(GameAssets); defer delete(pac_assets)
     os.write_entire_file("./GameAssets.dpac", pac_assets)
 
     err := dpac.load(pac_assets, &assets, type_info_of(GameAssets))
