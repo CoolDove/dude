@@ -77,9 +77,9 @@ game_update :: proc() {
     {// ** Final blit
         ctx := &_builtin_pass.immediate_draw_ctx
         render_pass_add_object_immediate(&_builtin_pass, RenderObject{obj=rcmd_bind_framebuffer(0)})
+        render_pass_add_object_immediate(&_builtin_pass, RenderObject{obj=rcmd_set_blend(dgl.GlStateBlendSimp{enable=false})})
         immediate_screen_quad(&_builtin_pass, {0,0}, vec_i2f(app.window.size), 
             texture=rsys._default_framebuffer_color0, uv_min={0,1}, uv_max={1,0})
-        render_pass_add_object_immediate(&_builtin_pass, RenderObject{obj=rcmd_restore_framebuffer()})
     }
     render_pass_draw(&_builtin_pass)
 
