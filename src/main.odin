@@ -108,20 +108,23 @@ update :: proc(game: ^dude.Game, delta: f32) {
     }
 
     imdraw.quad(&pass_main, to_screen({0,0}), {16,16}, texture=assets.qq.id)
-    imdraw.quad(&pass_main, to_screen({3,0}), {16,16}, texture=assets.qq.id)
-    imdraw.quad(&pass_main, to_screen({6,0}), {16,16}, texture=assets.qq.id)
+    imdraw.quad(&pass_main, to_screen({5,0}), {16,16}, texture=assets.qq.id)
+    imdraw.quad(&pass_main, to_screen({10,0}), {16,16}, texture=assets.qq.id)
+    imdraw.quad(&pass_main, to_screen({0,5}), {16,16}, texture=assets.qq.id)
+    imdraw.quad(&pass_main, to_screen({0,10}), {16,16}, texture=assets.qq.id)
 
     {// test arrow
-        root := dude.coord_world2screen(&pass_main.camera, {0,0})
-        forward := dude.get_mouse_position() - root
-        left := dude.rotate_vector(forward, 90 * math.RAD_PER_DEG)
+        root := to_screen({0,0})
+        // forward := dude.get_mouse_position() - root
+        forward := to_screen({0, -5}) - root
+        right := dude.rotate_vector(forward, -90 * math.RAD_PER_DEG)
         imdraw.arrow(&pass_main, 
             root,
             root + forward,
             16.0, {200, 64, 32, 222})
         imdraw.arrow(&pass_main, 
             root,
-            root + left,
+            root + right,
             16.0, {32, 230, 20, 222})
     }
 
@@ -267,6 +270,7 @@ on_mui :: proc(ctx: ^mui.Context) {
     if mui.window(ctx, "Hello, mui", {50,50, 300, 400}, {.NO_CLOSE}) {
         t := dude.render_pass_get_object(demo_game.player)
         mui.text(ctx, fmt.tprintf("player position: {}", t.position))
+        mui.text(ctx, fmt.tprintf("screen space root: {}", pass_main.camera.position))
         if .ACTIVE in mui.treenode(ctx, "Treenode") {
             using dude
             @static box := false

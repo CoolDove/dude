@@ -5,12 +5,15 @@ import "core:math"
 
 // FIXME:coord_world2screen
 coord_world2screen :: proc(camera: ^RenderCamera, pos: Vec2) -> Vec2 {
-    p :Vec2= pos + camera.position * Vec2{-1,1}
-    sa := math.sin(camera.angle)
-    ca := math.cos(camera.angle)
-    p = Vec2{ p.x * ca + p.y * sa, p.y * ca - p.x * sa }
-    p = p * 0.5 * camera.size
-    p = p + 0.5 * camera.viewport
+    p := pos;
+    p = p + Vec2{-1,1} * camera.position;
+    sa := math.sin(-camera.angle);
+    ca := math.cos(-camera.angle);
+    p = Vec2{ p.x * ca + p.y * sa, p.y * ca - p.x * sa };
+    scale := Vec2{ camera.size/camera.viewport.x, camera.size/camera.viewport.y };
+    p = p*scale*0.5;
+    p = p * camera.viewport;
+    p = p + camera.viewport * 0.5;
     return p
 }
 
