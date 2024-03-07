@@ -77,30 +77,30 @@ Tween :: struct {
     user_data : rawptr,
 }
 
-tween :: proc(tweener: ^Tweener, value: ^$T, target : T, duration : f32, easing_proc := ease_linear) -> ^Tween {
-    ptr_type := type_info_of(^T).variant.(runtime.Type_Info_Pointer).elem.id
-    dimen := size_of(T)/size_of(f32)
-    assert(size_of(T)%size_of(f32) == 0, "This type is unable to tween.")
-    assert(dimen > 0 && dimen < 5, "This type is unable to tween.")
+// tween :: proc(tweener: ^Tweener, value: ^$T, target : T, duration : f32, easing_proc := ease_linear) -> ^Tween {
+//     ptr_type := type_info_of(^T).variant.(runtime.Type_Info_Pointer).elem.id
+//     dimen := size_of(T)/size_of(f32)
+//     assert(size_of(T)%size_of(f32) == 0, "This type is unable to tween.")
+//     assert(dimen > 0 && dimen < 5, "This type is unable to tween.")
 
-    using hla
-    tween :^Tween= hla_get_pointer(hla_append(&tweener.tweens, Tween{}))
+//     using hla
+//     tween :^Tween= hla_get_pointer(hla_append(&tweener.tweens, Tween{}))
 
-    tween.dimension = cast(i32)dimen
-    tween.impl = &_impl_default
+//     tween.dimension = cast(i32)dimen
+//     tween.impl = &_impl_default
 
-    tween.easing_proc = easing_proc
-    tween.data = cast(rawptr)value
+//     tween.easing_proc = easing_proc
+//     tween.data = cast(rawptr)value
 
-    mem.copy(&tween.begin_value, value, size_of(T))
-    target := target
-    mem.copy(&tween.end_value, &target, size_of(T))
+//     mem.copy(&tween.begin_value, value, size_of(T))
+//     target := target
+//     mem.copy(&tween.end_value, &target, size_of(T))
 
-    tween.duration = duration
-    tween.time = 0
+//     tween.duration = duration
+//     tween.time = 0
 
-    return tween
-}
+//     return tween
+// }
 
 // ## easing proc
 // Easing function reference: [https://easings.net](https://easings.net)
