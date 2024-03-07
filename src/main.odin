@@ -16,6 +16,8 @@ import "dude/dgl"
 import mui "dude/microui"
 import hla "dude/collections/hollow_array"
 
+REPAC_ASSETS :: true
+
 pass_main : dude.RenderPass
 
 DemoGame :: struct {
@@ -31,6 +33,8 @@ DemoGame :: struct {
     book : []rune,
     book_ptr : int,
 
+    asset_pacbuffer : []u8,
+
     dialogue_size : f32,
 }
 
@@ -38,6 +42,20 @@ DemoGame :: struct {
 demo_game : DemoGame
 
 main :: proc() {
+    // ** Load dpacs
+    if REPAC_ASSETS {
+        bundle_err : dpac.BundleErr
+        demo_game.asset_pacbuffer, bundle_err = dpac.bundle(GameAssets)
+        if bundle_err != .None {
+            fmt.eprintf("bundle err: {}\n", bundle_err)
+        } else {
+            os.write_entire_file("./GameAssets.dpac", demo_game.asset_pacbuffer)
+        }
+    } else {
+        demo_game.asset_pacbuffer, _ = os.read_entire_file("./GameAssets.dpac")
+    }
+    defer delete(demo_game.asset_pacbuffer)
+    
 	dude.init("dude game demo", {_package_game, _test})
     dude.dude_main(update, init, release, on_mui)
 }
@@ -131,14 +149,9 @@ dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
 
 @(private="file")
 init :: proc(game: ^dude.Game) {
-    // ** Load dpacs
     dpac.register_load_handler(dove_assets_handler)
-    // pac_assets, bundle_err := dpac.bundle(GameAssets); defer delete(pac_assets)
-    // os.write_entire_file("./GameAssets.dpac", pac_assets)
-    pac_assets, _ := os.read_entire_file("./GameAssets.dpac"); defer delete(pac_assets)
-
-    err := dpac.load(pac_assets, &assets, type_info_of(GameAssets))
-    assert(err == .None, "Failed to load assets.")
+    err := dpac.load(demo_game.asset_pacbuffer, &assets, type_info_of(GameAssets))
+    assert(err == .None, fmt.tprintf("Failed to load assets: {}", err))
     
     using demo_game
     append(&game.render_pass, &pass_main)
@@ -183,7 +196,7 @@ init :: proc(game: ^dude.Game) {
     // render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
     // render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, texture_test.id, {0.5,0.5}, {1,1}}, order=101)
 
-    player = render_pass_add_object(&pass_main, RObjSprite{color={1,0,0,1}, texture=assets.dude_logo.id, size={4,4}, anchor={0.5,0.5}}, order=100)
+    player = render_pass_add_object(&pass_main, RObjSprite{color={1,1,0,1}, texture=assets.qq.id, size={4,4}, anchor={0.5,0.5}}, order=100)
 
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_grid, mode=.Lines}, order=-9999, vertex_color_on=true)
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_arrow}, vertex_color_on=true)
@@ -252,6 +265,8 @@ release :: proc(game: ^dude.Game) {
 @(private="file")
 on_mui :: proc(ctx: ^mui.Context) {
     if mui.window(ctx, "Hello, mui", {50,50, 300, 400}, {.NO_CLOSE}) {
+        t := dude.render_pass_get_object(demo_game.player)
+        mui.text(ctx, fmt.tprintf("player position: {}", t.position))
         if .ACTIVE in mui.treenode(ctx, "Treenode") {
             using dude
             @static box := false
