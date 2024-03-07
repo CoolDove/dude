@@ -1,5 +1,6 @@
 package dude
 
+import "core:fmt"
 import "core:log"
 import "core:math"
 import "core:slice"
@@ -291,22 +292,6 @@ order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0, vertex_color_o
         })
 }
 
-render_pass_add_object_immediate :: proc(pass: ^RenderPass, obj: RObj, material: ^Material=nil,
-order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0, vertex_color_on:=false, screen_space:=false) {
-    immediate_add_object(&pass.immediate_draw_ctx,
-        RenderObject{
-            obj = obj, 
-            material = material,
-            order = order,
-            ex = {1 if vertex_color_on else 0, 1 if screen_space else 0, 0,0},
-            transform = {
-                position=position,
-                scale=scale,
-                angle=angle,
-            },
-        })
-}
-
 render_pass_get_object :: proc(handle: RObjHandle) -> ^RenderObject {
     return hla.hla_get_pointer(handle)
 }
@@ -471,6 +456,7 @@ RObjCmdRenderTarget :: struct {
 }
 RObjCmdScissor :: struct {
     scissor : Vec4i,
+    enable : bool,
 }
 // ** Render object commands
 robjcmd_set_blend :: proc(blend: dgl.GlStateBlend) -> RObjCommand {
@@ -486,7 +472,7 @@ execute_render_command :: proc(cmd: RObjCommand) {
     case dgl.GlStateBlend:
         dgl.state_set_blend(cmd)
     case RObjCmdScissor:
-        dgl.state_set_scissor(cmd.scissor)
+        dgl.state_set_scissor(cmd.scissor, cmd.enable)
     case RObjCmdRenderTarget:
         assert(false, "RenderObject: Command RenderTarget is not supported now.")
         // dgl.framebuffer_attach_color(cmd.attach_point, cmd.texture)

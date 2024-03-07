@@ -12,6 +12,7 @@ imdraw :ImdDrawApi= {
     quad_9slice = immediate_screen_quad_9slice,
     text = immediate_screen_text,
     arrow = immediate_screen_arrow,
+    set_scissor = immediate_set_scissor,
 }
 
 @private
@@ -38,7 +39,7 @@ ImmediateDrawContext :: struct {
 
 @private
 ImmediateElemType :: enum {
-    ScreenMeshP2U2C4, ScreenMeshP2U2, Line,
+    None, ScreenMeshP2U2C4, ScreenMeshP2U2, Line,
 }
 
 @private
@@ -58,11 +59,12 @@ immediate_release :: proc(using ctx: ^ImmediateDrawContext) {
 //  the immediate buffer.
 @private
 immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
-    if len(mesh_builder.vertices) <= 0 {
+    if ctx.buffered_type == .None || len(mesh_builder.vertices) <= 0 {
         dgl.mesh_builder_clear(&mesh_builder)
         return
     }
     switch buffered_type {
+    case .None: return
     case .ScreenMeshP2U2:
         mesh := dgl.mesh_builder_create(mesh_builder)
         append(&meshes, mesh)
@@ -93,6 +95,9 @@ immediate_confirm :: proc(using ctx: ^ImmediateDrawContext) {
                 order=order,
         })
     }
+
+    dgl.mesh_builder_clear(&ctx.mesh_builder)
+    ctx.buffered_type = .None
 }
 
 @private
@@ -218,6 +223,14 @@ immediate_screen_arrow :: proc(pass: ^RenderPass, from,to : Vec2, width: f32, co
     mesher_arrow_p2u2c4(&ctx.mesh_builder, from,to, width, col_u2f(color))
 }
 
+@private
+immediate_set_scissor :: proc(pass: ^RenderPass, rect: Vec4i, enable: bool) {
+    ctx := &pass.impl.immediate_draw_ctx
+    immediate_confirm(ctx)
+    c :RObjCommand= RObjCmdScissor{rect, enable}
+    immediate_add_object(ctx, RenderObject{ obj = c })
+}
+
 // If the context states are different from the buffered settings, submit the buffered element.
 @(private="file")
 _confirm_context :: proc(pass: ^RenderPass, type: ImmediateElemType, color: Color32, texture: u32, order: i32, screen_space: bool, material: ^Material) -> bool {
@@ -243,4 +256,5 @@ ImdDrawApi :: struct {
     quad_9slice : proc(pass: ^RenderPass, corner,size, inner_size, uv_inner_size: Vec2, color:Color32={255,255,255,255}, texture: u32=0, order:i32=0),
     text : proc(pass: ^RenderPass, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, order:i32=0),
     arrow : proc(pass: ^RenderPass, from,to : Vec2, width: f32, color:Color32={255,255,255,255}, order:i32=0),
+    set_scissor : proc(pass: ^RenderPass, rect: Vec4i, enable: bool),
 }
