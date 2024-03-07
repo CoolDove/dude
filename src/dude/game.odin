@@ -73,6 +73,14 @@ game_update :: proc() {
     _builtin_pass.viewport = {0,0, wndx,wndy}
     _builtin_pass.camera.viewport = vec_i2f(Vec2i{wndx,wndy})
     _builtin_pass.immediate_draw_ctx.overlap_mode = true
+
+    {// ** Final blit
+        ctx := &_builtin_pass.immediate_draw_ctx
+        render_pass_add_object_immediate(&_builtin_pass, RenderObject{obj=rcmd_bind_framebuffer(0)})
+        immediate_screen_quad(&_builtin_pass, {0,0}, vec_i2f(app.window.size), 
+            texture=rsys._default_framebuffer_color0, uv_min={0,1}, uv_max={1,0})
+        render_pass_add_object_immediate(&_builtin_pass, RenderObject{obj=rcmd_restore_framebuffer()})
+    }
     render_pass_draw(&_builtin_pass)
 
     free_all(allocators.frame)
@@ -115,6 +123,12 @@ game_release :: proc() {
 
     allocators_release()
 }
+
+game_on_resize :: proc(from, to: Vec2i) {
+    render_on_resize(from, to)
+
+}
+
 
 BuiltinResource :: struct {
     default_font : ^DynamicFont,

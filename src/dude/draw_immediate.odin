@@ -7,6 +7,13 @@ import "core:strings"
 import "dgl"
 import "vendor/fontstash"
 
+// DOC:
+// Every render pass has an immediate draw context. You can use `imdraw` api to add immediate draw 
+//  commands (which are just render objects stored in a split array and released after drawn) to the
+//  pass. Generated instanted meshes stored in the meshes array would also be deleted after drawn.
+// If you want to add custom render objects to the immediate draw pool, you must call `immediate_confirm`
+//  to clear the mesh batching buffer at first, then use `immediate_add_object` to add.
+
 imdraw :ImdDrawApi= {
     quad = immediate_screen_quad,
     quad_9slice = immediate_screen_quad_9slice,

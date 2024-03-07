@@ -145,7 +145,7 @@ init :: proc(game: ^dude.Game) {
 
     {// ** Build meshes.
         using dgl
-        mb := &dude.rsys.temp_mesh_builder
+        mb := dude.render.get_temp_mesh_builder()
 
         mesh_builder_reset(mb, VERTEX_FORMAT_P2U2)
         mesh_builder_add_vertices(mb,
@@ -168,7 +168,7 @@ init :: proc(game: ^dude.Game) {
     }
 
     using dude
-    utable_general := rsys.shader_default_mesh.utable_general
+    utable_general := render.system.shader_default_mesh.utable_general
 
     // Pass initialization
     wndx, wndy := app.window.size.x, app.window.size.y
@@ -178,7 +178,7 @@ init :: proc(game: ^dude.Game) {
     blend := &pass_main.blend.(dgl.GlStateBlendSimp)
     blend.enable = true
 
-    render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1,1}, order=9999)
+    render_pass_add_object(&pass_main, RObjMesh{mesh=render.system.mesh_unit_quad}, position={1,1}, order=9999)
     // render_pass_add_object(&pass_main, RObjMesh{mesh=rsys.mesh_unit_quad}, position={1.2,1.1})
     // render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
     // render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, texture_test.id, {0.5,0.5}, {1,1}}, order=101)
@@ -188,7 +188,7 @@ init :: proc(game: ^dude.Game) {
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_grid, mode=.Lines}, order=-9999, vertex_color_on=true)
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_arrow}, vertex_color_on=true)
 
-    mb := &dude.rsys.temp_mesh_builder
+    mb := render.get_temp_mesh_builder()
     dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2C4)
     dude.mesher_text_p2u2c4(mb, "诗篇46的秘密\n试试换行", 32, {1,0.2,0, 1.0})
     tm_test = dgl.mesh_builder_create(mb^)
@@ -227,7 +227,7 @@ _flip_page :: proc() {
     using demo_game
     line_str := utf8.runes_to_string(line, context.temp_allocator)
 
-    mb := &dude.rsys.temp_mesh_builder
+    mb := dude.render.get_temp_mesh_builder()
     dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2C4)
     dude.mesher_text_p2u2c4(mb, line_str, 32, {1,0.2,0, 1.0})
     tm_test = dgl.mesh_builder_create(mb^)
@@ -256,7 +256,7 @@ on_mui :: proc(ctx: ^mui.Context) {
             using dude
             @static box := false
             mui.layout_row(ctx, {128,40}, 128)
-            muix.image(ctx, dude.rsys.fontstash_data.atlas, col_i2u(0xffffffff))
+            muix.image(ctx, dude.render.system.fontstash_data.atlas, col_i2u(0xffffffff))
             mui.layout_begin_column(ctx)
             mui.button(ctx, "button a")
             mui.button(ctx, "button b")

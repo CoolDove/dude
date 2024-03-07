@@ -18,6 +18,20 @@ UNIFORM_BLOCK_SLOT_DUDE :: 1
 //  texture after a material is applied, it'll use a texture slot began from 16.
 MAX_TEXTURES_FOR_MATERIAL :: 16
 
+RenderApi :: struct {
+    get_default_framebuffer : proc() -> dgl.FramebufferId,
+    get_temp_mesh_builder : proc() -> ^dgl.MeshBuilder,
+    system : ^RenderSystem,
+}
+
+render : RenderApi = {
+    _get_default_framebuffer,
+    proc() -> ^dgl.MeshBuilder {
+        return &rsys.temp_mesh_builder
+    },
+    &rsys,
+}
+
 RenderPass :: struct {
     // Differs from the viewport in camera, which is for transform calculation. This one defines how
     //  you output to the framebuffer. (This is what passed into gl.Viewport(...) before rendering)
@@ -158,20 +172,33 @@ RenderSystem :: struct {
     render_data_dude_ubo : dgl.UniformBlockId,
 
     fontid_unifont : int,
+
+    // Internal stuff
+    _default_framebuffer : dgl.FramebufferId,
+    _default_framebuffer_color0 : u32,
 }
 
 FontstashData :: struct {
     atlas : dgl.TextureId,
 }
 
+@private
 rsys : RenderSystem
 
+@private
 render_init :: proc() {
     using rsys
 
-    // Textures
+    // Builtin textures
     texture_default_white = dgl.texture_create_with_color(4,4, {255,255,255,255})
     texture_default_black = dgl.texture_create_with_color(4,4, {0,0,0,255})
+
+    // ** Default framebuffer
+    rsys._default_framebuffer_color0 = dgl.texture_create_empty(app.window.size.x, app.window.size.y)    
+    rsys._default_framebuffer = dgl.framebuffer_create()
+    dgl.framebuffer_bind(rsys._default_framebuffer)
+    dgl.framebuffer_attach_color(0, rsys._default_framebuffer_color0)
+    dgl.framebuffer_bind_default()
 
     render_data_dude_ubo = dgl.ubo_create(size_of(render_data_dude))
     dgl.ubo_bind(render_data_dude_ubo, UNIFORM_BLOCK_SLOT_DUDE)
@@ -224,6 +251,7 @@ render_init :: proc() {
 
 }
 
+@private
 render_release :: proc() {
     using rsys
 
@@ -240,14 +268,29 @@ render_release :: proc() {
     
     dgl.mesh_builder_release(&temp_mesh_builder)
     dgl.ubo_release(&render_data_dude_ubo)
+
+    dgl.framebuffer_destroy(rsys._default_framebuffer)
+    dgl.texture_delete(&rsys._default_framebuffer_color0)
+    
 }
 
+@private
 render_update :: proc(time_total : f32) {
     rsys.render_data_dude.time_total = time_total
     dgl.ubo_update_with_object(rsys.render_data_dude_ubo, &rsys.render_data_dude)
 }
 
-render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i, blend:=false) {
+@private
+render_on_resize :: proc(from, to: Vec2i) {
+    new_color0 := dgl.texture_create_empty(to.x, to.y)
+    dgl.texture_delete(&rsys._default_framebuffer_color0)
+    dgl.framebuffer_bind(_get_default_framebuffer())
+    dgl.framebuffer_attach_color(0, new_color0)
+    rsys._default_framebuffer_color0 = new_color0
+    dgl.framebuffer_bind_default()
+}
+
+render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i, blend:=false, target:dgl.FramebufferId=rsys._default_framebuffer) {
 	pass.robjs = hla.hla_make(RenderObject, 128)
 	pass.robjs_sorted = make([dynamic]^RenderObject)
 
@@ -259,6 +302,7 @@ render_pass_init :: proc(pass: ^RenderPass, viewport: Vec4i, blend:=false) {
     pass.viewport = viewport
 
     pass.blend = dgl.GlStateBlendSimp{blend, .FUNC_ADD, .SRC_ALPHA, .ONE_MINUS_SRC_ALPHA}
+    pass.target = target
 
     immediate_init(&pass.immediate_draw_ctx)
 }
@@ -292,6 +336,12 @@ order: i32=0, position:Vec2={0,0}, scale:Vec2={1,1}, angle:f32=0, vertex_color_o
         })
 }
 
+render_pass_add_object_immediate :: proc(pass: ^RenderPass, render_obj: RenderObject) {
+    ctx := &pass.immediate_draw_ctx
+    immediate_confirm(ctx)
+    immediate_add_object(ctx, render_obj)
+}
+
 render_pass_get_object :: proc(handle: RObjHandle) -> ^RenderObject {
     return hla.hla_get_pointer(handle)
 }
@@ -308,6 +358,7 @@ RenderClear :: struct {
     mask : dgl.ClearMasks,
 }
 
+@private
 render_pass_draw :: proc(pass: ^RenderPass) {
     dgl.framebuffer_bind(pass.target)
     dgl.state_set_viewport(pass.viewport)
@@ -363,7 +414,7 @@ render_pass_draw :: proc(pass: ^RenderPass) {
         case RObjHandle:
             log.errorf("Render: Render object type not supported.")
         case RObjCommand:
-            execute_render_command(robj)
+            execute_render_command(pass, robj)
         case RObjCustom:
             if robj != nil do robj()
         }
@@ -447,38 +498,6 @@ _draw_text :: #force_inline proc(robj: ^RObjTextMesh, obj: ^RenderObject) {
     dgl.draw_mesh(robj.text_mesh)
 }
 
-RObjCommand :: union {
-    dgl.GlStateBlend, RObjCmdRenderTarget, RObjCmdScissor,
-}
-RObjCmdRenderTarget :: struct {
-    texture : u32,
-    attach_point: u32,
-}
-RObjCmdScissor :: struct {
-    scissor : Vec4i,
-    enable : bool,
-}
-// ** Render object commands
-robjcmd_set_blend :: proc(blend: dgl.GlStateBlend) -> RObjCommand {
-    return blend
-}
-robjcmd_attach_render_texture :: proc(texture: u32, attach_point: u32) -> RObjCommand {
-    return RObjCmdRenderTarget{texture, attach_point}
-}
-
-@(private="file")
-execute_render_command :: proc(cmd: RObjCommand) {
-    switch cmd in cmd {
-    case dgl.GlStateBlend:
-        dgl.state_set_blend(cmd)
-    case RObjCmdScissor:
-        dgl.state_set_scissor(cmd.scissor, cmd.enable)
-    case RObjCmdRenderTarget:
-        assert(false, "RenderObject: Command RenderTarget is not supported now.")
-        // dgl.framebuffer_attach_color(cmd.attach_point, cmd.texture)
-    }
-}
-
 // ** Text rendering
 @(private="file")
 _fontstash_callback_resize :: proc(data: rawptr, w, h: int) {
@@ -490,4 +509,10 @@ _fontstash_callback_update :: proc(data: rawptr, dirtyRect: [4]f32, textureData:
     // Temporary: Just ignore the dirty rect, update the whole texture.
     fst := &rsys.fontstash_context
     dgl.texture_update(rsys.fontstash_data.atlas, auto_cast fst.width, auto_cast fst.height, fst.textureData, .Red)
+}
+
+// ** Default framebuffer
+@private
+_get_default_framebuffer :: proc() -> dgl.FramebufferId {
+    return rsys._default_framebuffer
 }

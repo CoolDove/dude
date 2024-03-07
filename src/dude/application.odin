@@ -40,8 +40,10 @@ app_run :: proc() {
 		// ## Handle events
 		for sdl.PollEvent(&evt) && window.handler != nil {
 			if evt.window.event == .RESIZED {
+				old := window.size 
 				window.size.x = evt.window.data1
 				window.size.y = evt.window.data2
+				game_on_resize(old, window.size)
 			} else if evt.window.event == .CLOSE {
                 window_closed = true
 			} else {
