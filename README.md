@@ -8,15 +8,16 @@ Run `make debug` (maybe you need MSYS2 on windows).
 - [x] Remove useless RObjs.
 - [x] Replace imgui with microui
     - [ ] Microui polish
-        - [ ] scissor
+        - [x] scissor
         - [ ] text input
-- [ ] Multi line text rendering.
+- [ ]*Multi line text rendering.
 
-- [ ] module: coordinate
 - [x] module: imdraw
-- [ ] module: render
+- [ ]*module: render
+- [ ] module: coordinate
 
-- [ ] Refactor resource loading and asset packaging.
-- [ ] Replace SDL2 with glfw.
+- [x] Refactor resource loading and asset packaging.
+- [ ]*Replace SDL2 with glfw.
 
 - [ ] Tween for colors and quaternions.
+- [ ] Try to use OpenGL 3.3
