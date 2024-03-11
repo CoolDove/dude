@@ -107,9 +107,9 @@ update :: proc(game: ^dude.Game, delta: f32) {
         return dude.coord_world2screen(&pass_main.camera, pos)
     }
 
-    imdraw.quad(&pass_main, to_screen({0,0}), {16,16}, texture=assets.qq.id)
-    imdraw.quad(&pass_main, to_screen({5,0}), {16,16}, texture=assets.qq.id)
-    imdraw.quad(&pass_main, to_screen({10,0}), {16,16}, texture=assets.qq.id)
+    imdraw.quad(&pass_main, to_screen({0,0}), {16,16}, texture=assets.qq.id, color=COL32_RED)
+    imdraw.quad(&pass_main, to_screen({5,0}), {16,16}, texture=assets.qq.id, color=COL32_GREEN)
+    imdraw.quad(&pass_main, to_screen({10,0}), {16,16}, texture=assets.qq.id, color=COL32_BLUE)
     imdraw.quad(&pass_main, to_screen({0,5}), {16,16}, texture=assets.qq.id)
     imdraw.quad(&pass_main, to_screen({0,10}), {16,16}, texture=assets.qq.id)
 
