@@ -6,7 +6,7 @@ import "core:math"
 // FIXME:coord_world2screen
 coord_world2screen :: proc(camera: ^RenderCamera, pos: Vec2) -> Vec2 {
     p := pos;
-    p = p + Vec2{-1,1} * camera.position;
+    p = p * Vec2{1,-1} + Vec2{-1,1} * camera.position;
     sa := math.sin(-camera.angle);
     ca := math.cos(-camera.angle);
     p = Vec2{ p.x * ca + p.y * sa, p.y * ca - p.x * sa };

@@ -72,7 +72,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     pass_main.camera.viewport = vec_i2f(viewport)
 
     pass_main.camera.angle = 0.06 * math.sin(time*0.8)
-    pass_main.camera.size = 60 + 6 * math.sin(time*1.2)
+    // pass_main.camera.size = 60 + 6 * math.sin(time*1.2)
 
     camera := &pass_main.camera
     t := dude.render_pass_get_object(player)
@@ -115,9 +115,8 @@ update :: proc(game: ^dude.Game, delta: f32) {
 
     {// test arrow
         root := to_screen({0,0})
-        // forward := dude.get_mouse_position() - root
-        forward := to_screen({0, -5}) - root
-        right := dude.rotate_vector(forward, -90 * math.RAD_PER_DEG)
+        forward := to_screen({0, 5}) - root
+        right := dude.rotate_vector(forward, 90 * math.RAD_PER_DEG)
         imdraw.arrow(&pass_main, 
             root,
             root + forward,
@@ -131,7 +130,15 @@ update :: proc(game: ^dude.Game, delta: f32) {
     if demo_game.dialogue_size > 0 {
         dialogue("Hello, Dove!", get_mouse_position(), {256, 128} * demo_game.dialogue_size, demo_game.dialogue_size)
     }
-    
+
+    for x in 0..<5 {
+        x := cast(f32)x
+        imdraw.text(&pass_main, fmt.tprintf("{}", x), to_screen({x,0}), 20, order=999999)
+    }
+    for y in 0..<5 {
+        y := cast(f32)y
+        imdraw.text(&pass_main, fmt.tprintf("{}", y), to_screen({0,y}), 20, order=999999)
+    }
 }
 
 dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
@@ -199,7 +206,7 @@ init :: proc(game: ^dude.Game) {
     // render_pass_add_object(&pass_main, RObjMesh{mesh=test_mesh_triangle, mode=.LineStrip}, position={.2,.2})
     // render_pass_add_object(&pass_main, RObjSprite{{1,1,1,1}, texture_test.id, {0.5,0.5}, {1,1}}, order=101)
 
-    player = render_pass_add_object(&pass_main, RObjSprite{color={1,1,0,1}, texture=assets.qq.id, size={4,4}, anchor={0.5,0.5}}, order=100)
+    player = render_pass_add_object(&pass_main, RObjSprite{color={1,1,1,1}, texture=assets.qq.id, size={4,4}, anchor={0.5,0}}, order=100)
 
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_grid, mode=.Lines}, order=-9999, vertex_color_on=true)
     render_pass_add_object(&pass_main, RObjMesh{mesh=mesh_arrow}, vertex_color_on=true)
@@ -269,6 +276,9 @@ release :: proc(game: ^dude.Game) {
 on_mui :: proc(ctx: ^mui.Context) {
     if mui.window(ctx, "Hello, mui", {50,50, 300, 400}, {.NO_CLOSE}) {
         t := dude.render_pass_get_object(demo_game.player)
+
+        mui.slider(ctx, &pass_main.camera.size, 10, 100, 1, "cam size: %.2f")
+
         mui.text(ctx, fmt.tprintf("player position: {}", t.position))
         mui.text(ctx, fmt.tprintf("screen space root: {}", pass_main.camera.position))
         if .ACTIVE in mui.treenode(ctx, "Treenode") {

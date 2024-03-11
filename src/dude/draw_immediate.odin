@@ -238,7 +238,8 @@ immediate_set_scissor :: proc(pass: ^RenderPass, rect: Vec4i, enable: bool) {
     immediate_add_object(ctx, RenderObject{ obj = c })
 }
 
-// If the context states are different from the buffered settings, submit the buffered element.
+// If the context states are different from the buffered states, submit the buffered element. If two
+//  elements share exactly the same states, that means they can be batched into a single element.
 @(private="file")
 _confirm_context :: proc(pass: ^RenderPass, type: ImmediateElemType, color: Color32, texture: u32, order: i32, screen_space: bool, material: ^Material) -> bool {
     ctx := &pass.impl.immediate_draw_ctx
