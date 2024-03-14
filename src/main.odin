@@ -10,6 +10,8 @@ import "core:strings"
 import "core:math/linalg"
 import "core:math"
 
+import sdl "vendor:sdl2"
+
 import "dude"
 import "dude/dpac"
 import "dude/dgl"
@@ -56,7 +58,7 @@ main :: proc() {
     }
     defer delete(demo_game.asset_pacbuffer)
     
-	dude.init("dude game demo", {_package_game, _test})
+	dude.init(dude.WindowInitializer{"dude game demo", {sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED}, {800,600}, {.RESIZABLE}, nil})
     dude.dude_main(update, init, release, on_mui)
 }
 

@@ -38,7 +38,7 @@ app_run :: proc() {
 		app_time_step()
 		
 		// ## Handle events
-		for sdl.PollEvent(&evt) && window.handler != nil {
+		for sdl.PollEvent(&evt) {
 			if evt.window.event == .RESIZED {
 				old := window.size 
 				window.size.x = evt.window.data1
@@ -47,7 +47,10 @@ app_run :: proc() {
 			} else if evt.window.event == .CLOSE {
                 window_closed = true
 			} else {
-				window.handler(&window, evt)
+                input_handle_sdl2(evt)
+                if window.handler != nil {
+                    window.handler(&window, evt)
+                }
 			}
 		} 
 
@@ -92,8 +95,8 @@ app_init :: proc() {
 	sdl.GL_GetAttribute(.CONTEXT_PROFILE_MASK, &profile)
 	log.infof("OpenGL version: {}.{}, profile: {}", major, minor, cast(sdl.GLprofile)profile)
 
-	window = create_main_window()
-	window_instantiate(&window)
+	// window = create_main_window()
+	window_instantiate(_game_initializer.window, &window)
 
 	game.window = &window
 

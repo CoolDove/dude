@@ -117,7 +117,6 @@ RObjImmediateScreenMesh :: struct {
 	color : Color,
     texture : u32,
 }
-// RObjMeshScreen :: distinct RObjMesh
 
 RObjTextMesh :: struct {
     text_mesh : dgl.Mesh,

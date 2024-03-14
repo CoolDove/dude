@@ -126,7 +126,6 @@ game_release :: proc() {
 
 game_on_resize :: proc(from, to: Vec2i) {
     render_on_resize(from, to)
-
 }
 
 
