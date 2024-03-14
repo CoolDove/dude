@@ -130,7 +130,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     }
 
     if demo_game.dialogue_size > 0 {
-        dialogue("Hello, Dove!", get_mouse_position(), {256, 128} * demo_game.dialogue_size, demo_game.dialogue_size)
+        dialogue("Hello, Dove!\nThis will be a long line.", get_mouse_position(), {256, 128} * demo_game.dialogue_size, demo_game.dialogue_size)
     }
 
     for x in 0..<5 {
@@ -155,8 +155,9 @@ dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
     quad_9slice(&pass_main, anchor, size, size-padding, {0.5,0.5}, 
         texture=assets.bg9slice.id, order=101, color={255,255,255, cast(u8)(alpha*255.0)})
     msg := message[:cast(int)(alpha*cast(f32)len(message))]
-    text(&pass_main, msg, anchor + {22,38}, 32, {0.1, 0.1, 0.1, 0.4*dude.ease_outcubic(alpha)}, order=102)
-    text(&pass_main, msg, anchor + {20,36}, 32, {0.2, 0.2, 0.2, dude.ease_outcubic(alpha)}, order=103)
+    fontsize :f32= 16
+    text(&pass_main, msg, anchor + {16,37}, fontsize, {0.1, 0.1, 0.1, 0.4*dude.ease_outcubic(alpha)}, region=size-{40,0}, order=102)
+    text(&pass_main, msg, anchor + {15,36}, fontsize, {0.2, 0.2, 0.2, dude.ease_outcubic(alpha)}, region=size-{40,0}, order=103)
 }
 
 @(private="file")
@@ -254,7 +255,7 @@ _flip_page :: proc() {
 
     mb := dude.render.get_temp_mesh_builder()
     dgl.mesh_builder_reset(mb, dgl.VERTEX_FORMAT_P2U2C4)
-    dude.mesher_text_p2u2c4(mb, line_str, 32, {1,0.2,0, 1.0})
+    dude.mesher_text_p2u2c4(mb, line_str, 32, {1,0.2,0, 1.0}, {8,8}*32)
     tm_test = dgl.mesh_builder_create(mb^)
     robj_message = dude.render_pass_add_object(&pass_main, dude.RObjTextMesh{text_mesh=tm_test}, scale={0.05,0.05}, order=999)
 }

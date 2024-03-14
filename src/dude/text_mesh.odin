@@ -5,7 +5,7 @@ import "dgl"
 import "core:fmt"
 import "vendor/fontstash"
 
-mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, text: string, size: f32, color: Color) {
+mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, text: string, size: f32, color: Color, region : Vec2={-1,-1}) {
 	fs := &rsys.fontstash_context
     fontstash.BeginState(fs); defer fontstash.EndState(fs)
 	fontstash.SetSize(fs, size)
@@ -26,8 +26,15 @@ mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, text: string, size: f32, color:
 				break
 			} 
 		}
-		prev_iter = iter
-        { using q
+        prev_iter = iter
+        newline := iter.codepoint == '\n'
+        overflow := region.x != -1 && iter.nextx > region.x
+        if newline || overflow {
+            iter.nextx = 0
+            iter.nexty += size
+        }
+        if !newline {
+            using q
             mesher_quad_p2u2c4(mb, {x1-x0,y1-y0}, {0,0}, {x0,y0}, {s0,t0}, {s1,t1}, {color,color,color,color})
         }
 	}
