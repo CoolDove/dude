@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import "core:time"
 import "core:os"
@@ -18,7 +18,7 @@ import "dude/dgl"
 import mui "dude/microui"
 import hla "dude/collections/hollow_array"
 
-REPAC_ASSETS :: true
+REPAC_ASSETS :: false
 
 pass_main : dude.RenderPass
 
@@ -84,6 +84,8 @@ update :: proc(game: ^dude.Game, delta: f32) {
     if get_key(.W) do t.position.y += move_speed * delta
     else if get_key(.S) do t.position.y -= move_speed * delta
     pass_main.camera.position = t.position
+    
+    if get_key_down(.H) do dude.audio_play()
 
 
     if get_key(.F) {

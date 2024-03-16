@@ -1,4 +1,4 @@
-﻿package dude
+package dude
 
 import "core:time"
 import "core:log"
@@ -90,6 +90,8 @@ game_update :: proc() {
 game_init :: proc() {
     using dgl
     allocators_init()
+    
+    audio_init()
 
     // dpac_init()
 
@@ -120,6 +122,8 @@ game_release :: proc() {
 	tweener_release(&game.global_tweener)
     
     free(game.settings)
+
+    audio_release()
 
     allocators_release()
 }

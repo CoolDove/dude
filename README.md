@@ -1,7 +1,7 @@
 # Maybe a self use game framework.
 
 ## How to build
-Run `make debug` (maybe you need MSYS2 on windows).
+Run `make debug` or `make release` (maybe you need MSYS2 on windows).
 
 ## TODO
 - [x] Draw immediate text
@@ -10,7 +10,7 @@ Run `make debug` (maybe you need MSYS2 on windows).
     - [ ] Microui polish
         - [x] scissor
         - [ ] text input
-- [ ]*Multi line text rendering.
+- [x]*Multi line text rendering.
 
 - [x] module: imdraw
 - [ ]*module: render
