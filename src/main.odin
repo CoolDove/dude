@@ -31,6 +31,8 @@ DemoGame :: struct {
 
     robj_message : dude.RObjHandle,
     message_color : dude.Color,
+    
+    sfx_hit, sfx_bgm : dude.AudioClip,
 
     book : []rune,
     book_ptr : int,
@@ -85,7 +87,8 @@ update :: proc(game: ^dude.Game, delta: f32) {
     else if get_key(.S) do t.position.y -= move_speed * delta
     pass_main.camera.position = t.position
     
-    if get_key_down(.H) do dude.audio_play("./res/sfx/test.wav")
+    if get_key_down(.H) do dude.audio_play(&sfx_hit)
+    
 
 
     if get_key(.F) {
@@ -228,6 +231,10 @@ init :: proc(game: ^dude.Game) {
         delete(book_data)
     }
     
+    // ** sfx
+    dude.audio_load("./res/sfx/test.wav", &demo_game.sfx_hit)
+    dude.audio_load("./res/sfx/eddie_theme.mp3", &demo_game.sfx_bgm)
+    dude.audio_play(&sfx_bgm)
 }
 
 @(private="file")
@@ -264,6 +271,10 @@ _flip_page :: proc() {
 
 @(private="file")
 release :: proc(game: ^dude.Game) {
+    // @Temporary
+    dude.audio_unload(&demo_game.sfx_hit)
+    dude.audio_unload(&demo_game.sfx_bgm)
+
     dpac.release(&assets, type_info_of(GameAssets))
     
     delete(demo_game.book)
