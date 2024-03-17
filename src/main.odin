@@ -85,7 +85,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     else if get_key(.S) do t.position.y -= move_speed * delta
     pass_main.camera.position = t.position
     
-    if get_key_down(.H) do dude.audio_play()
+    if get_key_down(.H) do dude.audio_play("./res/sfx/test.wav")
 
 
     if get_key(.F) {
