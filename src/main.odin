@@ -232,8 +232,8 @@ init :: proc(game: ^dude.Game) {
     }
     
     // ** sfx
-    dude.audio_load("./res/sfx/test.wav", &demo_game.sfx_hit)
-    dude.audio_load("./res/sfx/eddie_theme.mp3", &demo_game.sfx_bgm)
+    dude.audio_clip_load("./res/sfx/test.wav", &demo_game.sfx_hit, {.Stream})
+    dude.audio_clip_load("./res/sfx/eddie_theme.mp3", &demo_game.sfx_bgm, {.Stream, .Decode, .Async})
     dude.audio_play(&sfx_bgm)
 }
 
@@ -272,8 +272,8 @@ _flip_page :: proc() {
 @(private="file")
 release :: proc(game: ^dude.Game) {
     // @Temporary
-    dude.audio_unload(&demo_game.sfx_hit)
-    dude.audio_unload(&demo_game.sfx_bgm)
+    dude.audio_clip_unload(&demo_game.sfx_hit)
+    dude.audio_clip_unload(&demo_game.sfx_bgm)
 
     dpac.release(&assets, type_info_of(GameAssets))
     

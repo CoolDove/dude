@@ -9,6 +9,12 @@ AudioEngine :: struct {
     engine : ma.engine,
     fence : ma.fence,
 }
+AudioClipLoadFlag :: enum {
+    Stream = 1<<0,/* MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_STREAM */
+    Async  = 1<<1,/* MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_DECODE */
+    Decode = 1<<2,/* MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_ASYNC */
+}
+AudioClipLoadFlags :: bit_set[AudioClipLoadFlag]
 
 @private
 audio_engine : AudioEngine
@@ -37,15 +43,15 @@ audio_play :: proc(clip: ^AudioClip) {
     }
 }
 
-// TODO: Audio clip loading with custom flags like Stream, Async, Decode ...
-audio_load :: proc(path: string, clip: ^AudioClip) {
+audio_clip_load :: proc(path: string, clip: ^AudioClip, flags: AudioClipLoadFlags={}) {
     using audio_engine
     cpath := strings.clone_to_cstring(path, context.temp_allocator)
-    if ma.sound_init_from_file(&engine, cpath, 0, nil, nil, &clip.sound) != .SUCCESS {
+    flags :u32= cast(u32)(transmute(u8)flags)
+    if ma.sound_init_from_file(&engine, cpath, flags, nil, nil, &clip.sound) != .SUCCESS {
         log.errorf("AudioLoad: Failed to load clip: {}", path)
     }
 }
 
-audio_unload :: proc(clip: ^AudioClip) {
+audio_clip_unload :: proc(clip: ^AudioClip) {
     ma.sound_uninit(&clip.sound)
 }
