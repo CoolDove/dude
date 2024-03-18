@@ -12,6 +12,6 @@ AssetShader :: struct {
 AssetAudio :: struct {
     id : u32,
 }
-AssetFontFile :: struct {
-    data: []u8,
+AssetFont :: struct {
+    font : DynamicFont,
 }

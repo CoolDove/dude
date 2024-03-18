@@ -15,12 +15,15 @@ Run `make debug` or `make release` (maybe you need MSYS2 on windows).
 - [x] module: imdraw
 - [ ]*module: render
 - [ ] module: coordinate
-- [ ] audio system
+- [...] audio system
 
-- [ ] DPackage
-    - [ ] More asset type: font, shader, audio
+- [...] DPackage
+    - [ ] More asset type: 
+        - [x] font
+        - [ ] shader
+        - [ ] audio
     - [ ] endian handling
-    - [ ] default loading handler
+    - [ ] put the default loading handler in a right place.
 
 - [x] Refactor resource loading and asset packaging.
 - [ ]*Replace SDL2 with glfw.

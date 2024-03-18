@@ -201,7 +201,7 @@ immediate_screen_quad_9slice :: proc(pass: ^RenderPass, corner,size, inner_size,
 }
 
 @private
-immediate_screen_text :: proc(pass: ^RenderPass, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, region:Vec2={-1,-1}, order:i32=0) {
+immediate_screen_text :: proc(pass: ^RenderPass, font: DynamicFont, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, region:Vec2={-1,-1}, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
     font_atlas := rsys.fontstash_data.atlas
     if _confirm_context(pass, .ScreenMeshP2U2C4, {}, font_atlas, order, true, &rsys.material_default_text) {
@@ -211,7 +211,7 @@ immediate_screen_text :: proc(pass: ^RenderPass, text: string, offset: Vec2, siz
     mb := &ctx.mesh_builder
     vstart := dgl.mesh_builder_count_vertex(mb)
     stride := mb.stride
-    mesher_text_p2u2c4(mb, text, size, color, region)
+    mesher_text_p2u2c4(mb, font, text, size, color, region)
     vend := dgl.mesh_builder_count_vertex(mb)
     v : ^dgl.Vertex8
     for i in vstart..<vend {
@@ -262,7 +262,7 @@ _confirm_context :: proc(pass: ^RenderPass, type: ImmediateElemType, color: Colo
 ImdDrawApi :: struct {
     quad : proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0, uv_min:Vec2={0,0},uv_max:Vec2={1,1}),
     quad_9slice : proc(pass: ^RenderPass, corner,size, inner_size, uv_inner_size: Vec2, color:Color32={255,255,255,255}, texture: u32=0, order:i32=0),
-    text : proc(pass: ^RenderPass, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, region:Vec2={-1,-1}, order:i32=0),
+    text : proc(pass: ^RenderPass, font: DynamicFont, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, region:Vec2={-1,-1}, order:i32=0),
     arrow : proc(pass: ^RenderPass, from,to : Vec2, width: f32, color:Color32={255,255,255,255}, order:i32=0),
     set_scissor : proc(pass: ^RenderPass, rect: Vec4i, enable: bool),
 }

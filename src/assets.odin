@@ -13,7 +13,7 @@ GameAssets :: struct {
     dude_logos : []dude.AssetTexture `dpac:"./res/texture/dude$(index).png"`,
     qq : dude.AssetTexture `dpac:"./res/texture/qq.png"`,
     bg9slice : dude.AssetTexture `dpac:"./res/texture/default_ui_background_9slice.png"`,
-    font_inkfree : dude.AssetFontFile `dpac:"./res/font/inkfree.ttf"`,
+    font_inkfree : dude.AssetFont `dpac:"./res/font/inkfree.ttf"`,
     nothing : PlayerAssets,
 }
 
@@ -26,17 +26,17 @@ assets : GameAssets
 
 dove_assets_handler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8) {
     if e == .Load {
-        // fmt.printf("Load asset: {}({} bytes)\n", t.id, len(data))
         if t.id == dude.AssetTexture {
             atex := cast(^dude.AssetTexture)p
             tex := dgl.texture_load(data)
             atex.id = tex.id
             atex.size = tex.size
             fmt.printf("Load texture. {}-{}\n", atex.id, atex.size)
-        } else if t.id == dude.AssetFontFile {
-            afont := cast(^dude.AssetFontFile)p
-            afont.data = data
-            fmt.printf("Load font file.\n")
+        } else if t.id == dude.AssetFont {
+            font := cast(^dude.AssetFont)p
+            font.font = dude.font_load(data, "infree")
+            dude.font_add_fallback(font.font, dude.render.system.font_unifont)
+            fmt.printf("Load font.\n")
         } else {
             fmt.printf("Load unknown type asset.\n")
         }
@@ -45,7 +45,8 @@ dove_assets_handler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Type_Info, 
             atex := cast(^dude.AssetTexture)p
             dgl.texture_delete(&atex.id)
             fmt.printf("Release texture {} ({}).\n", atex.id, atex.size)
-        } else if t.id == dude.AssetFontFile {
+        } else if t.id == dude.AssetFont {
+            dude.font_unload((cast(^dude.AssetFont)p).font)
             fmt.printf("Release Font file.\n")
         } else {
             fmt.printf("Release unknown type.\n")

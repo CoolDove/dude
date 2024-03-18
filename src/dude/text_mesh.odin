@@ -6,7 +6,7 @@ import "core:fmt"
 import "vendor/fontstash"
 
 // Return the height
-mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, text: string, size: f32, color: Color, region : Vec2={-1,-1}) -> f32 {
+mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, font: DynamicFont, text: string, size: f32, color: Color, region : Vec2={-1,-1}) -> f32 {
 	fs := &rsys.fontstash_context
     fontstash.BeginState(fs); defer fontstash.EndState(fs)
 	fontstash.SetSize(fs, size)
@@ -14,7 +14,7 @@ mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, text: string, size: f32, color:
 	fontstash.SetBlur(fs, 0)
 	fontstash.SetAlignHorizontal(fs, .LEFT)
 	fontstash.SetAlignVertical(fs, .BASELINE)
-	fontstash.SetFont(fs, rsys.font_unifont.fontid)
+	fontstash.SetFont(fs, font.fontid)
 
 	iter := fontstash.TextIterInit(fs, 0, 0, text)
 	prev_iter := iter
