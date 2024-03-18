@@ -170,7 +170,7 @@ RenderSystem :: struct {
     render_data_dude : RenderDataDude,
     render_data_dude_ubo : dgl.UniformBlockId,
 
-    fontid_unifont : int,
+    font_unifont : DynamicFont,
 
     // Internal stuff
     _default_framebuffer : dgl.FramebufferId,
@@ -241,9 +241,8 @@ render_init :: proc() {
     atlas_size :int= 512
     fontstash.Init(&rsys.fontstash_context, atlas_size, atlas_size, .TOPLEFT)
     rsys.fontstash_context.userData = &rsys
-    // FIXME: The texture should be a single channel texture.
     rsys.fontstash_data.atlas = dgl.texture_create_empty(auto_cast atlas_size, auto_cast atlas_size)
-    rsys.fontid_unifont = fontstash.AddFontMem(&rsys.fontstash_context, "unifont", #load("./resources/unifont.ttf"), false)
+    rsys.font_unifont = font_load(#load("./resources/unifont.ttf"), "unifont")
     rsys.fontstash_context.callbackResize = _fontstash_callback_resize
     rsys.fontstash_context.callbackUpdate = _fontstash_callback_update
     _fontstash_callback_update(nil,{},nil)

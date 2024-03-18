@@ -108,7 +108,7 @@ texture_create :: proc {
     texture_create_with_buffer,
 }
 
-texture_create_empty :: proc(width, height : i32) -> TextureId {
+texture_create_empty :: proc(width, height : i32, type :TextureType= .RGBA) -> TextureId {
     tex : u32
     gl.GenTextures(1, &tex)
     gl.BindTexture(gl.TEXTURE_2D, tex)
@@ -119,7 +119,7 @@ texture_create_empty :: proc(width, height : i32) -> TextureId {
     gl.TexParameteri(target, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.TexParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
-    gl.TexImage2D(target, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
+    texture_update_current(width, height, {}, type)
     return tex
 }
 texture_create_with_color :: proc(width, height : int, color : Color32, gen_mipmap := false) -> TextureId {
