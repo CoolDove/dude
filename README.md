@@ -4,6 +4,7 @@
 Run `make debug` or `make release` (maybe you need MSYS2 on windows).
 
 ## TODO
+- [ ] **The memory explodes after loading audio clips from bytes, fix this!**
 - [x] Draw immediate text
 - [x] Remove useless RObjs.
 - [x] Replace imgui with microui
