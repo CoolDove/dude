@@ -9,8 +9,8 @@ AssetTexture :: struct {
 AssetShader :: struct {
     id : u32,
 }
-AssetAudio :: struct {
-    id : u32,
+AssetAudioClip :: struct {
+    clip : AudioClip,
 }
 AssetFont :: struct {
     font : DynamicFont,

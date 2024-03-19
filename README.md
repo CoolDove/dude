@@ -16,6 +16,7 @@ Run `make debug` or `make release` (maybe you need MSYS2 on windows).
 - [ ]*module: render
 - [ ] module: coordinate
 - [...] audio system
+- [ ] animation system
 
 - [...] DPackage
     - [ ] More asset type: 

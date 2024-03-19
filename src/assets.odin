@@ -8,6 +8,7 @@ import "dude/dpac"
 import "dude/dgl"
 
 GameAssets :: struct {
+    using sfx : SoundEffectAssets,
     box : dude.AssetTexture `dpac:"./res/texture/box.png"`,
     dude_logo : dude.AssetTexture `dpac:"./res/texture/dude.png"`,
     dude_logos : []dude.AssetTexture `dpac:"./res/texture/dude$(index).png"`,
@@ -20,6 +21,10 @@ GameAssets :: struct {
 PlayerAssets :: struct {
     player1 : dude.AssetTexture `dpac:"./res/texture/box.png"`,
     player2 : dude.AssetTexture `dpac:"./res/texture/box.png"`,
+}
+SoundEffectAssets :: struct {
+    hit : dude.AssetAudioClip `dpac:"./res/sfx/hit.wav"`,
+    bgm_eddie_theme : dude.AssetAudioClip `dpac:"./res/sfx/eddie_theme.mp3"`,
 }
 
 assets : GameAssets
@@ -37,6 +42,11 @@ dove_assets_handler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Type_Info, 
             font.font = dude.font_load(data, "infree")
             dude.font_add_fallback(font.font, dude.render.system.font_unifont)
             fmt.printf("Load font.\n")
+        } else if t.id == dude.AssetAudioClip {
+            asset := cast(^dude.AssetAudioClip)p
+            clip := &asset.clip
+            dude.audio_clip_load_from_mem(data, clip)
+            fmt.printf("Load audio clip.\n")
         } else {
             fmt.printf("Load unknown type asset.\n")
         }
