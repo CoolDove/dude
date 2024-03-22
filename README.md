@@ -4,7 +4,7 @@
 Run `make debug` or `make release` (maybe you need MSYS2 on windows).
 
 ## FIXME
-- [ ] The audio playback sometimes accidently stops.
+- [x] Cannot build debug, why? (dont know the reason, but it disapears when you use -thread-count:1 with -debug)
 - [ ] When quit the game, a win32 exception is thrown (maybe something is wrong while releasing).
 
 ## TODO
