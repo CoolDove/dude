@@ -45,7 +45,7 @@ dove_assets_handler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Type_Info, 
         } else if t.id == dude.AssetAudioClip {
             asset := cast(^dude.AssetAudioClip)p
             clip := &asset.clip
-            dude.audio_clip_load_from_mem(data, clip)
+            dude.audio_clip_load_from_mem(data, clip, {.Async, .Decode, .Stream})
             fmt.printf("Load audio clip.\n")
         } else {
             fmt.printf("Load unknown type asset.\n")
