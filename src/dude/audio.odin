@@ -21,7 +21,7 @@ audio_engine : AudioEngine
 
 AudioClip :: struct {
     sound : ma.sound,
-    buffer : ^ma.audio_buffer,
+    decoder : ma.decoder,
 }
 
 
@@ -44,26 +44,13 @@ audio_play :: proc(clip: ^AudioClip) {
     }
 }
 
-audio_clip_load :: proc(path: string, clip: ^AudioClip, flags: AudioClipLoadFlags={}) {
+audio_clip_load_from_mem :: proc(data: []u8, clip: ^AudioClip, flags: AudioClipLoadFlags={}) {
     using audio_engine
-    cpath := strings.clone_to_cstring(path, context.temp_allocator)
-    flags :u32= cast(u32)(transmute(u8)flags)
-    if ma.sound_init_from_file(&engine, cpath, flags, nil, nil, &clip.sound) != .SUCCESS {
-        log.errorf("AudioLoad: Failed to load clip: {}", path)
-    }
-}
-// Return decoded audio data.
-audio_clip_load_from_mem :: proc(data: []u8, clip: ^AudioClip, flags: AudioClipLoadFlags={}) -> (frames:rawptr, frame_count: u64) {
-    using audio_engine
-    channels := ma.engine_get_channels(&engine)
-    format := ma.format.f32
-    decoder_cfg := ma.decoder_config_init(format, channels, 48000)
+    decoder_cfg := ma.decoder_config_init_default()
+    ma.decoder_init_memory(raw_data(data), len(data), &decoder_cfg, &clip.decoder)
     
-    decode_memory_res := ma.decode_memory(raw_data(data), len(data), &decoder_cfg, &frame_count, &frames)
-    audio_buffer_cfg := ma.audio_buffer_config_init(format, channels, frame_count, frames, nil)   
-    ma.audio_buffer_alloc_and_init(&audio_buffer_cfg, &clip.buffer)
     flags :u32= cast(u32)(transmute(u8)flags)
-    if ma.sound_init_from_data_source(&engine, auto_cast clip.buffer, flags, nil, &clip.sound) != .SUCCESS {
+    if ma.sound_init_from_data_source(&engine, auto_cast &clip.decoder, flags, nil, &clip.sound) != .SUCCESS {
         log.errorf("Failed to init audio clip from data source")
     }
     return
@@ -71,5 +58,5 @@ audio_clip_load_from_mem :: proc(data: []u8, clip: ^AudioClip, flags: AudioClipL
 
 audio_clip_unload :: proc(clip: ^AudioClip) {
     ma.sound_uninit(&clip.sound)
-    ma.audio_buffer_uninit_and_free(clip.buffer)
+    ma.decoder_uninit(&clip.decoder)
 }

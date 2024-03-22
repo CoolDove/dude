@@ -3,6 +3,10 @@
 ## How to build
 Run `make debug` or `make release` (maybe you need MSYS2 on windows).
 
+## FIXME
+- [ ] The audio playback sometimes accidently stops.
+- [ ] When quit the game, a win32 exception is thrown (maybe something is wrong while releasing).
+
 ## TODO
 - [ ] **The memory explodes after loading audio clips from bytes, fix this!**
 - [x] Draw immediate text
