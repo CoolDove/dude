@@ -5,6 +5,10 @@ import "core:log"
 import "core:strings"
 import ma "vendor:miniaudio"
 
+// NOTE: 
+// The audio system is not good to use. Still needs much more modification during
+//  usage.
+
 AudioEngine :: struct {
     engine : ma.engine,
     fence : ma.fence,
@@ -55,6 +59,11 @@ audio_clip_load_from_mem :: proc(data: []u8, clip: ^AudioClip, flags: AudioClipL
     }
     return
 }
+
+audio_clip_set_frame :: proc(clip: ^AudioClip, target_frame: u64) {
+    ma.decoder_seek_to_pcm_frame(&clip.decoder, target_frame)
+}
+
 
 audio_clip_unload :: proc(clip: ^AudioClip) {
     ma.sound_uninit(&clip.sound)

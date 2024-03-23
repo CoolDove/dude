@@ -11,6 +11,7 @@ import "core:math/linalg"
 import "core:math"
 
 import sdl "vendor:sdl2"
+import ma "vendor:miniaudio"
 
 import "dude"
 import "dude/dpac"
@@ -86,8 +87,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     pass_main.camera.position = t.position
     
     if get_key_down(.H) do dude.audio_play(&assets.sfx.hit.clip)
-    
-
+    if get_key_down(.K) do dude.audio_clip_set_frame(&assets.bgm_hotel_california.clip, 0)
 
     if get_key(.F) {
         _flip_page()
@@ -144,6 +144,22 @@ update :: proc(game: ^dude.Game, delta: f32) {
         y := cast(f32)y
         imdraw.text(&pass_main, dude.render.system.font_unifont, fmt.tprintf("{}", y), to_screen({0,y}), 20, order=999999)
     }
+    
+    // audio clip informations
+    {
+        // text :: proc(txt: string, x,y: f32, order:=99999) {
+        //     size :f32= 30
+        //     imdraw.text(&pass_main, dude.render.system.font_unifont, txt, {x,y}, size, order=999999)
+        // }
+        // x, y :f32= 20, 50
+        // text("Hotel California", x, y); y += 30
+        // cursor, length : f32
+        // ma.sound_get_cursor_in_seconds(&assets.bgm_hotel_california.clip.sound, &cursor)
+        // ma.sound_get_length_in_seconds(&assets.bgm_hotel_california.clip.sound, &length)
+        // // ma.decoder_get_length_in_pcm_frames(&assets.bgm_hotel_california.clip.decoder, &pcm_length)
+        // // text(fmt.tprintf("-frames count: {}", available_frames), x, y); y += 30
+        // text(fmt.tprintf("-progress: {}/{}", cursor, length), x, y); y += 30
+    }   
 }
 
 dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
@@ -158,7 +174,7 @@ dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {
     quad_9slice(&pass_main, anchor, size, size-padding, {0.5,0.5}, 
         texture=assets.bg9slice.id, order=101, color={255,255,255, cast(u8)(alpha*255.0)})
     msg := message[:cast(int)(alpha*cast(f32)len(message))]
-    fontsize :f32= 28
+    fontsize :f32= 32 * alpha
     font := assets.font_inkfree.font
     text(&pass_main, font, msg, anchor + {16,37}, fontsize, {0.1, 0.1, 0.1, 0.4*dude.ease_outcubic(alpha)}, region=size-{40,0}, order=102)
     text(&pass_main, font, msg, anchor + {15,36}, fontsize, {0.2, 0.2, 0.2, dude.ease_outcubic(alpha)}, region=size-{40,0}, order=103)
@@ -230,7 +246,7 @@ init :: proc(game: ^dude.Game) {
         delete(book_data)
     }
     
-    dude.audio_play(&assets.sfx.bgm_eddie_theme.clip)
+    dude.audio_play(&assets.sfx.bgm_hotel_california.clip)
 }
 
 @(private="file")
@@ -292,15 +308,8 @@ on_mui :: proc(ctx: ^mui.Context) {
         if .ACTIVE in mui.treenode(ctx, "Treenode") {
             using dude
             @static box := false
-            mui.layout_row(ctx, {128,40}, 128)
+            mui.layout_row(ctx, {256}, 256)
             muix.image(ctx, dude.render.system.fontstash_data.atlas, col_i2u(0xffffffff))
-            mui.layout_begin_column(ctx)
-            mui.button(ctx, "button a")
-            mui.button(ctx, "button b")
-            @static input_buffer : [2048]u8
-            @static length : int
-            mui.textbox(ctx, input_buffer[:], &length)
-            mui.layout_end_column(ctx)
         }
         
         if .ACTIVE in mui.treenode(ctx, "Tween") {
