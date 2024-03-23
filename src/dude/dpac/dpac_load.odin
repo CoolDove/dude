@@ -4,8 +4,11 @@ import "core:io"
 import "core:os"
 import "core:path/filepath"
 import "core:reflect"
+import "core:slice"
 import "core:mem"
+import "core:log"
 import "core:runtime"
+import "core:encoding/endian"
 
 LoadErr :: enum {
     None = 0,
@@ -51,12 +54,14 @@ load :: proc(pac: []u8, p: rawptr, t: ^reflect.Type_Info) -> LoadErr {
     loader := DPacLoader{pac, 0}
 
     if len(pac) < size_of(PackageHeader) do return .InvalidPac_PacTooSmall
-    header := (cast(^PackageHeader)raw_data(pac))^
-    loader.ptr += size_of(PackageHeader)
-    if header.magic != transmute(u32)MAGIC do return .InvalidPac_NotADPac
+    header, got_dpacheader := _load_package_header(&loader)
+    if !got_dpacheader do return .InvalidPac_NotADPac
+    if header.magic != transmute(u64)MAGIC do return .InvalidPac_NotADPac
     if header.version != VERSION {
         return .InvalidPac_VersionNotMatch
     }
+    
+    log.debugf("DPAC, header check passed, header: {}", header)
 
     err := _load_struct(&loader, p, t)
     return err
@@ -145,4 +150,26 @@ _load_header :: proc(using loader: ^DPacLoader, peek:= false) -> (BlockHeader, b
     h := cast(^BlockHeader)&buf[ptr]
     if !peek do ptr += size_of(BlockHeader)
     return h^, true
+}
+@private
+_load_package_header :: proc(loader: ^DPacLoader, peek:= false) -> (PackageHeader, bool) {
+    h : PackageHeader
+    ptr := loader.ptr
+    ok := false
+    if h.magic,ok = endian.get_u64(_loader_step(loader, size_of(u64)), .Little); !ok {
+        loader.ptr = ptr
+        return {}, false
+    }
+    if h.version,ok = endian.get_u64(_loader_step(loader, size_of(u64)), .Little); !ok {
+        loader.ptr = ptr
+        return {}, false
+    }
+    if peek do loader.ptr = ptr
+    return h, true
+}
+
+@private
+_loader_step :: proc(loader: ^DPacLoader, size: i32) -> []u8 {
+    defer loader.ptr += auto_cast size
+    return slice.bytes_from_ptr(&loader.buf[loader.ptr], auto_cast size)
 }

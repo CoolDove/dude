@@ -144,22 +144,6 @@ update :: proc(game: ^dude.Game, delta: f32) {
         y := cast(f32)y
         imdraw.text(&pass_main, dude.render.system.font_unifont, fmt.tprintf("{}", y), to_screen({0,y}), 20, order=999999)
     }
-    
-    // audio clip informations
-    {
-        // text :: proc(txt: string, x,y: f32, order:=99999) {
-        //     size :f32= 30
-        //     imdraw.text(&pass_main, dude.render.system.font_unifont, txt, {x,y}, size, order=999999)
-        // }
-        // x, y :f32= 20, 50
-        // text("Hotel California", x, y); y += 30
-        // cursor, length : f32
-        // ma.sound_get_cursor_in_seconds(&assets.bgm_hotel_california.clip.sound, &cursor)
-        // ma.sound_get_length_in_seconds(&assets.bgm_hotel_california.clip.sound, &length)
-        // // ma.decoder_get_length_in_pcm_frames(&assets.bgm_hotel_california.clip.decoder, &pcm_length)
-        // // text(fmt.tprintf("-frames count: {}", available_frames), x, y); y += 30
-        // text(fmt.tprintf("-progress: {}/{}", cursor, length), x, y); y += 30
-    }   
 }
 
 dialogue :: proc(message : string, anchor, size: dude.Vec2, alpha:f32) {

@@ -8,6 +8,17 @@ Run `make debug` or `make release` (maybe you need MSYS2 on windows).
 - [ ] When quit the game, a win32 exception is thrown (maybe something is wrong while releasing).
 
 ## TODO
+- [...] DPackage
+    - [ ] Endian safety!
+        - [x] Package header
+        - [!] Block header
+    - [ ] More asset type: 
+        - [x] font
+        - [ ] shader
+        - [x] audio
+    - [ ] endian handling
+    - [ ] put the default loading handler in a right place.
+
 - [x] **The memory explodes after loading audio clips from bytes, fix this!**
 - [x] Draw immediate text
 - [x] Remove useless RObjs.
@@ -23,14 +34,6 @@ Run `make debug` or `make release` (maybe you need MSYS2 on windows).
 - [ ] module: coordinate
 - [...] audio system
 - [ ] animation system
-
-- [...] DPackage
-    - [ ] More asset type: 
-        - [x] font
-        - [ ] shader
-        - [x] audio
-    - [ ] endian handling
-    - [ ] put the default loading handler in a right place.
 
 - [x] Refactor resource loading and asset packaging.
 ~~- [ ]*Replace SDL2 with glfw.~~

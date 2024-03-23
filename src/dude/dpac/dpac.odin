@@ -17,8 +17,8 @@ import "core:strings"
 
 // TODO: Endian is not handled.
 
-MAGIC :[4]u8: {'D','P','A','C'}
-VERSION :u32: 1
+MAGIC :[8]u8: {'D','P','A','C','D','P','A','C'}
+VERSION :u64: 1
 
 DPAC_TAG :: "dpac"
 
