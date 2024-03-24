@@ -111,11 +111,11 @@ _load_array :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: 
         ptr := p
         if reflect.is_array(t) {
             tarray := t.variant.(reflect.Type_Info_Array)
-            if cast(u32)tarray.count != elem_count do return .PacStructMissmatch_ArrayOrSliceCount
+            if cast(u64)tarray.count != elem_count do return .PacStructMissmatch_ArrayOrSliceCount
             elem_type = tarray.elem
         } else if reflect.is_slice(t) {
             elem_type = t.variant.(reflect.Type_Info_Slice).elem
-            elem_buffer := make_slice([]u8, elem_count * cast(u32)elem_type.size)
+            elem_buffer := make_slice([]u8, elem_count * cast(u64)elem_type.size)
             the_slice := cast(^runtime.Raw_Slice)p
             ptr = raw_data(elem_buffer)
             the_slice.data = ptr
@@ -145,11 +145,35 @@ _load_asset :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: 
 }
 
 @private
-_load_header :: proc(using loader: ^DPacLoader, peek:= false) -> (BlockHeader, bool) {
-    if len(buf) - ptr < size_of(BlockHeader) do return {}, false
-    h := cast(^BlockHeader)&buf[ptr]
-    if !peek do ptr += size_of(BlockHeader)
-    return h^, true
+_load_header :: proc(loader: ^DPacLoader, peek:= false) -> (BlockHeader, bool) {
+    header : BlockHeader
+    ptr := loader.ptr
+    ok : bool
+    type_value : u64
+    if type_value, ok = endian.get_u64(_loader_step(loader, size_of(u64)), .Little); !ok {
+        loader.ptr = ptr
+        return {}, false
+    }
+    header.type = transmute(BlockType)type_value
+    switch header.type {
+    case .NestedStruct: fallthrough
+    case .Array:
+        if header.info.count, ok = endian.get_u64(_loader_step(loader, size_of(u64)), .Little); !ok {
+            loader.ptr = ptr
+            return {}, false
+        }
+    case .Data:
+        if header.info.index.from, ok = endian.get_u64(_loader_step(loader, size_of(u64)), .Little); !ok {
+            loader.ptr = ptr
+            return {}, false
+        }
+        if header.info.index.to, ok = endian.get_u64(_loader_step(loader, size_of(u64)), .Little); !ok {
+            loader.ptr = ptr
+            return {}, false
+        }
+    }
+    if peek do loader.ptr = ptr
+    return header, true
 }
 @private
 _load_package_header :: proc(loader: ^DPacLoader, peek:= false) -> (PackageHeader, bool) {

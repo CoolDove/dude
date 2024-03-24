@@ -105,8 +105,8 @@ _bundle_asset :: proc(b: ^strings.Builder, tag: string) -> BundleErr {
     defer {
         header := cast(^BlockHeader)_string_builder_point(b, header_offset)
         header.type = .Data
-        header.info.index.from = cast(i64)(header_offset + cast(uintptr)size_of(BlockHeader))
-        header.info.index.to = cast(i64)builder_len(b^)
+        header.info.index.from = cast(u64)(header_offset + cast(uintptr)size_of(BlockHeader))
+        header.info.index.to = cast(u64)builder_len(b^)
     }
 
     if data, ok := os.read_entire_file_from_filename(tag); ok {
@@ -119,9 +119,16 @@ _bundle_asset :: proc(b: ^strings.Builder, tag: string) -> BundleErr {
 
 @private// Returns where does the header begin.
 _write_header :: proc(b: ^strings.Builder, header: BlockHeader) -> uintptr {
-    obj := header
     ptr := strings.builder_len(b^)
-    strings.write_bytes(b, slice.bytes_from_ptr(&obj, size_of(BlockHeader)))
+    endian.put_u64(_sb_step(b, size_of(u64)), .Little, transmute(u64)header.type)
+    switch header.type {
+    case .Data:
+        endian.put_u64(_sb_step(b, size_of(u64)), .Little, transmute(u64)header.info.index.from)
+        endian.put_u64(_sb_step(b, size_of(u64)), .Little, transmute(u64)header.info.index.to)
+    case .NestedStruct: fallthrough
+    case .Array:
+        endian.put_u64(_sb_step(b, size_of(u64)), .Little, cast(u64)header.info.count)
+    }
     return auto_cast ptr
 }
 @private
@@ -152,15 +159,15 @@ PackageHeader :: struct {
 BlockHeader :: struct {
     type : BlockType,
     info : struct #raw_union {
-        count : u32,
-        index : BlockIndex,
+        count : u64, // For .Array and .NestedStruct, indicates the count of elements or fields.
+        index : BlockIndex, // For .Data, indicates the start ptr and the end ptr in this dpac.
     },
 }
 BlockIndex :: struct {
-    from,to : i64,
+    from,to : u64,
 }
 
-BlockType :: enum u32 {
+BlockType :: enum u64 {
     Data,
     Array,
     NestedStruct,
