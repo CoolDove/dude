@@ -15,8 +15,6 @@ import "core:strings"
 // You can tag an array/slice's load path like "./res/texture_$(index).png"
 //  the index should be continuous.
 
-// TODO: Endian is not handled.
-
 MAGIC :[8]u8: {'D','P','A','C','D','P','A','C'}
 VERSION :u64: 1
 
@@ -29,4 +27,3 @@ PacEvent :: enum {
 register_load_handler :: proc(handler: proc(event: PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8)) {
     append(&_handlers, handler)
 }
-
