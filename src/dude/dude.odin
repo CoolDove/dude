@@ -15,8 +15,12 @@ _callback_release : proc(game: ^Game)
 @(private)
 _callback_mui : proc(ctx: ^mui.Context)
 
+
+// If you want a event-driven window, you should set event_driven to true, and use window.handler to
+//  write the logic, and call `manually_update` somewhere you desire.
 GameInitializer :: struct {
     window : WindowInitializer,
+    event_driven : bool,
 }
 
 @private
@@ -34,9 +38,17 @@ dude_main :: proc(update: proc(game: ^Game, delta:f32), init, release: proc(game
     _callback_release = release
     _callback_mui = mui
 
-	app_run()
+    if _game_initializer.event_driven do app_run_event_driven()
+	else do app_run()
 }
 
-init :: proc(wnd : WindowInitializer) {
+init :: proc(wnd : WindowInitializer, event_driven:= false) {
     _game_initializer.window = wnd
+    _game_initializer.event_driven = event_driven
+}
+
+@private
+_manually_update := false
+manually_update :: proc() {
+    _manually_update = true
 }

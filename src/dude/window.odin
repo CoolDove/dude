@@ -59,6 +59,8 @@ window_instantiate :: proc(i : WindowInitializer, using wnd:^Window) -> bool {
     sdl.GL_SetSwapInterval(1)
 
     gl.Enable(gl.MULTISAMPLE)
+
+    wnd.handler = i.handler
     return true
 }
 
