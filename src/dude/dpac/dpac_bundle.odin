@@ -15,13 +15,15 @@ BundleErr :: enum {
     InvalidPac_UntaggedArrayOrSlice,
 }
 
+// Stored with little endian.
 bundle :: proc(T: typeid, allocator:= context.allocator) -> (output: []byte, err: BundleErr) {
     using strings
     b : Builder
     builder_init(&b)
 
-    dpac_header := PackageHeader{transmute(u32)MAGIC, VERSION, cast(u32)endian.PLATFORM_BYTE_ORDER}
-    write_bytes(&b, slice.bytes_from_ptr(&dpac_header, size_of(PackageHeader)))
+    dpac_header := PackageHeader{transmute(u64)MAGIC, VERSION}
+    // write_bytes(&b, slice.bytes_from_ptr(&dpac_header, size_of(PackageHeader)))
+    _write_package_header(&b, dpac_header)
 
     if err = _bundle_struct(&b, type_info_of(T)); err == .None {
         return transmute([]u8)to_string(b), err
@@ -103,8 +105,8 @@ _bundle_asset :: proc(b: ^strings.Builder, tag: string) -> BundleErr {
     defer {
         header := cast(^BlockHeader)_string_builder_point(b, header_offset)
         header.type = .Data
-        header.info.index.from = cast(i64)(header_offset + cast(uintptr)size_of(BlockHeader))
-        header.info.index.to = cast(i64)builder_len(b^)
+        header.info.index.from = cast(u64)(header_offset + cast(uintptr)size_of(BlockHeader))
+        header.info.index.to = cast(u64)builder_len(b^)
     }
 
     if data, ok := os.read_entire_file_from_filename(tag); ok {
@@ -115,12 +117,34 @@ _bundle_asset :: proc(b: ^strings.Builder, tag: string) -> BundleErr {
     }
 }
 
-@private
+@private// Returns where does the header begin.
 _write_header :: proc(b: ^strings.Builder, header: BlockHeader) -> uintptr {
-    obj := header
     ptr := strings.builder_len(b^)
-    strings.write_bytes(b, slice.bytes_from_ptr(&obj, size_of(BlockHeader)))
+    endian.put_u64(_sb_step(b, size_of(u64)), .Little, transmute(u64)header.type)
+    switch header.type {
+    case .Data:
+        endian.put_u64(_sb_step(b, size_of(u64)), .Little, transmute(u64)header.info.index.from)
+        endian.put_u64(_sb_step(b, size_of(u64)), .Little, transmute(u64)header.info.index.to)
+    case .NestedStruct: fallthrough
+    case .Array:
+        endian.put_u64(_sb_step(b, size_of(u64)), .Little, cast(u64)header.info.count)
+    }
     return auto_cast ptr
+}
+@private
+_write_package_header :: proc(b: ^strings.Builder, header: PackageHeader) {
+    h := header
+    endian.put_u64(_sb_step(b, size_of(u64)), .Little, h.magic)
+    endian.put_u64(_sb_step(b, size_of(u64)), .Little, h.version)
+}
+
+@private
+_sb_step :: proc(b: ^strings.Builder, size: i32) -> []u8 {
+    ptr := cast(uintptr)strings.builder_len(b^)
+    for i in 0..<size {
+        strings.write_byte(b, 0)
+    }
+    return slice.bytes_from_ptr(cast(rawptr)(transmute(uintptr)raw_data(b.buf)+ptr), auto_cast size)
 }
 
 @private
@@ -129,22 +153,21 @@ _string_builder_point :: proc(b: ^strings.Builder, offset: uintptr) -> rawptr {
 }
 
 PackageHeader :: struct {
-    magic : u32,
-    version : u32,
-    endian : u32,
+    magic : u64,
+    version : u64,
 }
 BlockHeader :: struct {
     type : BlockType,
     info : struct #raw_union {
-        count : u32,
-        index : BlockIndex,
+        count : u64, // For .Array and .NestedStruct, indicates the count of elements or fields.
+        index : BlockIndex, // For .Data, indicates the start ptr and the end ptr in this dpac.
     },
 }
 BlockIndex :: struct {
-    from,to : i64,
+    from,to : u64,
 }
 
-BlockType :: enum u32 {
+BlockType :: enum u64 {
     Data,
     Array,
     NestedStruct,

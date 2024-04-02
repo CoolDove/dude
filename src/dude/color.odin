@@ -1,4 +1,4 @@
-﻿package dude
+package dude
 
 @(private="file")
 _COLORS :: struct { 
