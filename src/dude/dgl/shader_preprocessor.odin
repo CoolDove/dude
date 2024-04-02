@@ -7,11 +7,15 @@ import "core:strings"
 _shader_libs : map[string]string
 @(private="file")
 _shader_lib_strings : strings.Builder
+@(private="file")
+_shader_preprocess_initialized := false
 
 // Support:
 // #include "libname"
 shader_preprocess :: proc(source : string, allocator:= context.allocator) -> string {
     context.allocator = allocator
+    _shader_preprocess_try_init()
+    
     using strings
     sb : Builder
     builder_init(&sb)//; defer builder_destroy(&sb)// Should be manually deleted
@@ -52,14 +56,7 @@ shader_preprocess :: proc(source : string, allocator:= context.allocator) -> str
 }
 
 shader_preprocess_add_lib :: proc(name, source: string) {
-    if len(_shader_libs) == 0 {
-        strings.builder_init(&_shader_lib_strings)
-        _shader_libs = make(map[string]string)
-        append(&release_handler, proc() {
-            delete(_shader_libs)
-            strings.builder_destroy(&_shader_lib_strings)
-        })
-    }
+    _shader_preprocess_try_init()
     start := strings.builder_len(_shader_lib_strings)
     strings.write_string(&_shader_lib_strings, source)
     end := strings.builder_len(_shader_lib_strings)
@@ -68,5 +65,19 @@ shader_preprocess_add_lib :: proc(name, source: string) {
 }
 
 shader_preprocess_get_lib_source :: proc(name: string) -> (string, bool) {
+    _shader_preprocess_try_init()
     return _shader_libs[name]
+}
+
+@(private="file")
+_shader_preprocess_try_init :: proc() {
+    if _shader_preprocess_initialized do return
+    strings.builder_init(&_shader_lib_strings)
+    _shader_libs = make(map[string]string)
+    
+    append(&release_handler, proc() {
+        delete(_shader_libs)
+        strings.builder_destroy(&_shader_lib_strings)
+    })
+    _shader_preprocess_initialized = true
 }

@@ -14,7 +14,7 @@ init :: proc() {
 release_handler : [dynamic]proc()
 
 release :: proc() {
-    for rh in release_handler do rh()
+    #reverse for rh in release_handler do rh()
     delete(release_handler)
 }
 

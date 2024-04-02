@@ -20,18 +20,11 @@ import "ecs"
 import "dpac"
 
 Game :: struct {
-    using settings : ^GameSettings,
     window : ^Window,
 	global_tweener : Tweener,
 	render_pass : [dynamic]^RenderPass,
 
     time_total, time_delta : f64,
-}
-
-GameSettings :: struct {
-    status_window_alpha : f32,
-    render_wireframe : bool,
-    immediate_draw_wireframe : bool,
 }
 
 game : Game
@@ -95,8 +88,6 @@ game_init :: proc() {
 
     // dpac_init()
 
-    game.settings = new(GameSettings)
-
 	tweener_init(&game.global_tweener, 16)
 
     render_init()
@@ -105,6 +96,8 @@ game_init :: proc() {
 
     render_pass_init(&_builtin_pass, {0,0, app.window.size.x, app.window.size.y}, true)
     _builtin_pass.clear = {}
+    
+    game.render_pass = make([dynamic]^RenderPass)
 
     if _callback_init != nil do _callback_init(&game)
 }
@@ -112,17 +105,19 @@ game_init :: proc() {
 game_release :: proc() {
     log.debug("game release")
     if _callback_release != nil do _callback_release(&game)
+    
+    delete(game.render_pass)
 
     render_pass_release(&_builtin_pass)
 
     mui_release()
 
     render_release()
+    
+    dgl.release()
 
 	tweener_release(&game.global_tweener)
     
-    free(game.settings)
-
     audio_release()
 
     allocators_release()

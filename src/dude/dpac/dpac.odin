@@ -1,4 +1,4 @@
-﻿package dpac
+package dpac
 
 import "core:slice"
 import "core:strconv"
@@ -25,5 +25,6 @@ PacEvent :: enum {
 }
 
 register_load_handler :: proc(handler: proc(event: PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8)) {
+    // Leak, but i don't care.
     append(&_handlers, handler)
 }

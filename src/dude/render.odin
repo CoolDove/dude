@@ -264,6 +264,9 @@ render_release :: proc() {
     material_release(&material_default_sprite)
     shader_release(&shader_default_sprite)
     
+    material_release(&material_default_text)
+    shader_release(&shader_default_text)
+    
     dgl.mesh_builder_release(&temp_mesh_builder)
     dgl.ubo_release(&render_data_dude_ubo)
 
