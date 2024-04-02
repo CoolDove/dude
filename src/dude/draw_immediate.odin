@@ -1,4 +1,4 @@
-﻿package dude
+package dude
 
 import gl "vendor:OpenGL"
 import "core:log"
@@ -13,6 +13,16 @@ import "vendor/fontstash"
 //  pass. Generated instanted meshes stored in the meshes array would also be deleted after drawn.
 // If you want to add custom render objects to the immediate draw pool, you must call `immediate_confirm`
 //  to clear the mesh batching buffer at first, then use `immediate_add_object` to add.
+
+
+@private
+ImdDrawApi :: struct {
+    quad : proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0, uv_min:Vec2={0,0},uv_max:Vec2={1,1}),
+    quad_9slice : proc(pass: ^RenderPass, corner,size, inner_size, uv_inner_size: Vec2, color:Color32={255,255,255,255}, texture: u32=0, order:i32=0),
+    text : proc(pass: ^RenderPass, font: DynamicFont, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, region:Vec2={-1,-1}, order:i32=0),
+    arrow : proc(pass: ^RenderPass, from,to : Vec2, width: f32, color:Color32={255,255,255,255}, order:i32=0),
+    set_scissor : proc(pass: ^RenderPass, rect: Vec4i, enable: bool),
+}
 
 imdraw :ImdDrawApi= {
     quad = immediate_screen_quad,
@@ -255,14 +265,4 @@ _confirm_context :: proc(pass: ^RenderPass, type: ImmediateElemType, color: Colo
         return true
     }
     return false
-}
-
-
-@private
-ImdDrawApi :: struct {
-    quad : proc(pass: ^RenderPass, corner, size: Vec2, color: Color32={255,255,255,255}, texture: u32=0, order: i32=0, uv_min:Vec2={0,0},uv_max:Vec2={1,1}),
-    quad_9slice : proc(pass: ^RenderPass, corner,size, inner_size, uv_inner_size: Vec2, color:Color32={255,255,255,255}, texture: u32=0, order:i32=0),
-    text : proc(pass: ^RenderPass, font: DynamicFont, text: string, offset: Vec2, size: f32, color:Color={1,1,1,1}, region:Vec2={-1,-1}, order:i32=0),
-    arrow : proc(pass: ^RenderPass, from,to : Vec2, width: f32, color:Color32={255,255,255,255}, order:i32=0),
-    set_scissor : proc(pass: ^RenderPass, rect: Vec4i, enable: bool),
 }
