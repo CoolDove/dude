@@ -126,10 +126,3 @@ game_release :: proc() {
 game_on_resize :: proc(from, to: Vec2i) {
     render_on_resize(from, to)
 }
-
-
-BuiltinResource :: struct {
-    default_font : ^DynamicFont,
-}
-
-builtin_res : BuiltinResource

@@ -34,7 +34,6 @@ main :: proc() {
     tracking_allocator : mem.Tracking_Allocator
     mem.tracking_allocator_init(&tracking_allocator, context.allocator)
     context.allocator = mem.tracking_allocator(&tracking_allocator)
-    
     reset_tracking_allocator :: proc(a: ^mem.Tracking_Allocator) -> bool {
         fmt.printf("Memory leak report:\n")
         leaks := false
@@ -75,9 +74,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
     pass_main.viewport = Vec4i{0,0, viewport.x, viewport.y}
     pass_main.camera.viewport = vec_i2f(viewport)
 
-    // if get_key_down(.H) do dude.audio_play(&assets.sfx.hit.clip)
     imdraw.text(&pass_main, assets.font_inkfree.font, "Hello, dude.", {100, 100}, 32)
-
 }
 
 @(private="file")
