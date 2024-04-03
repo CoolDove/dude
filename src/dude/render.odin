@@ -18,20 +18,6 @@ UNIFORM_BLOCK_SLOT_DUDE :: 1
 //  texture after a material is applied, it'll use a texture slot began from 16.
 MAX_TEXTURES_FOR_MATERIAL :: 16
 
-RenderApi :: struct {
-    get_default_framebuffer : proc() -> dgl.FramebufferId,
-    get_temp_mesh_builder : proc() -> ^dgl.MeshBuilder,
-    system : ^RenderSystem,
-}
-
-render : RenderApi = {
-    _get_default_framebuffer,
-    proc() -> ^dgl.MeshBuilder {
-        return &rsys.temp_mesh_builder
-    },
-    &rsys,
-}
-
 RenderPass :: struct {
     // Differs from the viewport in camera, which is for transform calculation. This one defines how
     //  you output to the framebuffer. (This is what passed into gl.Viewport(...) before rendering)
@@ -181,7 +167,6 @@ FontstashData :: struct {
     atlas : dgl.TextureId,
 }
 
-@private
 rsys : RenderSystem
 
 @private
@@ -513,7 +498,6 @@ _fontstash_callback_update :: proc(data: rawptr, dirtyRect: [4]f32, textureData:
 }
 
 // ** Default framebuffer
-@private
 _get_default_framebuffer :: proc() -> dgl.FramebufferId {
     return rsys._default_framebuffer
 }

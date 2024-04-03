@@ -6,6 +6,7 @@ import "core:reflect"
 import "dude"
 import "dude/dpac"
 import "dude/dgl"
+import "dude/render"
 
 GameAssets :: struct {
     using sfx : SoundEffectAssets,
@@ -41,7 +42,7 @@ dove_assets_handler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Type_Info, 
         } else if t.id == dude.AssetFont {
             font := cast(^dude.AssetFont)p
             font.font = dude.font_load(data, "infree")
-            dude.font_add_fallback(font.font, dude.render.system.font_unifont)
+            dude.font_add_fallback(font.font, render.system().font_unifont)
             fmt.printf("Load font.\n")
         } else if t.id == dude.AssetAudioClip {
             asset := cast(^dude.AssetAudioClip)p

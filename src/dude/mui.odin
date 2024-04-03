@@ -127,7 +127,7 @@ mui_render :: proc(pass: ^RenderPass) {
 			y := cmd.rect.y + (cmd.rect.h - rect.h)/2
 			draw_atlas_rect(pass, rect, vec_i2f(Vec2i{x, y}), transmute(Color32)cmd.color)
 		case ^mui.Command_Clip:
-            imdraw.set_scissor(pass, transmute(Vec4i)cmd.rect, true)
+            immediate_set_scissor(pass, transmute(Vec4i)cmd.rect, true)
 		case ^mui.Command_Jump: 
 			unreachable()
 		}

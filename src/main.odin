@@ -16,6 +16,9 @@ import sdl "vendor:sdl2"
 import "dude"
 import "dude/dpac"
 import "dude/dgl"
+import "dude/imdraw"
+import "dude/render"
+
 import mui "dude/microui"
 import hla "dude/collections/hollow_array"
 
