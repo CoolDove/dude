@@ -87,8 +87,6 @@ main :: proc() {
 @(private="file")
 update :: proc(game: ^dude.Game, delta: f32) {
     using dd, demo_game
-    @static time : f32 = 0
-    time += delta
 
     viewport := app.window.size
     pass_main.viewport = Vec4i{0,0, viewport.x, viewport.y}
@@ -102,7 +100,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
 
     if input.get_mouse_button_down(.Left) {
         size = 0
-        tween.tween(dd.get_global_tweener(), &size, 32, 0.4)
+        tween.tween(get_global_tweener(), &size, 32, 0.4)
     }
 }
 
