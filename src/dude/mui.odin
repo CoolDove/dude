@@ -44,13 +44,9 @@ mui_update :: proc() {
     mui.input_mouse_move(ctx, mouse_pos.x, mouse_pos.y)
     mui.input_scroll(ctx, cast(i32)get_mouse_wheel().x, cast(i32)get_mouse_wheel().y)
 
-    // FIXME: Write a better text input for mui. This one is too bad.
-    for k in KeyCode.A..<KeyCode.Z {
-        if get_key_repeat(k) {
-            A, a :i32: cast(i32)'A', cast(i32)'a'
-            cap :i32= A-a if get_key(.LSHIFT) || get_key(.RSHIFT) else 0
-            mui.input_text_byte(ctx, cast(u8)(cast(i32)(k-KeyCode.A) + cast(i32)a + cap))
-        }
+    if text, ok := get_textinput_charactors_temp(); ok {
+        bytes := transmute([]u8)text
+        for b in bytes do mui.input_text_byte(ctx, b)
     }
 
     // mouse buttons

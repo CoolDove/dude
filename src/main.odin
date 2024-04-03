@@ -123,10 +123,11 @@ update :: proc(game: ^dude.Game, delta: f32) {
         }
     }
 
-    if input_text, ok := dude.get_textinput_charactors_temp(); ok {
-        strings.write_string(&demo_game.buffer, input_text)
+    if !input.get_mui_hovering() {
+        if input_text, ok := dude.get_textinput_charactors_temp(); ok {
+            strings.write_string(&demo_game.buffer, input_text)
+        }
     }
-    
 }
 
 @(private="file")
@@ -159,4 +160,15 @@ release :: proc(game: ^dude.Game) {
 
 @(private="file")
 on_mui :: proc(ctx: ^mui.Context) {
+    mui.begin_window(ctx, "Input test", {50,50, 200, 400})
+    @static buf : [2048]u8
+    @static length : int
+
+    mui.layout_row(ctx, { -70, -1 }, 0);
+    if .SUBMIT in mui.textbox(ctx, buf[:], &length) {
+        mui.set_focus(ctx, ctx.last_id);
+    }
+    mui.label(ctx, "test")
+
+    mui.end_window(ctx)
 }
