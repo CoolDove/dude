@@ -12,20 +12,15 @@ Vec2i :: dgl.Vec2i
 Vec3i :: dgl.Vec3i
 Vec4i :: dgl.Vec4i
 
-Rect :: struct {
+Rect :: struct #raw_union {
+    using _rect4i : Rect4i,
+    using _rectps : RectPs,
+}
+
+Rect4i :: struct {
 	x, y: i32,
 	w, h: i32,
 }
-
-// Rect :: struct #raw_union {
-//     using _rect4i : Rect4i,
-//     using _rectps : RectPs,
-// }
-
-// Rect4i :: struct {
-// 	x, y: i32,
-// 	w, h: i32,
-// }
 RectPs :: struct {
     position : Vec2i,
     size : Vec2i,

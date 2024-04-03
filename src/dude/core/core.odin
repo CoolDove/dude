@@ -27,6 +27,8 @@ Vec2i :: dd.Vec2i
 Vec3i :: dd.Vec3i
 Vec4i :: dd.Vec4i
 
+Rect :: dd.Rect
+
 Color :: dd.Color
 Color32 :: dd.Color32
 

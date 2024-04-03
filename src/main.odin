@@ -99,11 +99,11 @@ update :: proc(game: ^dude.Game, delta: f32) {
     tween_debug_msg := fmt.tprintf("Tweens: {}", tween.tweener_count(get_global_tweener()))
     imdraw.text(&pass_main, default_font, tween_debug_msg, {10, 36}, 32, color={0,1,0,1})
     imdraw.text(&pass_main, default_font, 
-        "TextInput on" if dude.is_textinput_activating() else "TextInput off",
+        "TextInput on" if input.is_textinput_activating() else "TextInput off",
         {10, 84}, 32, color={0,1,0,1})
 
     imdraw.text(&pass_main, default_font, strings.to_string(buffer), {400, 280}, 32)
-    imdraw.text(&pass_main, default_font, dude.get_textinput_editting_text(), {400, 360}, 32, {.6,.6,.6,1})
+    imdraw.text(&pass_main, default_font, input.get_textinput_editting_text(), {400, 360}, 32, {.6,.6,.6,1})
 
     if input.get_mouse_button_down(.Left) {
         size = 0
@@ -111,20 +111,20 @@ update :: proc(game: ^dude.Game, delta: f32) {
     }
 
     if input.get_mouse_button_down(.Right) {
-        if dude.is_textinput_activating() {
-            dude.textinput_end()
+        if input.is_textinput_activating() {
+            input.textinput_end()
         } else {
             r : dude.RectPs
             r.position = dd.vec_f2i(input.get_mouse_position())
             r.size = {64, 32}
             demo_game.textinput_rect = transmute(dude.Rect)r
-            dude.textinput_begin()
-            dude.textinput_set_rect(demo_game.textinput_rect)
+            input.textinput_begin()
+            input.textinput_set_rect(demo_game.textinput_rect)
         }
     }
 
     if !input.get_mui_hovering() {
-        if input_text, ok := dude.get_textinput_charactors_temp(); ok {
+        if input_text, ok := input.get_textinput_charactors_temp(); ok {
             strings.write_string(&demo_game.buffer, input_text)
         }
     }
