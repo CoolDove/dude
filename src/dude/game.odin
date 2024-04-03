@@ -16,7 +16,6 @@ import gl "vendor:OpenGL"
 import mui "microui"
 
 import "dgl"
-import "ecs"
 import "dpac"
 
 Game :: struct {

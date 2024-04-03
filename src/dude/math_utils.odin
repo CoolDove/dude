@@ -5,7 +5,6 @@ import "core:math/linalg"
 import glm "core:math/linalg/glsl"
 
 import "dgl"
-import "ecs"
 
 // calc_camera_vp :: proc(camera: ^Camera) -> linalg.Matrix4x4f32 {
 //     using ecs

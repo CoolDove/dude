@@ -9,7 +9,7 @@ import "core:math/linalg"
 
 import gl "vendor:OpenGL"
 import "dgl"
-import "ecs"
+// import "ecs"
 
 // Gizmos is drawn in world space.
 // So a camera is needed.

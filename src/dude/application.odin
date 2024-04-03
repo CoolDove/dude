@@ -93,7 +93,7 @@ app_run_event_driven :: proc() {
             if window.handler != nil {
                 window.handler(&window, evt)
             }
-            if !window_closed && _manually_update {
+            if !window_closed && _dispatch_update {
                 // Input is not available for event-driven game.
                 // input_before_update()
 
@@ -101,7 +101,7 @@ app_run_event_driven :: proc() {
 
                 sdl.GL_SwapWindow(app.window.window)
                 // input_after_update()
-                _manually_update = false
+                _dispatch_update = false
             }
         }
     }

@@ -14,13 +14,15 @@ import "core:mem"
 import sdl "vendor:sdl2"
 
 import "dude"
+import dd "dude/core"
 import "dude/dpac"
 import "dude/dgl"
 import "dude/imdraw"
 import "dude/render"
+import "dude/tween"
+import "dude/input"
 
 import mui "dude/microui"
-import hla "dude/collections/hollow_array"
 
 REPAC_ASSETS :: false
 
@@ -28,6 +30,7 @@ pass_main : dude.RenderPass
 
 DemoGame :: struct {
     asset_pacbuffer : []u8,
+    size : f32,
 }
 
 @(private="file")
@@ -63,7 +66,7 @@ main :: proc() {
     }
     defer delete(demo_game.asset_pacbuffer)
     
-    dude_config : dude.DudeConfig = {
+    dude_config : dd.DudeConfig = {
         // ** window
         title = "dude demo game",
         position = {sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED},
@@ -77,12 +80,13 @@ main :: proc() {
         mui = on_mui,
     }
     
-    dude.dude_main(&dude_config)
+    dd.dude_main(&dude_config)
+
 }
 
 @(private="file")
 update :: proc(game: ^dude.Game, delta: f32) {
-    using dude, demo_game
+    using dd, demo_game
     @static time : f32 = 0
     time += delta
 
@@ -90,7 +94,12 @@ update :: proc(game: ^dude.Game, delta: f32) {
     pass_main.viewport = Vec4i{0,0, viewport.x, viewport.y}
     pass_main.camera.viewport = vec_i2f(viewport)
 
-    imdraw.text(&pass_main, assets.font_inkfree.font, "Hello, dude.", {100, 100}, 32)
+    imdraw.text(&pass_main, assets.font_inkfree.font, "Hello, dude.", {100, 100}, size)
+
+    if input.get_mouse_button_down(.Left) {
+        size = 0
+        tween.tween(dd.get_global_tweener(), &size, 32, 0.4)
+    }
 }
 
 @(private="file")
@@ -104,18 +113,17 @@ init :: proc(game: ^dude.Game) {
     using dude
     // Pass initialization
     wndx, wndy := app.window.size.x, app.window.size.y
-    render_pass_init(&pass_main, {0,0, wndx, wndy})
+    render.pass_init(&pass_main, {0,0, wndx, wndy})
     pass_main.clear.color = {.2,.2,.2, 1}
     pass_main.clear.mask = {.Color,.Depth,.Stencil}
     blend := &pass_main.blend.(dgl.GlStateBlendSimp)
     blend.enable = true
-
 }
 
 @(private="file")
 release :: proc(game: ^dude.Game) {
     dpac.release(&assets, type_info_of(GameAssets))
-    dude.render_pass_release(&pass_main)
+    render.pass_release(&pass_main)
 }
 
 @(private="file")

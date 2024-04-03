@@ -23,10 +23,3 @@ RIGHT3 :: Vec3{1, 0, 0}
 
 UP2 :: Vec2{0, 1}
 RIGHT2 :: Vec2{1, 1}
-
-
-Transform :: struct {
-    position    : Vec3,
-    orientation : linalg.Quaternionf32,
-    scale       : Vec3,
-}

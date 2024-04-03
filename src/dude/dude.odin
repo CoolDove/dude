@@ -17,7 +17,7 @@ _callback_mui : proc(ctx: ^mui.Context)
 
 
 // If you want a event-driven window, you should set `event_driven` to true, and use `custom_handler` to
-//  write the logic, and call `manually_update` somewhere to invoke an `update` callback.
+//  write the logic, and call `dispatch_update` somewhere to invoke an `update` callback.
 dude_main :: proc(config: ^DudeConfig) {
     logger : log.Logger
 	when ODIN_DEBUG {
@@ -64,7 +64,7 @@ DudeConfigWindow :: struct {
 }
 
 @private
-_manually_update := false
-manually_update :: proc() {
-    _manually_update = true
+_dispatch_update := false
+dispatch_update :: proc() {
+    _dispatch_update = true
 }
