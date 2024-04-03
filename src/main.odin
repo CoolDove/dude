@@ -96,6 +96,10 @@ update :: proc(game: ^dude.Game, delta: f32) {
 
     imdraw.text(&pass_main, assets.font_inkfree.font, "Hello, dude.", {100, 100}, size)
 
+    default_font := render.system().font_unifont
+    tween_debug_msg := fmt.tprintf("Tweens: {}", tween.tweener_count(get_global_tweener()))
+    imdraw.text(&pass_main, default_font, tween_debug_msg, {10, 36}, 32, color={0,1,0,1})
+
     if input.get_mouse_button_down(.Left) {
         size = 0
         tween.tween(dd.get_global_tweener(), &size, 32, 0.4)
