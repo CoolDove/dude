@@ -117,6 +117,9 @@ app_init :: proc(config: ^DudeConfig) {
 
     time.stopwatch_start(&app.stopwatch)
 
+    sdl.SetHint("SDL_IME_SHOW_UI", "1")
+    sdl.SetHint(sdl.HINT_IME_INTERNAL_EDITING, "1")
+
     if sdl.Init({.VIDEO, .EVENTS}) != 0 {
         fmt.println("failed to init: ", sdl.GetErrorString())
         return
@@ -134,6 +137,7 @@ app_init :: proc(config: ^DudeConfig) {
     sdl.GL_GetAttribute(.CONTEXT_MAJOR_VERSION, &minor)
     sdl.GL_GetAttribute(.CONTEXT_PROFILE_MASK, &profile)
     log.infof("OpenGL version: {}.{}, profile: {}", major, minor, cast(sdl.GLprofile)profile)
+
 
     window_instantiate(&config.window, &window)
 

@@ -5,6 +5,8 @@ import "core:c"
 import "core:fmt"
 import "core:log"
 import "core:strings"
+import "core:mem"
+import win32 "core:sys/windows"
 import sdl "vendor:sdl2"
 
 Input :: struct {
@@ -13,6 +15,7 @@ Input :: struct {
     mouse_position, mouse_position_prev, mouse_motion : Vec2,
     mouse_wheel : Vec2,
     strbuffer : strings.Builder,
+    strbuffer_editting : strings.Builder,
 
     mui_hovering : bool,
 }
@@ -94,6 +97,32 @@ get_mui_hovering :: proc() -> bool {
     return input.mui_hovering
 }
 
+get_textinput_charactors_temp :: proc() -> (string, bool) #optional_ok {
+    context.allocator = context.temp_allocator
+    length := strings.builder_len(input.strbuffer)
+    if length == 0 do return {}, false
+    b := make([]u8, length)
+    mem.copy(raw_data(b), raw_data(input.strbuffer.buf), length)
+    strings.builder_reset(&input.strbuffer)
+    return string(b), true
+}
+get_textinput_editting_text :: proc() -> string {
+    return strings.to_string(input.strbuffer_editting)
+}
+
+textinput_begin :: proc() {
+    sdl.StartTextInput()
+}
+textinput_set_rect :: proc(rect: Rect) {
+    r := rect
+    sdl.SetTextInputRect(cast(^sdl.Rect)&r)
+}
+textinput_end :: proc() {
+    sdl.StopTextInput()
+}
+is_textinput_activating :: proc() -> bool {
+    return auto_cast sdl.IsTextInputActive()
+}
 
 @(private="file")
 get_key_state_ptr :: proc(key : KeyCode) -> ^KeyState {
@@ -112,10 +141,12 @@ get_mouse_button_state_ptr :: proc(button : MouseButton) -> ^MouseButtonState {
 @private
 input_init :: proc() {
     strings.builder_init(&input.strbuffer)
+    strings.builder_init(&input.strbuffer_editting)
 }
 @private
 input_release :: proc() {
     strings.builder_destroy(&input.strbuffer)
+    strings.builder_destroy(&input.strbuffer_editting)
 }
 
 @private
@@ -173,5 +204,17 @@ input_handle_sdl2 :: proc(event: sdl.Event) {
         }
     case sdl.EventType.MOUSEWHEEL:
         input.mouse_wheel = vec_i2f(Vec2i{event.wheel.x, event.wheel.y})
+
+    // ** Text editting.
+    case sdl.EventType.TEXTINPUT:
+        text := event.text.text
+        cstr :cstring= transmute(cstring)raw_data(text[:])
+        strings.write_string(&input.strbuffer, string(cstr))
+        strings.builder_reset(&input.strbuffer_editting)
+    case sdl.EventType.TEXTEDITING:
+        text := event.edit.text
+        cstr :cstring= transmute(cstring)raw_data(text[:])
+        strings.builder_reset(&input.strbuffer_editting)
+        strings.write_string(&input.strbuffer_editting, string(cstr))
     }
 }

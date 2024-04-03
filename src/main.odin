@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import "core:time"
 import "core:os"
@@ -31,6 +31,8 @@ pass_main : dude.RenderPass
 DemoGame :: struct {
     asset_pacbuffer : []u8,
     size : f32,
+    buffer : strings.Builder,
+    textinput_rect : dude.Rect,
 }
 
 @(private="file")
@@ -81,7 +83,6 @@ main :: proc() {
     }
     
     dd.dude_main(&dude_config)
-
 }
 
 @(private="file")
@@ -97,11 +98,35 @@ update :: proc(game: ^dude.Game, delta: f32) {
     default_font := render.system().font_unifont
     tween_debug_msg := fmt.tprintf("Tweens: {}", tween.tweener_count(get_global_tweener()))
     imdraw.text(&pass_main, default_font, tween_debug_msg, {10, 36}, 32, color={0,1,0,1})
+    imdraw.text(&pass_main, default_font, 
+        "TextInput on" if dude.is_textinput_activating() else "TextInput off",
+        {10, 84}, 32, color={0,1,0,1})
+
+    imdraw.text(&pass_main, default_font, strings.to_string(buffer), {400, 280}, 32)
+    imdraw.text(&pass_main, default_font, dude.get_textinput_editting_text(), {400, 360}, 32, {.6,.6,.6,1})
 
     if input.get_mouse_button_down(.Left) {
         size = 0
         tween.tween(get_global_tweener(), &size, 32, 0.4)
     }
+
+    if input.get_mouse_button_down(.Right) {
+        if dude.is_textinput_activating() {
+            dude.textinput_end()
+        } else {
+            r : dude.RectPs
+            r.position = dd.vec_f2i(input.get_mouse_position())
+            r.size = {64, 32}
+            demo_game.textinput_rect = transmute(dude.Rect)r
+            dude.textinput_begin()
+            dude.textinput_set_rect(demo_game.textinput_rect)
+        }
+    }
+
+    if input_text, ok := dude.get_textinput_charactors_temp(); ok {
+        strings.write_string(&demo_game.buffer, input_text)
+    }
+    
 }
 
 @(private="file")
@@ -112,18 +137,22 @@ init :: proc(game: ^dude.Game) {
     
     using demo_game
     append(&game.render_pass, &pass_main)
-    using dude
+    
     // Pass initialization
-    wndx, wndy := app.window.size.x, app.window.size.y
+    wndx, wndy := dd.app.window.size.x, dd.app.window.size.y
     render.pass_init(&pass_main, {0,0, wndx, wndy})
     pass_main.clear.color = {.2,.2,.2, 1}
     pass_main.clear.mask = {.Color,.Depth,.Stencil}
     blend := &pass_main.blend.(dgl.GlStateBlendSimp)
     blend.enable = true
+
+    strings.builder_init(&buffer)
 }
 
 @(private="file")
 release :: proc(game: ^dude.Game) {
+    strings.builder_destroy(&demo_game.buffer)
+    
     dpac.release(&assets, type_info_of(GameAssets))
     render.pass_release(&pass_main)
 }

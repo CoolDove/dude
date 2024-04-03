@@ -25,7 +25,7 @@ window_instantiate :: proc(config: ^DudeConfigWindow, using wnd:^Window) -> bool
     wnd.position = config.position
     wnd.size = {config.width, config.height}
 
-    flags : sdl.WindowFlags = {.OPENGL}
+    flags : sdl.WindowFlags = {.OPENGL, .ALLOW_HIGHDPI}
     if config.resizable do flags = flags | { .RESIZABLE }
 	window = sdl.CreateWindow(
 	    strings.clone_to_cstring(config.title, context.temp_allocator),
