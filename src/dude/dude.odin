@@ -26,10 +26,10 @@ GameInitializer :: struct {
 @private
 _game_initializer : GameInitializer
 
-
 dude_main :: proc(update: proc(game: ^Game, delta:f32), init, release: proc(game: ^Game), mui: proc(ctx:^mui.Context)) {
+    logger : log.Logger
 	when ODIN_DEBUG {
-		logger := log.create_console_logger(.Debug, {.Level, .Short_File_Path, .Line, .Terminal_Color})
+		logger = log.create_console_logger(.Debug, {.Level, .Short_File_Path, .Line, .Terminal_Color})
 		context.logger = logger
 	}
 
@@ -40,6 +40,8 @@ dude_main :: proc(update: proc(game: ^Game, delta:f32), init, release: proc(game
 
     if _game_initializer.event_driven do app_run_event_driven()
 	else do app_run()
+	
+	log.destroy_console_logger(logger)
 }
 
 init :: proc(wnd : WindowInitializer, event_driven:= false) {

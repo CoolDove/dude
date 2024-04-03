@@ -104,7 +104,12 @@ game_init :: proc() {
 
 game_release :: proc() {
     log.debug("game release")
+    
+    // All user's dpacakges are released in this, so there shall be no more dpac invokes
+    //  after this.
     if _callback_release != nil do _callback_release(&game)
+    
+    dpac.release_handlers()
     
     delete(game.render_pass)
 
