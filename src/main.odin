@@ -63,8 +63,21 @@ main :: proc() {
     }
     defer delete(demo_game.asset_pacbuffer)
     
-	dude.init(dude.WindowInitializer{"dude game demo", {sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED}, {800,600}, {.RESIZABLE}, nil})
-    dude.dude_main(update, init, release, on_mui)
+    dude_config : dude.DudeConfig = {
+        // ** window
+        title = "dude demo game",
+        position = {sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED},
+        width = 800,
+        height = 600,
+        resizable = true,
+        // ** callbacks
+        update = update,
+        init = init,
+        release = release,
+        mui = on_mui,
+    }
+    
+    dude.dude_main(&dude_config)
 }
 
 @(private="file")

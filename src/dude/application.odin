@@ -30,7 +30,6 @@ app : Application
 @private
 app_run :: proc() {
     using app
-    app_init()
     game_init()
 
     evt : sdl.Event
@@ -67,13 +66,11 @@ app_run :: proc() {
     }
 
     game_release()
-    app_release()
 }
 
 @private
 app_run_event_driven :: proc() {
     using app
-    app_init()
     game_init()
 
     evt : sdl.Event
@@ -110,13 +107,11 @@ app_run_event_driven :: proc() {
     }
 
     game_release()
-    app_release()
-
 }
 
 
-@(private="file")
-app_init :: proc() {
+@private
+app_init :: proc(config: ^DudeConfig) {
     using app
     when ODIN_OS == .Windows do win32.SetConsoleOutputCP(65001)
 
@@ -140,14 +135,11 @@ app_init :: proc() {
     sdl.GL_GetAttribute(.CONTEXT_PROFILE_MASK, &profile)
     log.infof("OpenGL version: {}.{}, profile: {}", major, minor, cast(sdl.GLprofile)profile)
 
-    window_instantiate(_game_initializer.window, &window)
-
-    game.window = &window
+    window_instantiate(&config.window, &window)
 
     input_init()
-    
 }
-@(private="file")
+@private
 app_release :: proc() {
     input_release()
     window_destroy(&app.window)

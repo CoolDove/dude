@@ -82,6 +82,8 @@ game_update :: proc() {
 
 game_init :: proc() {
     using dgl
+    game.window = &app.window
+    
     allocators_init()
     
     audio_init()
@@ -126,6 +128,8 @@ game_release :: proc() {
     audio_release()
 
     allocators_release()
+    
+    game.window = nil
 }
 
 game_on_resize :: proc(from, to: Vec2i) {

@@ -11,9 +11,6 @@ OPENGL_VERSION_MAJOR :: 4
 OPENGL_VERSION_MINOR :: 4
 
 Window :: struct {
-	// NOTE(Dove): 
-	// The GLContext is not correct during `handler`, 
-	// so do not use any OpenGL things in `handler`.
     handler  : proc(wnd:^Window, event:sdl.Event),
 
 	position, size : Vec2i,
@@ -24,22 +21,16 @@ Window :: struct {
     gl_context : sdl.GLContext,
 }
 
-WindowInitializer :: struct {
-    name : string,
-    position : Vec2i,
-    size : Vec2i,
-    flags : sdl.WindowFlags,
-    handler : proc(using wnd:^Window, event:sdl.Event),
-}
+window_instantiate :: proc(config: ^DudeConfigWindow, using wnd:^Window) -> bool {
+    wnd.position = config.position
+    wnd.size = {config.width, config.height}
 
-window_instantiate :: proc(i : WindowInitializer, using wnd:^Window) -> bool {
-    wnd.position = i.position
-    wnd.size = i.size
-
+    flags : sdl.WindowFlags = {.OPENGL}
+    if config.resizable do flags = flags | { .RESIZABLE }
 	window = sdl.CreateWindow(
-	    strings.clone_to_cstring(i.name, context.temp_allocator),
-	    i.position.x, i.position.y, i.size.x, i.size.y,
-	    i.flags | { .OPENGL })
+	    strings.clone_to_cstring(config.title, context.temp_allocator),
+	    config.position.x, config.position.y, config.width, config.height,
+	    flags)
 
 	if window == nil {
         fmt.println("failed to instantiate window: ", name)
@@ -60,7 +51,7 @@ window_instantiate :: proc(i : WindowInitializer, using wnd:^Window) -> bool {
 
     gl.Enable(gl.MULTISAMPLE)
 
-    wnd.handler = i.handler
+    wnd.handler = config.custom_handler
     return true
 }
 
