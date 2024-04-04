@@ -10,6 +10,8 @@ import "core:strings"
 import "core:math/linalg"
 import "core:math"
 import "core:mem"
+import "core:c/libc"
+
 
 import sdl "vendor:sdl2"
 
@@ -148,6 +150,10 @@ init :: proc(game: ^dude.Game) {
     blend.enable = true
 
     strings.builder_init(&buffer)
+
+    // test
+    log.debugf(">> \n{}\n", execute("make cody"))
+    
 }
 
 @(private="file")
@@ -168,7 +174,12 @@ on_mui :: proc(ctx: ^mui.Context) {
     if .SUBMIT in mui.textbox(ctx, buf[:], &length) {
         mui.set_focus(ctx, ctx.last_id);
     }
-    mui.label(ctx, "test")
+    if .SUBMIT in mui.button(ctx, "execute") {
+        cmd := cast(string)buf[:length]
+        log.debugf(">\n{}\n", execute(cmd))
+        buf[0] = 0
+        length = 0
+    }
 
     mui.end_window(ctx)
 }
