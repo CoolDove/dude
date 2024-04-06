@@ -1,6 +1,0 @@
-[submodule "pac/imgui"]
-	path = pac/imgui
-	url = git@github.com:CoolDove/odin-imgui.git
-[submodule "pac/assimp"]
-	path = pac/assimp
-	url = git@github.com:CoolDove/odin-assimp.git
