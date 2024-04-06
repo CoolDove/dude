@@ -152,7 +152,7 @@ init :: proc(game: ^dude.Game) {
     strings.builder_init(&buffer)
 
     // test
-    output := execute("make cody"); defer delete(output)
+    output := dude.execute("make cody"); defer delete(output)
     log.debugf(">> \n{}\n", output)
     
 }
@@ -177,7 +177,8 @@ on_mui :: proc(ctx: ^mui.Context) {
         }
         if .SUBMIT in mui.button(ctx, "execute") {
             cmd := cast(string)buf[:length]
-            log.debugf(">\n{}\n", execute(cmd))
+            output := dude.execute(cmd); defer delete(output)
+            log.debugf(">\n{}\n", output)
             buf[0] = 0
             length = 0
         }
