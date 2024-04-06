@@ -152,7 +152,8 @@ init :: proc(game: ^dude.Game) {
     strings.builder_init(&buffer)
 
     // test
-    log.debugf(">> \n{}\n", execute("make cody"))
+    output := execute("make cody"); defer delete(output)
+    log.debugf(">> \n{}\n", output)
     
 }
 
@@ -166,20 +167,21 @@ release :: proc(game: ^dude.Game) {
 
 @(private="file")
 on_mui :: proc(ctx: ^mui.Context) {
-    mui.begin_window(ctx, "Input test", {50,50, 200, 400})
-    @static buf : [2048]u8
-    @static length : int
+    if mui.begin_window(ctx, "Input test", {50,50, 200, 400}) {
+        @static buf : [2048]u8
+        @static length : int
 
-    mui.layout_row(ctx, { -70, -1 }, 0);
-    if .SUBMIT in mui.textbox(ctx, buf[:], &length) {
-        mui.set_focus(ctx, ctx.last_id);
-    }
-    if .SUBMIT in mui.button(ctx, "execute") {
-        cmd := cast(string)buf[:length]
-        log.debugf(">\n{}\n", execute(cmd))
-        buf[0] = 0
-        length = 0
-    }
+        mui.layout_row(ctx, { -70, -1 }, 0);
+        if .SUBMIT in mui.textbox(ctx, buf[:], &length) {
+            mui.set_focus(ctx, ctx.last_id);
+        }
+        if .SUBMIT in mui.button(ctx, "execute") {
+            cmd := cast(string)buf[:length]
+            log.debugf(">\n{}\n", execute(cmd))
+            buf[0] = 0
+            length = 0
+        }
 
-    mui.end_window(ctx)
+        mui.end_window(ctx)
+    }
 }
