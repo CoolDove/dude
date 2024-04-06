@@ -136,6 +136,7 @@ game_on_resize :: proc(from, to: Vec2i) {
 }
 
 
+@(private="file")
 _dude_default_assets_handler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8) {
     if e == .Load {
         if t.id == AssetTexture {
