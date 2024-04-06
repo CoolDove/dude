@@ -134,7 +134,7 @@ update :: proc(game: ^dude.Game, delta: f32) {
 
 @(private="file")
 init :: proc(game: ^dude.Game) {
-    dpac.register_load_handler(dove_assets_handler)
+    // dpac.register_load_handler(dove_assets_handler)
     err := dpac.load(demo_game.asset_pacbuffer, &assets, type_info_of(GameAssets))
     assert(err == .None, fmt.tprintf("Failed to load assets: {}", err))
     
@@ -152,8 +152,8 @@ init :: proc(game: ^dude.Game) {
     strings.builder_init(&buffer)
 
     // test
-    output := dude.execute("make cody"); defer delete(output)
-    log.debugf(">> \n{}\n", output)
+    // output := dude.execute("make cody"); defer delete(output)
+    // log.debugf(">> \n{}\n", output)
     
 }
 

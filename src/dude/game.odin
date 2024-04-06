@@ -1,4 +1,4 @@
-package dude
+﻿package dude
 
 import "core:time"
 import "core:log"
@@ -87,7 +87,7 @@ game_init :: proc() {
     
     audio_init()
 
-    // dpac_init()
+    dpac.register_load_handler(_dude_default_assets_handler)
 
 	tweener_init(&game.global_tweener, 16)
 
@@ -97,7 +97,7 @@ game_init :: proc() {
 
     render_pass_init(&_builtin_pass, {0,0, app.window.size.x, app.window.size.y}, true)
     _builtin_pass.clear = {}
-    
+
     game.render_pass = make([dynamic]^RenderPass)
 
     if _callback_init != nil do _callback_init(&game)
@@ -133,4 +133,40 @@ game_release :: proc() {
 
 game_on_resize :: proc(from, to: Vec2i) {
     render_on_resize(from, to)
+}
+
+
+_dude_default_assets_handler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8) {
+    if e == .Load {
+        if t.id == AssetTexture {
+            atex := cast(^AssetTexture)p
+            tex := dgl.texture_load(data)
+            atex.id = tex.id
+            atex.size = tex.size
+            fmt.printf("Load texture. {}-{}\n", atex.id, atex.size)
+        } else if t.id == AssetFont {
+            font := cast(^AssetFont)p
+            font.font = font_load(data, "infree")
+            font_add_fallback(font.font, rsys.font_unifont)
+            fmt.printf("Load font.\n")
+        } else if t.id == AssetAudioClip {
+            asset := cast(^AssetAudioClip)p
+            clip := &asset.clip
+            audio_clip_load_from_mem(data, clip, {.Decode,.Stream,.Async})
+            fmt.printf("Load audio clip.\n")
+        } else {
+            fmt.printf("Load unknown type asset.\n")
+        }
+    } else if e == .Release {
+        if t.id == AssetTexture {
+            atex := cast(^AssetTexture)p
+            dgl.texture_delete(&atex.id)
+            fmt.printf("Release texture {} ({}).\n", atex.id, atex.size)
+        } else if t.id == AssetFont {
+            font_unload((cast(^AssetFont)p).font)
+            fmt.printf("Release Font file.\n")
+        } else {
+            fmt.printf("Release unknown type.\n")
+        }
+    }
 }

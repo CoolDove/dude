@@ -30,38 +30,3 @@ SoundEffectAssets :: struct {
 }
 
 assets : GameAssets
-
-dove_assets_handler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8) {
-    if e == .Load {
-        if t.id == dude.AssetTexture {
-            atex := cast(^dude.AssetTexture)p
-            tex := dgl.texture_load(data)
-            atex.id = tex.id
-            atex.size = tex.size
-            fmt.printf("Load texture. {}-{}\n", atex.id, atex.size)
-        } else if t.id == dude.AssetFont {
-            font := cast(^dude.AssetFont)p
-            font.font = dude.font_load(data, "infree")
-            dude.font_add_fallback(font.font, render.system().font_unifont)
-            fmt.printf("Load font.\n")
-        } else if t.id == dude.AssetAudioClip {
-            asset := cast(^dude.AssetAudioClip)p
-            clip := &asset.clip
-            dude.audio_clip_load_from_mem(data, clip, {.Decode,.Stream,.Async})
-            fmt.printf("Load audio clip.\n")
-        } else {
-            fmt.printf("Load unknown type asset.\n")
-        }
-    } else if e == .Release {
-        if t.id == dude.AssetTexture {
-            atex := cast(^dude.AssetTexture)p
-            dgl.texture_delete(&atex.id)
-            fmt.printf("Release texture {} ({}).\n", atex.id, atex.size)
-        } else if t.id == dude.AssetFont {
-            dude.font_unload((cast(^dude.AssetFont)p).font)
-            fmt.printf("Release Font file.\n")
-        } else {
-            fmt.printf("Release unknown type.\n")
-        }
-    }
-}
