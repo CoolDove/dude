@@ -33,12 +33,19 @@ get_key_state :: dd.get_key_state
 get_mouse_button_state :: dd.get_mouse_button_state
 
 // ** Text input
+
+// Unavailable in event-driven mode.
 get_textinput_charactors_temp :: dd.get_textinput_charactors_temp
+// Unavailable in event-driven mode.
 get_textinput_editting_text :: dd.get_textinput_editting_text
 
+// Available in event-driven mode.
 textinput_begin :: dd.textinput_begin
+// Available in event-driven mode.
 textinput_set_rect :: dd.textinput_set_rect
+// Available in event-driven mode.
 textinput_end :: dd.textinput_end
+// Available in event-driven mode.
 is_textinput_activating :: dd.is_textinput_activating
 
 
