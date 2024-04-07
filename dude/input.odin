@@ -115,9 +115,11 @@ get_textinput_editting_text :: proc() -> string {
 textinput_begin :: #force_inline proc() {
     sdl.StartTextInput()
 }
-textinput_set_rect :: #force_inline proc(rect: Rect) {
-    r := rect
-    sdl.SetTextInputRect(cast(^sdl.Rect)&r)
+textinput_set_cursor_pos :: #force_inline proc(pos: Vec2) {
+    sdl.SetTextInputRect(nil)
+    when ODIN_OS == .Windows {
+        window_imm_set_position(app.window.window, pos)
+    }
 }
 textinput_end :: #force_inline proc() {
     sdl.StopTextInput()
