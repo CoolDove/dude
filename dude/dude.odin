@@ -65,6 +65,17 @@ DudeConfigWindow :: struct {
 
 @private
 _dispatch_update := false
+@private
+_during_update := false
 dispatch_update :: proc() {
     _dispatch_update = true
+    // @TEMPORARY: Send a custom event to trigger next update.
+    if _during_update {
+        custom_event : sdl.Event
+        custom_event.type = .USEREVENT
+        custom_event.user.code = 0
+        custom_event.user.data1 = nil
+        custom_event.user.data2 = nil
+        sdl.PushEvent(&custom_event)
+    }
 }
