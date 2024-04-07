@@ -12,6 +12,8 @@ MouseButtonState :: dd.MouseButtonState
 
 MouseButton :: dd.MouseButton
 
+// Indicates which input events has been received.
+InputHandleResult :: dd.InputHandleResult
 
 // ** Keyboard and mouse
 get_key :: dd.get_key
@@ -31,6 +33,8 @@ get_mouse_wheel :: dd.get_mouse_wheel
 
 get_key_state :: dd.get_key_state
 get_mouse_button_state :: dd.get_mouse_button_state
+
+get_input_handle_result :: dd.get_input_handle_result
 
 // ** Text input
 

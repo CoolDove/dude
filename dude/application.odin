@@ -95,12 +95,12 @@ app_run_event_driven :: proc() {
             }
             if !window_closed && _dispatch_update {
                 // Input is not available for event-driven game.
-                // input_before_update()
+                input_before_update()
 
                 game_update()
 
                 sdl.GL_SwapWindow(app.window.window)
-                // input_after_update()
+                input_after_update()
                 _dispatch_update = false
             }
         }

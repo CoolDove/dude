@@ -17,6 +17,8 @@ Input :: struct {
     strbuffer : strings.Builder,
     strbuffer_editting : strings.Builder,
 
+    input_handle_result : InputHandleResult,
+
     mui_hovering : bool,
 }
 
@@ -110,18 +112,22 @@ get_textinput_editting_text :: proc() -> string {
     return strings.to_string(input.strbuffer_editting)
 }
 
-textinput_begin :: proc() {
+textinput_begin :: #force_inline proc() {
     sdl.StartTextInput()
 }
-textinput_set_rect :: proc(rect: Rect) {
+textinput_set_rect :: #force_inline proc(rect: Rect) {
     r := rect
     sdl.SetTextInputRect(cast(^sdl.Rect)&r)
 }
-textinput_end :: proc() {
+textinput_end :: #force_inline proc() {
     sdl.StopTextInput()
 }
-is_textinput_activating :: proc() -> bool {
+is_textinput_activating :: #force_inline proc() -> bool {
     return auto_cast sdl.IsTextInputActive()
+}
+
+get_input_handle_result :: #force_inline proc() -> InputHandleResult {
+    return input.input_handle_result
 }
 
 @(private="file")
@@ -172,29 +178,48 @@ input_set_mui_hovering :: proc(hovering: bool) {
     input.mui_hovering = hovering
 }
 
+
+InputHandleResult :: enum u32 {
+    None = 0,
+    KeyDown = 1,
+    KeyUp = 1<<1,
+    MouseButtonDown = 1<<2,
+    MouseButtonUp = 1<<3,
+    MouseMotion = 1<<4,
+    MouseWheel = 1<<5,
+    TextInput = 1<<6,
+    TextEdit = 1<<6
+}
+
 @private
-input_handle_sdl2 :: proc(event: sdl.Event) {
+input_handle_sdl2 :: proc(event: sdl.Event) -> InputHandleResult {
+    input.input_handle_result = .None
+    result : InputHandleResult
     #partial switch event.type {
     case sdl.EventType.KEYDOWN:
         key := event.key
         key_state := get_key_state_ptr(cast(KeyCode)key.keysym.scancode)
         key_state.pressed = true
         key_state.repeat = key.repeat > 0
+        result |= .KeyDown
     case sdl.EventType.KEYUP:
         key := event.key
         key_state := get_key_state_ptr(cast(KeyCode)key.keysym.scancode)
         key_state.pressed = false
+        result |= .KeyUp
 
     case sdl.EventType.MOUSEBUTTONDOWN:
         button := event.button
         state := get_mouse_button_state_ptr(cast(MouseButton)button.button)
         state.pressed = true
         state.clicks = button.clicks
+        result |= .MouseButtonDown
     case sdl.EventType.MOUSEBUTTONUP:
         button := event.button
         state := get_mouse_button_state_ptr(cast(MouseButton)button.button)
         state.pressed = false
         state.clicks = 0
+        result |= .MouseButtonUp
     case sdl.EventType.MOUSEMOTION:
         @static init := true
         input.mouse_position = {cast(f32)event.motion.x, cast(f32)event.motion.y}
@@ -202,8 +227,10 @@ input_handle_sdl2 :: proc(event: sdl.Event) {
             input.mouse_position_prev = input.mouse_position
             init = false
         }
+        result |= .MouseMotion
     case sdl.EventType.MOUSEWHEEL:
         input.mouse_wheel = vec_i2f(Vec2i{event.wheel.x, event.wheel.y})
+        result |= .MouseWheel
 
     // ** Text editting.
     case sdl.EventType.TEXTINPUT:
@@ -211,10 +238,14 @@ input_handle_sdl2 :: proc(event: sdl.Event) {
         cstr :cstring= transmute(cstring)raw_data(text[:])
         strings.write_string(&input.strbuffer, string(cstr))
         strings.builder_reset(&input.strbuffer_editting)
+        result |= .TextInput
     case sdl.EventType.TEXTEDITING:
         text := event.edit.text
         cstr :cstring= transmute(cstring)raw_data(text[:])
         strings.builder_reset(&input.strbuffer_editting)
         strings.write_string(&input.strbuffer_editting, string(cstr))
+        result |= .TextEdit
     }
+    input.input_handle_result = result
+    return result
 }
