@@ -118,7 +118,7 @@ textinput_begin :: #force_inline proc() {
 textinput_set_cursor_pos :: #force_inline proc(pos: Vec2) {
     sdl.SetTextInputRect(nil)
     when ODIN_OS == .Windows {
-        window_imm_set_position(app.window.window, pos)
+        window_imm_set_position(app.window.window, pos+{0,-16})
     }
 }
 textinput_end :: #force_inline proc() {
