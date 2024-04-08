@@ -143,7 +143,7 @@ _dude_default_assets_handler :: proc(e: dpac.PacEvent, p: rawptr, t: ^reflect.Ty
         } else if t.id == AssetFont {
             font := cast(^AssetFont)p
             font.font = font_load(data, "infree")
-            font_add_fallback(font.font, rsys.font_unifont)
+            font_add_fallback(font.font, rsys.default_font)
             fmt.printf("Load font.\n")
         } else if t.id == AssetAudioClip {
             asset := cast(^AssetAudioClip)p

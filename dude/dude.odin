@@ -18,6 +18,9 @@ _callback_mui : proc(ctx: ^mui.Context)
 
 // If you want a event-driven window, you should set `event_driven` to true, and use `custom_handler` to
 //  write the logic, and call `dispatch_update` somewhere to invoke an `update` callback.
+@private
+_dude_startup_config : DudeConfig
+
 dude_main :: proc(config: ^DudeConfig) {
     logger : log.Logger
 	when ODIN_DEBUG {
@@ -26,6 +29,7 @@ dude_main :: proc(config: ^DudeConfig) {
 	}
 
     using config
+    _dude_startup_config = config^
     _callback_update = update
     _callback_init = init
     _callback_release = release
@@ -44,6 +48,7 @@ dude_main :: proc(config: ^DudeConfig) {
 // Just to initialize the game, anything in here can be changed by related API (changing this struct
 //  directly during runtime doesn't make sense).
 DudeConfig :: struct {
+    default_font_data : []u8,
     using window : DudeConfigWindow,
     using callbacks : DudeConfigCallbacks,
 }

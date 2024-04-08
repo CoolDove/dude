@@ -156,7 +156,7 @@ RenderSystem :: struct {
     render_data_dude : RenderDataDude,
     render_data_dude_ubo : dgl.UniformBlockId,
 
-    font_unifont : DynamicFont,
+    default_font : DynamicFont,
 
     // Internal stuff
     _default_framebuffer : dgl.FramebufferId,
@@ -227,7 +227,7 @@ render_init :: proc() {
     fontstash.Init(&rsys.fontstash_context, atlas_size, atlas_size, .TOPLEFT)
     rsys.fontstash_context.userData = &rsys
     rsys.fontstash_data.atlas = dgl.texture_create_empty(auto_cast atlas_size, auto_cast atlas_size)
-    rsys.font_unifont = font_load(#load("./resources/unifont.ttf"), "unifont")
+    rsys.default_font = font_load(_dude_startup_config.default_font_data, "Default")
     rsys.fontstash_context.callbackResize = _fontstash_callback_resize
     rsys.fontstash_context.callbackUpdate = _fontstash_callback_update
     _fontstash_callback_update(nil,{},nil)
