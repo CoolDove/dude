@@ -55,7 +55,7 @@ app_run :: proc() {
 }
 
 @private
-app_run_event_driven :: proc() {
+app_run_event_driven :: proc(tick_delay : f32) {
     using app
     game_init()
 
@@ -79,6 +79,7 @@ app_run_event_driven :: proc() {
             sdl.GL_SwapWindow(app.window.window)
             input_after_update()
         }
+        if tick_delay > 0 do sdl.Delay(auto_cast tick_delay)
     }
 
     game_release()

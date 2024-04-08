@@ -33,7 +33,7 @@ dude_main :: proc(config: ^DudeConfig) {
     
     app_init(config)
 
-    if event_driven do app_run_event_driven()
+    if event_driven do app_run_event_driven(event_driven_tick_delay_time_ms)
 	else do app_run()
 	
 	app_release()
@@ -59,6 +59,7 @@ DudeConfigWindow :: struct {
     position : Vec2i,
     width, height: i32,
     event_driven : bool,
+    event_driven_tick_delay_time_ms : f32,
     resizable : bool,
     custom_handler : proc(using wnd:^Window, event:sdl.Event),
 }
