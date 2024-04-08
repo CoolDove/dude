@@ -46,7 +46,7 @@ get_textinput_editting_text :: dd.get_textinput_editting_text
 // Available in event-driven mode.
 textinput_begin :: dd.textinput_begin
 // Available in event-driven mode.
-textinput_set_cursor_pos :: dd.textinput_set_cursor_pos
+textinput_set_imm_composition_pos :: dd.textinput_set_imm_composition_pos
 // Available in event-driven mode.
 textinput_end :: dd.textinput_end
 // Available in event-driven mode.

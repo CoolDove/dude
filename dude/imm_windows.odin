@@ -9,17 +9,14 @@ foreign import imm32 "system:Imm32.lib"
 HIMC :: win32.HWND
 
 @(private="file")
-CFS_DEFAULT			:win32.DWORD: 0x0000
-@(private="file")
-CFS_RECT			:win32.DWORD: 0x0001
-@(private="file")
-CFS_POINT			:win32.DWORD: 0x0002
-@(private="file")
-CFS_FORCE_POSITION	:win32.DWORD: 0x0020
-@(private="file")
-CFS_CANDIDATEPOS	:win32.DWORD: 0x0040
-@(private="file")
-CFS_EXCLUDE			:win32.DWORD: 0x0080
+DwStyle :: enum {
+	CFS_DEFAULT = 0x0000,
+	CFS_RECT = 0x0001,
+	CFS_POINT = 0x0002,
+	CFS_FORCE_POSITION = 0x0020,
+	CFS_CANDIDATEPOS = 0x0040,
+	CFS_EXCLUDE = 0x0080,
+}
 
 @(private="file")
 COMPOSITIONFORM :: struct {
@@ -41,7 +38,7 @@ window_imm_set_position :: proc(wnd: ^sdl.Window, pos: Vec2) {
 
 	himc := ImmGetContext(hwnd)
 	comp :=COMPOSITIONFORM {
-		CFS_POINT,
+		auto_cast DwStyle.CFS_CANDIDATEPOS,
 		{auto_cast pos.x, auto_cast pos.y},
 		{},
 	}
