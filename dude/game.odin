@@ -75,15 +75,12 @@ game_update :: proc() {
     }
     render_pass_draw(&_builtin_pass)
 
-    free_all(allocators.frame)
     free_all(context.temp_allocator)
 }
 
 game_init :: proc() {
     using dgl
     game.window = &app.window
-    
-    allocators_init()
     
     audio_init()
 
@@ -126,8 +123,6 @@ game_release :: proc() {
     
     audio_release()
 
-    allocators_release()
-    
     game.window = nil
 }
 

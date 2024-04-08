@@ -168,7 +168,7 @@ Reset :: proc(using ctx: ^FontContext) {
 	__dirtyRectReset(ctx)
 	mem.zero_slice(textureData)
 
-	for font in &fonts {
+	for &font in &fonts {
 		__lutReset(&font)
 	}
 
@@ -724,7 +724,7 @@ ResetAtlas :: proc(ctx: ^FontContext, width, height: int, allocator := context.a
 	ctx.dirtyRect[3] = 0
 
 	// reset fonts
-	for font in &ctx.fonts {
+	for &font in &ctx.fonts {
 		clear(&font.glyphs)
 		__lutReset(&font)
 	}
