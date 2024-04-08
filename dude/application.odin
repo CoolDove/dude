@@ -35,26 +35,12 @@ app_run :: proc() {
     evt : sdl.Event
     window_closed : bool
     for !window_closed {
-        app_time_step()
-        
-        // ## Handle events
         for sdl.PollEvent(&evt) {
-            if evt.window.event == .RESIZED {
-                old := window.size 
-                window.size.x = evt.window.data1
-                window.size.y = evt.window.data2
-                game_on_resize(old, window.size)
-            } else if evt.window.event == .CLOSE {
-                window_closed = true
-            } else {
-                input_handle_sdl2(evt)
-            }
-            if window.handler != nil {
-                window.handler(&window, evt)
-            }
+            _handle_event(&window, evt, &window_closed)
         }
 
         if !window_closed {
+            app_time_step()
             input_before_update()
 
             game_update()
@@ -75,25 +61,16 @@ app_run_event_driven :: proc() {
 
     evt : sdl.Event
     window_closed : bool
-        // ## Handle events
     for sdl.WaitEvent(&evt) && !window_closed {
-        app_time_step()
-        if evt.window.event == .RESIZED {
-            old := window.size 
-            window.size.x = evt.window.data1
-            window.size.y = evt.window.data2
-            game_on_resize(old, window.size)
-        } else if evt.window.event == .CLOSE {
-            window_closed = true
-        } else {
-            input_handle_sdl2(evt)
+        _handle_event(&window, evt, &window_closed)
+
+        for !window_closed && sdl.PollEvent(&evt) {
+            _handle_event(&window, evt, &window_closed)
         }
-        if window.handler != nil {
-            window.handler(&window, evt)
-        }
+
         if !window_closed && _dispatch_update {
             _during_update = true; defer _during_update = false
-            // Input is not available for event-driven game.
+            app_time_step()
             input_before_update()
 
             _dispatch_update = false
@@ -105,6 +82,23 @@ app_run_event_driven :: proc() {
     }
 
     game_release()
+}
+
+@(private="file")
+_handle_event :: proc(window: ^Window, event: sdl.Event, window_close: ^bool) {
+    if event.window.event == .RESIZED {
+        old := window.size 
+        window.size.x = event.window.data1
+        window.size.y = event.window.data2
+        game_on_resize(old, window.size)
+    } else if event.window.event == .CLOSE {
+        window_close^ = true
+    } else {
+        input_handle_sdl2(event)
+    }
+    if window.handler != nil {
+        window.handler(window, event)
+    }
 }
 
 

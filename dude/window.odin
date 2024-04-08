@@ -49,7 +49,8 @@ window_instantiate :: proc(config: ^DudeConfigWindow, using wnd:^Window) -> bool
     gl.load_up_to(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR, sdl.gl_set_proc_address)
     
     // v sync is disabled for event-driven window
-    if !config.event_driven do sdl.GL_SetSwapInterval(1)
+    // if !config.event_driven do sdl.GL_SetSwapInterval(1)
+    sdl.GL_SetSwapInterval(1)
 
     gl.Enable(gl.MULTISAMPLE)
 
