@@ -1233,3 +1233,60 @@ EndState :: proc(using ctx: ^FontContext) {
 		__dirtyRectReset(ctx)
 	}
 }
+
+// ** Dove
+
+TextIterEx :: struct {
+	x, y, nextx, nexty, scale, spacing: f32,
+	isize, iblur: i16,
+
+	font: ^Font,
+	previousGlyphIndex: Glyph_Index,
+
+	// unicode iteration
+	utf8state: rune, // utf8
+	codepoint: rune,
+	text: string,
+
+	ctx: ^FontContext,
+}
+
+// init text iter struct with settings
+TextIterExInit :: proc(
+	ctx: ^FontContext,
+	x: f32,
+	y: f32,
+) -> (res: TextIterEx) {
+	state := __getState(ctx)
+	res.ctx = ctx
+	res.font = __getFont(ctx, state.font)
+	res.isize = i16(f32(state.size) * 10)
+	res.iblur = i16(state.blur)
+	res.scale = __getPixelHeightScale(res.font, f32(res.isize) / 10)
+
+	res.x = x
+	res.y = y
+	res.nextx = x
+	res.nexty = y
+	res.previousGlyphIndex = -1
+	res.spacing = state.spacing
+	return
+}
+
+TextIterExNext :: proc(
+	iter: ^TextIterEx, 
+	r : rune,
+) -> Quad {
+	quad : Quad
+	iter.x = iter.nextx
+	iter.y = iter.nexty
+
+	glyph := __getGlyph(iter.ctx, iter.font, r, iter.isize, iter.iblur)
+	
+	if glyph != nil {
+		__getQuad(iter.ctx, iter.font, iter.previousGlyphIndex, glyph, iter.scale, iter.spacing, &iter.nextx, &iter.nexty, &quad)
+	}
+
+	iter.previousGlyphIndex = glyph == nil ? -1 : glyph.index
+	return quad
+}

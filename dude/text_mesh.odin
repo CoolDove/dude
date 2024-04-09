@@ -61,7 +61,7 @@ mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, font: DynamicFont, text: string
 	return height
 }
 
-mesher_text_measure :: proc(font: DynamicFont, text: string, size: f32, region : Vec2={-1,-1}) -> Vec2 {
+mesher_text_measure :: proc(font: DynamicFont, text: string, size: f32, region : Vec2={-1,-1}, out_next_pos: ^Vec2=nil) -> Vec2 {
     standard_size_count :: 6
     standard_sizes :[6]f32= {8,16,32,64,128,256}
     stdsize : f32
@@ -116,5 +116,6 @@ mesher_text_measure :: proc(font: DynamicFont, text: string, size: f32, region :
             if y_pos > measure.y do measure.y = y_pos
         }
 	}
+    if out_next_pos != nil do out_next_pos^ = {iter.nextx, iter.nexty}
 	return measure
 }

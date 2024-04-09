@@ -18,7 +18,6 @@ _callback_mui : proc(ctx: ^mui.Context)
 
 // If you want a event-driven window, you should set `event_driven` to true, and use `custom_handler` to
 //  write the logic, and call `dispatch_update` somewhere to invoke an `update` callback.
-
 @private
 _dude_startup_config : DudeConfig
 
