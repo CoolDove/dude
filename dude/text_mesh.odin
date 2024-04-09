@@ -54,8 +54,17 @@ mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, font: DynamicFont, text: string
         }
         if !newline {
             using q
-            clamped := clamp && ((region.x != -1 && (x1 < 0 || x0 > region.x)) || (region.y != -1 && (y1 < 0 || y0 > region.y)))
+            clamped := clamp && ((region.x != -1 && (x1 <= 0 || x0 >= region.x)) || (region.y != -1 && (y1 <= 0 || y0 >= region.y)))
             if !clamped {
+                if x1 > region.x && x0 < region.x {
+                    x11 := region.x
+                    s1 = (s1-s0)*((x11-x0)/(x1-x0)) + s0
+                    x1 = x11
+                } else if x1 > 0 && x0 < 0 {
+                    x00 :f32= 0
+                    s0 = s1 - ((x1-x00)/(x1-x0))*(s1-s0)
+                    x0 = x00
+                }
                 mesher_quad_p2u2c4(mb, {x1-x0,y1-y0}*scale, {0,0}, {x0,y0} * scale, {s0,t0}, {s1,t1}, {color,color,color,color})
             }
         }
