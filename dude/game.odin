@@ -79,16 +79,21 @@ game_update :: proc() {
 }
 
 game_init :: proc() {
+    timer_check("Game init begin")
     using dgl
     game.window = &app.window
     
-    audio_init()
+    timer_check("Audio init begin")
+    if !_dude_startup_config.disable_audio do audio_init()
+    timer_check("Audio init end")
 
     dpac.register_load_handler(_dude_default_assets_handler)
 
 	tweener_init(&game.global_tweener, 16)
 
+    timer_check("Render init begin")
     render_init()
+    timer_check("Render init end")
 
     mui_init()
 
@@ -96,16 +101,17 @@ game_init :: proc() {
     _builtin_pass.clear = {}
 
     game.render_pass = make([dynamic]^RenderPass)
+    timer_check("Game init End")
 
     if _callback_init != nil do _callback_init(&game)
 }
 
 game_release :: proc() {
-    log.debug("game release")
-    
     // All user's dpacakges are released in this, so there shall be no more dpac invokes
     //  after this.
     if _callback_release != nil do _callback_release(&game)
+    
+    timer_check("Game release begin")
     
     dpac.release_handlers()
     
@@ -121,9 +127,10 @@ game_release :: proc() {
 
 	tweener_release(&game.global_tweener)
     
-    audio_release()
+    if !_dude_startup_config.disable_audio do audio_release()
 
     game.window = nil
+    timer_check("Game release end")
 }
 
 game_on_resize :: proc(from, to: Vec2i) {

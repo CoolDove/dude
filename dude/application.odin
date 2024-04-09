@@ -108,6 +108,8 @@ app_init :: proc(config: ^DudeConfig) {
     using app
     when ODIN_OS == .Windows do win32.SetConsoleOutputCP(65001)
 
+    timer_check("App init begin")
+
     time.stopwatch_start(&app.stopwatch)
 
     sdl.SetHint("SDL_IME_SHOW_UI", "1")
@@ -135,6 +137,8 @@ app_init :: proc(config: ^DudeConfig) {
     window_instantiate(&config.window, &window)
 
     input_init()
+
+    timer_check("App init end")
 }
 @private
 app_release :: proc() {

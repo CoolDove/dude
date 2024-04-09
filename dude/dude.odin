@@ -2,6 +2,7 @@ package dude
 
 import "core:fmt"
 import "core:os"
+import "core:time"
 import "core:log"
 import sdl "vendor:sdl2"
 import mui "microui"
@@ -21,12 +22,17 @@ _callback_mui : proc(ctx: ^mui.Context)
 @private
 _dude_startup_config : DudeConfig
 
+@private
+_check_timer : time.Stopwatch
+
 dude_main :: proc(config: ^DudeConfig) {
     logger : log.Logger
 	when ODIN_DEBUG {
 		logger = log.create_console_logger(.Debug, {.Level, .Short_File_Path, .Line, .Terminal_Color})
 		context.logger = logger
 	}
+
+    time.stopwatch_start(&_check_timer)
 
     using config
     _dude_startup_config = config^
@@ -49,6 +55,7 @@ dude_main :: proc(config: ^DudeConfig) {
 //  directly during runtime doesn't make sense).
 DudeConfig :: struct {
     default_font_data : []u8,
+    disable_audio : bool,
     using window : DudeConfigWindow,
     using callbacks : DudeConfigCallbacks,
 }
@@ -84,4 +91,8 @@ dispatch_update :: proc() {
         custom_event.user.data2 = nil
         sdl.PushEvent(&custom_event)
     }
+}
+
+timer_check :: proc(name: string, location := #caller_location) {
+    log.debugf("timer [{}]: {}s", name, time.duration_seconds(time.stopwatch_duration(_check_timer)), location=location)
 }
