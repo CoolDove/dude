@@ -201,7 +201,7 @@ immediate_screen_text :: proc(pass: ^RenderPass, font: DynamicFont, text: string
     mb := &ctx.mesh_builder
     vstart := dgl.mesh_builder_count_vertex(mb)
     stride := mb.stride
-    mesher_text_p2u2c4(mb, font, text, size, color, region)
+    mesher_text_p2u2c4(mb, font, text, size, color, region, clamp=true)
     vend := dgl.mesh_builder_count_vertex(mb)
     v : ^dgl.Vertex8
     for i in vstart..<vend {

@@ -7,7 +7,7 @@ import "core:math"
 import "vendor/fontstash"
 
 // Return the height
-mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, font: DynamicFont, text: string, size: f32, color: Color, region : Vec2={-1,-1}) -> f32 {
+mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, font: DynamicFont, text: string, size: f32, color: Color, region : Vec2={-1,-1}, overflow:= false, clamp:=false) -> f32 {
     standard_size_count :: 6
     standard_sizes :[6]f32= {8,16,32,64,128,256}
     stdsize : f32
@@ -46,7 +46,7 @@ mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, font: DynamicFont, text: string
 		}
         prev_iter = iter
         newline := iter.codepoint == '\n'
-        overflow := region.x != -1 && iter.nextx > region.x
+        overflow := (overflow && (region.x != -1 && iter.nextx > region.x))
         if newline || overflow {
             iter.nextx = 0
             iter.nexty += stdsize
@@ -54,14 +54,16 @@ mesher_text_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, font: DynamicFont, text: string
         }
         if !newline {
             using q
-
-            mesher_quad_p2u2c4(mb, {x1-x0,y1-y0}*scale, {0,0}, {x0,y0} * scale, {s0,t0}, {s1,t1}, {color,color,color,color})
+            clamped := clamp && ((region.x != -1 && (x1 < 0 || x0 > region.x)) || (region.y != -1 && (y1 < 0 || y0 > region.y)))
+            if !clamped {
+                mesher_quad_p2u2c4(mb, {x1-x0,y1-y0}*scale, {0,0}, {x0,y0} * scale, {s0,t0}, {s1,t1}, {color,color,color,color})
+            }
         }
 	}
 	return height
 }
 
-mesher_text_measure :: proc(font: DynamicFont, text: string, size: f32, region : Vec2={-1,-1}, out_next_pos: ^Vec2=nil) -> Vec2 {
+mesher_text_measure :: proc(font: DynamicFont, text: string, size: f32, region : Vec2={-1,-1}, overflow:= false, out_next_pos: ^Vec2=nil) -> Vec2 {
     standard_size_count :: 6
     standard_sizes :[6]f32= {8,16,32,64,128,256}
     stdsize : f32
@@ -102,7 +104,7 @@ mesher_text_measure :: proc(font: DynamicFont, text: string, size: f32, region :
 		}
         prev_iter = iter
         newline := iter.codepoint == '\n'
-        overflow := region.x != -1 && iter.nextx > region.x
+        overflow := (overflow && (region.x != -1 && iter.nextx > region.x))
         if newline || overflow {
             iter.nextx = 0
             iter.nexty += stdsize
