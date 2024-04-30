@@ -105,6 +105,7 @@ tbro_write_string :: proc(tbro: ^TextBro, str: string) -> int {
 
 tbro_export_to_mesh_builder :: proc(tbro: ^TextBro, mb: ^dgl.MeshBuilder, from,to: int, color: Color32) {
 	assert(from<=to && from>-1 && to<tbro_length(tbro), fmt.tprintf("TextBro: Invalid export range: {}-{}", from,to))
+	if from == to do return
 	if mb.vertex_format == dgl.VERTEX_FORMAT_P2U2C4 {
 		for i in from..=to {
 			g := tbro.elems[i]
