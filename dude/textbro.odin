@@ -50,6 +50,23 @@ tbro_count_lines :: proc(tbro: ^TextBro) -> int {
 tbro_length :: proc(tbro: ^TextBro) -> int {
 	return len(tbro.elems)
 }
+
+tbro_next_pos :: proc(tbro: ^TextBro, idx: int) -> Vec2 {
+	if idx < 0 do return {0,0}
+	g := tbro.elems[idx]
+	switch v in g {
+	case TextBroNewLine:
+		panic("Not handled: text bro next pos of newline")
+	case TextBroChar:
+		return v.next
+	case TextBroTab:
+		return v.next
+	}
+	return {}
+}
+
+
+
 // TODO:
 // tbro_goback :: proc(tbro: ^TextBro, count: int) -> bool {
 	// if count > len(tbro.elems) do return false
@@ -105,7 +122,7 @@ tbro_write_string :: proc(tbro: ^TextBro, str: string) -> int {
 
 tbro_export_to_mesh_builder :: proc(tbro: ^TextBro, mb: ^dgl.MeshBuilder, from,to: int, color: Color32) {
 	assert(from<=to && from>-1 && to<tbro_length(tbro), fmt.tprintf("TextBro: Invalid export range: {}-{}", from,to))
-	if from == to do return
+
 	if mb.vertex_format == dgl.VERTEX_FORMAT_P2U2C4 {
 		for i in from..=to {
 			g := tbro.elems[i]
