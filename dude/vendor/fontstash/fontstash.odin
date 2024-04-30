@@ -1254,14 +1254,16 @@ TextIterEx :: struct {
 // init text iter struct with settings
 TextIterExInit :: proc(
 	ctx: ^FontContext,
+	fontid: int,
+	size : f32,
 	x: f32,
 	y: f32,
 ) -> (res: TextIterEx) {
-	state := __getState(ctx)
 	res.ctx = ctx
-	res.font = __getFont(ctx, state.font)
-	res.isize = i16(f32(state.size) * 10)
-	res.iblur = i16(state.blur)
+	res.font = __getFont(ctx, fontid)
+	res.isize = i16(size * 10)
+	res.iblur = 0
+	// res.iblur = i16(state.blur)
 	res.scale = __getPixelHeightScale(res.font, f32(res.isize) / 10)
 
 	res.x = x
@@ -1269,7 +1271,7 @@ TextIterExInit :: proc(
 	res.nextx = x
 	res.nexty = y
 	res.previousGlyphIndex = -1
-	res.spacing = state.spacing
+	res.spacing = 1.0
 	return
 }
 
