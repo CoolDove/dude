@@ -7,6 +7,13 @@ import "core:math/linalg"
 import "core:unicode/utf8"
 import "vendor/fontstash"
 
+
+/* TODO
+- Handle multiple lines.
+- Handle iterate back.
+- Implement some basic styles.
+*/
+
 TextBro :: struct {
 	elems : [dynamic]TextBroElem,
 	line_count : int,
@@ -65,26 +72,6 @@ tbro_next_pos :: proc(tbro: ^TextBro, idx: int) -> Vec2 {
 	}
 	return {}
 }
-
-
-
-// TODO:
-// tbro_goback :: proc(tbro: ^TextBro, count: int) -> bool {
-	// if count > len(tbro.elems) do return false
-	// for i in 0..<count {
-		// e := pop(&tbro.elems)
-		// #partial switch v in TextBroElem {
-		// case .TextBroNewLine:
-			// tbro.line_count -= 1
-		// }
-	// }
-	// length := tbro_length(tbro)
-	// if length > 0 {
-		// tbro._iter.nextx = tbro.elems[length-1]
-		// tbro._iter.nexty = tbro.elems[length-1]
-	// }
-	// return true
-// }
 
 tbro_write_newline :: proc(tbro: ^TextBro) {
 	tbro.line_count += 1
@@ -157,6 +144,9 @@ tbro_export_to_mesh_builder :: proc(tbro: ^TextBro, mb: ^dgl.MeshBuilder, from,t
 			case TextBroNewLine:
 			case TextBroTab:
 			}
+		}
+		if config.underline {
+			panic("not implemented")
 		}
 	} else {
 		panic("Vertex format not supported")
