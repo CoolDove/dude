@@ -124,9 +124,21 @@ tbro_write_string :: proc(tbro: ^TextBro, str: string) -> int {
 // ** export
 
 TextBroExportConfig :: struct {
+	// Basic
 	color : Color32,
 	transform : linalg.Matrix3f32,
+
+	// Clamping happens before transformation, so the rect is in local space.
+	clamp_enable : bool,
+	clamp_rect : Rect,
+
+	// Styles
 	underline : bool,
+}
+
+tbro_config_clamp :: proc(cfg: ^TextBroExportConfig, enable: bool, rect: Rect) {
+	cfg.clamp_enable = enable
+	cfg.clamp_rect = rect
 }
 
 tbro_export_to_mesh_builder :: proc(tbro: ^TextBro, mb: ^dgl.MeshBuilder, from,to: int, config: TextBroExportConfig) {
@@ -139,6 +151,7 @@ tbro_export_to_mesh_builder :: proc(tbro: ^TextBro, mb: ^dgl.MeshBuilder, from,t
 			case TextBroChar:
 				q := v.quad
 				t := v.texcoord
+				if config.clamp_enable do q,t = _clamp_quad(q,t, config.clamp_rect)
 				c := col_u2f(config.color)
 				mesher_quad_p2u2c4(mb, {q.w,q.h}, {0,0}, {q.x,q.y}, {t.x,t.y}, {t.x,t.y}+{t.w,t.h}, {c,c,c,c}, transform=config.transform)
 			case TextBroNewLine:
@@ -148,4 +161,38 @@ tbro_export_to_mesh_builder :: proc(tbro: ^TextBro, mb: ^dgl.MeshBuilder, from,t
 	} else {
 		panic("Vertex format not supported")
 	}
+
+	_clamp_quad :: proc(quad, texcoord, clamper: Rect) -> (q,t: Rect) {
+		qmin, qmax :Vec2= {quad.x,quad.y}, {quad.x,quad.y}+{quad.w,quad.h}
+		cmin, cmax :Vec2= {clamper.x,clamper.y}, {clamper.x,clamper.y}+{clamper.w,clamper.h}
+
+		// Completely clamped
+		if qmin.x>=cmax.x || qmin.y>=cmax.y || qmax.x<=cmin.x || qmax.y<=cmin.y do return {}, {}
+
+		q, t = quad, texcoord
+
+		if qmin.x<cmin.x {
+			q.x = cmin.x
+			q.w = math.clamp(qmax.x-q.x, 0, quad.w)
+			t.x = (q.x-qmin.x)/quad.w * texcoord.w + texcoord.x
+			t.w = texcoord.w-(t.x-texcoord.x)
+		}
+		if qmax.x>cmax.x {
+			q.w = math.clamp(cmax.x - q.x, 0, quad.w)
+			t.w = (texcoord.x+texcoord.w) - (qmax.x - cmax.x)/quad.w*texcoord.w - t.x
+		}
+
+		if qmin.y<cmin.y {
+			q.y = cmin.y
+			q.h = math.clamp(qmax.y-q.y, 0, quad.h)
+			t.y = (q.y-qmin.y)/quad.h * texcoord.h + texcoord.y
+			t.h = texcoord.h-(t.y-texcoord.y)
+		}
+		if qmax.y>cmax.y {
+			q.h = math.clamp(cmax.y - q.y, 0, quad.h)
+			t.h = (texcoord.y+texcoord.h) - (qmax.y - cmax.y)/quad.h*texcoord.h - t.y
+		}
+		return
+	}
+
 }
