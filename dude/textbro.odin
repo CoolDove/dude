@@ -3,6 +3,7 @@ package dude
 import "dgl"
 import "core:fmt"
 import "core:math"
+import "core:math/linalg"
 import "core:unicode/utf8"
 import "vendor/fontstash"
 
@@ -120,7 +121,15 @@ tbro_write_string :: proc(tbro: ^TextBro, str: string) -> int {
 	return tbro_length(tbro)-1
 }
 
-tbro_export_to_mesh_builder :: proc(tbro: ^TextBro, mb: ^dgl.MeshBuilder, from,to: int, color: Color32) {
+// ** export
+
+TextBroExportConfig :: struct {
+	color : Color32,
+	transform : linalg.Matrix3f32,
+	underline : bool,
+}
+
+tbro_export_to_mesh_builder :: proc(tbro: ^TextBro, mb: ^dgl.MeshBuilder, from,to: int, config: TextBroExportConfig) {
 	assert(from<=to && from>-1 && to<tbro_length(tbro), fmt.tprintf("TextBro: Invalid export range: {}-{}", from,to))
 
 	if mb.vertex_format == dgl.VERTEX_FORMAT_P2U2C4 {
@@ -130,8 +139,8 @@ tbro_export_to_mesh_builder :: proc(tbro: ^TextBro, mb: ^dgl.MeshBuilder, from,t
 			case TextBroChar:
 				q := v.quad
 				t := v.texcoord
-				c := col_u2f(color)
-				mesher_quad_p2u2c4(mb, {q.w,q.h}, {0,0}, {q.x,q.y}, {t.x,t.y}, {t.x,t.y}+{t.w,t.h}, {c,c,c,c})
+				c := col_u2f(config.color)
+				mesher_quad_p2u2c4(mb, {q.w,q.h}, {0,0}, {q.x,q.y}, {t.x,t.y}, {t.x,t.y}+{t.w,t.h}, {c,c,c,c}, transform=config.transform)
 			case TextBroNewLine:
 			case TextBroTab:
 			}

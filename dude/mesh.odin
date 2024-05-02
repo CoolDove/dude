@@ -21,16 +21,23 @@ mesher_quad_p2u2 :: proc(mb: ^dgl.MeshBuilder, size, anchor: Vec2, offset:Vec2={
     dgl.mesh_builder_add_indices(mb, idx+0,idx+1,idx+2, idx+1,idx+3,idx+2)
 }
 
-mesher_quad_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, size, anchor: Vec2, offset:Vec2={0,0}, uv_min:Vec2={0,0},uv_max:Vec2={1,1}, colors: [4]Color= {}) {
+mesher_quad_p2u2c4 :: proc(mb: ^dgl.MeshBuilder, size, anchor: Vec2, offset:Vec2={0,0}, uv_min:Vec2={0,0},uv_max:Vec2={1,1}, 
+/**/colors: [4]Color= {}, 
+/**/transform:linalg.Matrix3f32=1) {
     assert(mb.vertex_format == dgl.VERTEX_FORMAT_P2U2C4, "Mesher: Only P2U2C4 format is supported.")
     idx := cast(u32)len(mb.vertices)/8
     min := -anchor * size + offset
     max := (1-anchor) * size + offset
+	a :Vec3= {min.x,min.y, 1}
+	b :Vec3= {max.x,min.y, 1}
+	c :Vec3= {min.x,max.y, 1}
+	d :Vec3= {max.x,max.y, 1}
+	a,b,c,d = transform*a, transform*b, transform*c, transform*d
     dgl.mesh_builder_add_vertices(mb, 
-        {v8={min.x,min.y, uv_min.x, uv_min.y, colors[0].r, colors[0].g, colors[0].b, colors[0].a}},
-        {v8={max.x,min.y, uv_max.x, uv_min.y, colors[1].r, colors[1].g, colors[1].b, colors[1].a}},
-        {v8={min.x,max.y, uv_min.x, uv_max.y, colors[2].r, colors[2].g, colors[2].b, colors[2].a}},
-        {v8={max.x,max.y, uv_max.x, uv_max.y, colors[3].r, colors[3].g, colors[3].b, colors[3].a}},
+        {v8={a.x,a.y, uv_min.x, uv_min.y, colors[0].r, colors[0].g, colors[0].b, colors[0].a}},
+        {v8={b.x,b.y, uv_max.x, uv_min.y, colors[1].r, colors[1].g, colors[1].b, colors[1].a}},
+        {v8={c.x,c.y, uv_min.x, uv_max.y, colors[2].r, colors[2].g, colors[2].b, colors[2].a}},
+        {v8={d.x,d.y, uv_max.x, uv_max.y, colors[3].r, colors[3].g, colors[3].b, colors[3].a}},
     )
     dgl.mesh_builder_add_indices(mb, idx+0,idx+1,idx+2, idx+1,idx+3,idx+2)
 }

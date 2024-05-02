@@ -129,3 +129,15 @@ ActionProcess :: struct {
 execute_process :: proc(process: ActionProcess) {
     process.process(process.data)
 }
+
+
+// Matrix3x3
+mat3_trs :: proc(translate: Vec2, radian: f32, scale: Vec2) -> linalg.Matrix3x3f32 {
+	c,s := math.cos(radian), math.sin(radian)
+	return {
+		c*scale.x, -s, translate.x,
+		s, c, translate.y,
+		0,0,1,
+	}
+}
+

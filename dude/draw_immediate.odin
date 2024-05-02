@@ -2,6 +2,8 @@ package dude
 
 import gl "vendor:OpenGL"
 import "core:log"
+import "core:math/linalg"
+import "core:math"
 import "core:strings"
 
 import "dgl"
@@ -210,7 +212,7 @@ immediate_screen_text :: proc(pass: ^RenderPass, font: DynamicFont, text: string
         v[1] += offset.y
     }
 }
-immediate_screen_textbro :: proc(pass: ^RenderPass, tbro: ^TextBro, position: Vec2, from,to: int, color: Color32, order:i32=0) {
+immediate_screen_textbro :: proc(pass: ^RenderPass, tbro: ^TextBro, from,to: int, config: TextBroExportConfig, order:i32=0) {
     ctx := &pass.impl.immediate_draw_ctx
     font_atlas := rsys.fontstash_data.atlas
     if _confirm_context(pass, .ScreenMeshP2U2C4, {}, font_atlas, order, true, &rsys.material_default_text) {
@@ -221,15 +223,15 @@ immediate_screen_textbro :: proc(pass: ^RenderPass, tbro: ^TextBro, position: Ve
     vstart := dgl.mesh_builder_count_vertex(mb)
     stride := mb.stride
 
-	tbro_export_to_mesh_builder(tbro, mb, from, to, color)
+	tbro_export_to_mesh_builder(tbro, mb, from, to, config)
 
-    vend := dgl.mesh_builder_count_vertex(mb)
-    v : ^dgl.Vertex8
-    for i in vstart..<vend {
-        v = auto_cast &mb.vertices[i*cast(int)stride]
-        v[0] += position.x 
-        v[1] += position.y
-    }
+    // vend := dgl.mesh_builder_count_vertex(mb)
+    // v : ^dgl.Vertex8
+    // for i in vstart..<vend {
+    //     v = auto_cast &mb.vertices[i*cast(int)stride]
+    //     v[0] += position.x 
+    //     v[1] += position.y
+    // }
 }
 
 immediate_screen_arrow :: proc(pass: ^RenderPass, from,to : Vec2, width: f32, color:Color32={255,255,255,255}, order:i32=0) {
