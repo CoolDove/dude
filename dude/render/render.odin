@@ -31,6 +31,10 @@ system :: proc() -> ^dd.RenderSystem {
     return &dd.rsys
 }
 
+get_default_font :: #force_inline proc() -> dd.DynamicFont {
+	return system().default_font
+}
+
 pass_init :: dd.render_pass_init
 pass_release :: dd.render_pass_release
 
