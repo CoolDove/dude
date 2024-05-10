@@ -84,7 +84,10 @@ tbro_write_tab :: proc(tbro: ^TextBro) {
 	append(&tbro.elems, TextBroTab{'\t', {},{}, {tbro._iter.nextx, tbro._iter.nexty}})
 }
 
-tbro_write_rune :: proc(tbro: ^TextBro, r: rune) -> int {
+tbro_write_rune :: proc(tbro: ^TextBro, r: rune, state:=true) -> int {
+	if state do fontstash.BeginState(&rsys.fontstash_context); 
+	defer if state do fontstash.EndState(&rsys.fontstash_context)
+
 	if r == '\n' {
 		tbro_write_newline(tbro)
 	} else if r == '\t' {
@@ -98,12 +101,14 @@ tbro_write_rune :: proc(tbro: ^TextBro, r: rune) -> int {
 	return tbro_length(tbro)-1
 }
 tbro_write_string :: proc(tbro: ^TextBro, str: string) -> int {
+	fontstash.BeginState(&rsys.fontstash_context); defer fontstash.EndState(&rsys.fontstash_context)
+	
 	data := transmute([]u8)str
 	i := 0
 	for ; i < len(str); {
 		r, offset := utf8.decode_rune_in_bytes(data[i:])
 		i += offset
-		tbro_write_rune(tbro, r)
+		tbro_write_rune(tbro, r, false)
 	}
 	return tbro_length(tbro)-1
 }
@@ -129,10 +134,11 @@ tbro_config_clamp :: proc(cfg: ^TextBroExportConfig, enable: bool, rect: Rect) {
 }
 
 tbro_export_to_mesh_builder :: proc(tbro: ^TextBro, mb: ^dgl.MeshBuilder, from,to: int, config: TextBroExportConfig) {
-	assert(from<=to && from>-1 && to<tbro_length(tbro), fmt.tprintf("TextBro: Invalid export range: {}-{}", from,to))
+	assert(from<=to && from>-1 && to<=tbro_length(tbro), fmt.tprintf("TextBro: Invalid export range: {}-{}", from,to))
+	if from == to do return
 
 	if mb.vertex_format == dgl.VERTEX_FORMAT_P2U2C4 {
-		for i in from..=to {
+		for i in from..<to {
 			g := tbro.elems[i]
 			#partial switch v in g {
 			case TextBroChar:
