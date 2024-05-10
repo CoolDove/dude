@@ -296,10 +296,10 @@ render_pass_release :: proc(pass: ^RenderPass) {
     immediate_release(&pass.immediate_draw_ctx)
 
     hla.hla_delete(&pass.robjs)
-    if len(pass.robjs_sorted) > 0 {
-        delete(pass.robjs_sorted)
-	    pass.robjs_sorted = nil
-    }
+
+	delete(pass.robjs_sorted)
+	pass.robjs_sorted = nil
+
 
     if pass.camera_ubo != 0 {
         dgl.ubo_release(&pass.camera_ubo)
