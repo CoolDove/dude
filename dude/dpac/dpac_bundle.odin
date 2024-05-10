@@ -110,6 +110,7 @@ _bundle_asset :: proc(b: ^strings.Builder, tag: string) -> BundleErr {
     }
 
     if data, ok := os.read_entire_file_from_filename(tag); ok {
+		defer delete(data)
         write_bytes(b, data)
         return .None
     } else {

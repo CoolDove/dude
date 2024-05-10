@@ -28,21 +28,24 @@ DPacLoader :: struct {
 @private
 _handlers : [dynamic]proc(e: PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8)
 
-release :: proc(p: rawptr, t: ^reflect.Type_Info, tag: string="") {
+release :: proc(p: ^$T) {
+	_release(p, type_info_of(T))
+}
+_release :: proc(p: rawptr, t: ^reflect.Type_Info, tag: string="") {
     if reflect.is_struct(t) && tag == "" {
         types := reflect.struct_field_types(t.id)
         offsets := reflect.struct_field_offsets(t.id)
         tags := reflect.struct_field_tags(t.id)
         for i in 0..<len(types) {
             ptr := cast(rawptr)(cast(uintptr)p + offsets[i])
-            release(ptr, types[i], cast(string)tags[i])
+            _release(ptr, types[i], cast(string)tags[i])
         }
     } else if reflect.is_slice(t) {
         s := cast(^runtime.Raw_Slice)p
         elem := t.variant.(runtime.Type_Info_Slice).elem
         for i in 0..<s.len {
             ptr := cast(rawptr)(cast(uintptr)s.data + cast(uintptr)(i * elem.size))
-            release(ptr, elem, tag)
+            _release(ptr, elem, tag)
         }
         mem.free_with_size(s.data, s.len * elem.size)
     } else {
@@ -50,7 +53,10 @@ release :: proc(p: rawptr, t: ^reflect.Type_Info, tag: string="") {
     }
 }
 
-load :: proc(pac: []u8, p: rawptr, t: ^reflect.Type_Info) -> LoadErr {
+load :: proc(pac: []u8, p: ^$T) -> LoadErr {
+	return _load(pac, auto_cast p, type_info_of(T))
+}
+_load :: proc(pac: []u8, p: rawptr, t: ^reflect.Type_Info) -> LoadErr {
     loader := DPacLoader{pac, 0}
 
     if len(pac) < size_of(PackageHeader) do return .InvalidPac_PacTooSmall
@@ -75,7 +81,7 @@ _handle_data :: proc(e: PacEvent, p: rawptr, t: ^reflect.Type_Info, data: []u8) 
 }
 
 @private
-_load :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: string) -> LoadErr {
+_load_annony :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: string) -> LoadErr {
     if reflect.is_struct(t) {
         if tag != "" do return _load_asset(loader, p, t, cast(string)tag)
         else do return _load_struct(loader, p, t)
@@ -93,7 +99,7 @@ _load_struct :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info) -> L
         offsets := reflect.struct_field_offsets(t.id)
         tags := reflect.struct_field_tags(t.id)
         for i in 0..<len(types) {
-            err := _load(loader, cast(rawptr)(cast(uintptr)p+offsets[i]), types[i], cast(string)tags[i])
+            err := _load_annony(loader, cast(rawptr)(cast(uintptr)p+offsets[i]), types[i], cast(string)tags[i])
             if err != .None do return err
         }
         return .None
@@ -122,7 +128,7 @@ _load_array :: proc(loader: ^DPacLoader, p: rawptr, t: ^reflect.Type_Info, tag: 
             the_slice.len = cast(int)elem_count
         }
         for i in 0..<elem_count {
-            err := _load(loader, ptr, elem_type, tag)
+            err := _load_annony(loader, ptr, elem_type, tag)
             if err != .None do return err
             ptr = cast(rawptr)(cast(uintptr)ptr + cast(uintptr)elem_type.size)
         }
