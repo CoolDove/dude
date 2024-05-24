@@ -39,8 +39,10 @@ TextBroNewLine :: struct {
 }
 TextBroTab :: distinct TextBroChar
 
+// You can repeatly call this to reuse a textbro.
 tbro_init :: proc(tbro: ^TextBro, fontid: DynamicFont, size: f32) {
-	tbro.elems = make([dynamic]TextBroElem)
+	if len(tbro.elems) != 0 do clear(&tbro.elems)// If this TextBro has been initialized.
+	else do tbro.elems = make([dynamic]TextBroElem)
 
 	tbro.tabstop = 4
 	tbro.line_spacing = 1.5
