@@ -21,6 +21,7 @@ TextBro :: struct {
 	tabstop : int, // How many spaces for a tab, 4 by default.
 	line_spacing : f32, // 1.5 by default
 
+	_initialized : bool,
 	_iter : fontstash.TextIterEx,
 }
 
@@ -41,8 +42,9 @@ TextBroTab :: distinct TextBroChar
 
 // You can repeatly call this to reuse a textbro.
 tbro_init :: proc(tbro: ^TextBro, fontid: DynamicFont, size: f32) {
-	if len(tbro.elems) != 0 do clear(&tbro.elems)// If this TextBro has been initialized.
+	if tbro._initialized do clear(&tbro.elems)// If this TextBro has been initialized.
 	else do tbro.elems = make([dynamic]TextBroElem)
+	tbro._initialized = true
 
 	tbro.tabstop = 4
 	tbro.line_spacing = 1.5
@@ -51,6 +53,7 @@ tbro_init :: proc(tbro: ^TextBro, fontid: DynamicFont, size: f32) {
 }
 tbro_release :: proc(tbro: ^TextBro) {
 	delete(tbro.elems)
+	tbro._initialized = false
 }
 
 tbro_count_lines :: proc(tbro: ^TextBro) -> int {
